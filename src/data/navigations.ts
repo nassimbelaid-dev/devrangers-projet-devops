@@ -27,7 +27,7 @@ export const navigationsData: NavigationType[] = [
     items: [
       {
         title: "Membres (prototype)",
-        href: "/tables",
+        href: "/members",
         iconName: "Users",
       },
       {
