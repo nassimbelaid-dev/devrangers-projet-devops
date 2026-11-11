@@ -17,7 +17,7 @@ export const navigationsData: NavigationType[] = [
       ,
       {
         title: "Suivi des actions",
-        href: "/apps/kanban",
+        href: "/actions",
         iconName: "Grid2x2",
       },
     ],
