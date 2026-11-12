@@ -1,31 +1,22 @@
 import type { Metadata } from "next"
 
-import { ConversionFunnel } from "./_components/conversion-funnel"
-import { EngagementByDevice } from "./_components/engagement-by-device"
-import { NewVsReturningVisitors } from "./_components/new-vs-returning-visitors"
-import { Overview } from "./_components/overview"
-import { PerformanceOverTime } from "./_components/performance-over-time"
-import { TrafficSources } from "./_components/traffic-sources"
-import { VisitorsByCountry } from "./_components/visitors-by-country"
+import { DashboardOverview } from "@/features/dashboard/dashboard-overview"
 
-// Define metadata for the page
-// More info: https://nextjs.org/docs/app/building-your-application/optimizing/metadata
 export const metadata: Metadata = {
-  title: "Analytics",
+  title: "Tableau de bord | Gestion du comité scientifique",
+  description:
+    "Vue d'ensemble des réunions, décisions, actions et notifications du comité scientifique.",
 }
 
-export default function AnalyticsPage() {
-  return (
-    <section className="container grid gap-4 p-4 md:grid-cols-2">
-      <Overview />
-      <TrafficSources />
-      <div className="space-y-4">
-        <ConversionFunnel />
-        <NewVsReturningVisitors />
-      </div>
-      <PerformanceOverTime />
-      <VisitorsByCountry />
-      <EngagementByDevice />
-    </section>
-  )
+/**
+ * Remplace uniquement l'écran de démonstration Analytics de Shadboard.
+ * On conserve la même route afin de ne modifier ni la sidebar ni HOME_PATHNAME.
+ */
+export default async function AnalyticsPage({
+  params,
+}: {
+  params: Promise<{ lang: string }>
+}) {
+  const { lang } = await params
+  return <DashboardOverview lang={lang} />
 }
