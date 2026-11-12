@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { useDemoCollection, useDemoData } from "@/lib/demo-store"
 import { CalendarDays, LockKeyhole, LockOpen, Plus, RotateCcw, Search } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -8,26 +9,24 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { initialMeetings } from "@/features/meetings/mock-data"
-import { initialMembers, committeeSeats } from "@/features/members/mock-data"
-import { initialDecisions } from "@/features/decisions/mock-data"
+import { committeeSeats } from "@/features/members/mock-data"
 import type { DecisionRecord } from "@/features/decisions/types"
 import { BallotPanel } from "./ballot-panel"
 import { CreateBallotDialog } from "./create-ballot-dialog"
-import { initialBallots } from "./mock-data"
 import { ResultsPanel } from "./results-panel"
 import type { BallotSession, VoteChoice } from "./types"
 import { calculateBallot, removeStaleVotes, seatRepresentations } from "./utils"
 
-const decisionById = (id: string): DecisionRecord | undefined => initialDecisions.find((item) => item.id === id)
-const meetingById = (id: string) => initialMeetings.find((item) => item.id === id)
-const meetingDateFor = (decisionId: string) => meetingById(decisionById(decisionId)?.meetingId ?? "")?.date ?? ""
 const readableDate = (date: string) => date
   ? new Date(`${date}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
   : "Date non définie"
 
 export function VotesClient() {
-  const [ballots, setBallots] = useState<BallotSession[]>(initialBallots)
+  const { meetings, members, decisions } = useDemoData()
+  const decisionById = (id: string): DecisionRecord | undefined => decisions.find((item) => item.id === id)
+  const meetingById = (id: string) => meetings.find((item) => item.id === id)
+  const meetingDateFor = (decisionId: string) => meetingById(decisionById(decisionId)?.meetingId ?? "")?.date ?? ""
+  const [ballots, setBallots] = useDemoCollection("ballots")
   const [selectedId, setSelectedId] = useState(initialBallots[0]?.id ?? "")
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState("all")
@@ -38,9 +37,9 @@ export function VotesClient() {
   const selected = ballots.find((item) => item.id === selectedId) ?? ballots[0]
   const decision = selected ? decisionById(selected.decisionId) : undefined
   const meeting = decision ? meetingById(decision.meetingId) : undefined
-  const summary = selected ? calculateBallot(selected, initialMembers, committeeSeats, meeting?.date ?? "") : null
+  const summary = selected ? calculateBallot(selected, members, committeeSeats, meeting?.date ?? "") : null
 
-  const availableDecisions = initialDecisions.filter((item) => !ballots.some((ballot) => ballot.decisionId === item.id))
+  const availableDecisions = decisions.filter((item) => !ballots.some((ballot) => ballot.decisionId === item.id))
   const visible = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("fr")
     return ballots.filter((ballot) => {
@@ -49,9 +48,9 @@ export function VotesClient() {
       const haystack = `${linked?.reference ?? ""} ${linked?.title ?? ""}`.toLocaleLowerCase("fr")
       return !query || haystack.includes(query)
     })
-  }, [ballots, search, filter])
+  }, [ballots, search, filter, decisions])
 
-  const adoptedCount = ballots.filter((ballot) => calculateBallot(ballot, initialMembers, committeeSeats, meetingDateFor(ballot.decisionId)).outcome === "Adoptée").length
+  const adoptedCount = ballots.filter((ballot) => calculateBallot(ballot, members, committeeSeats, meetingDateFor(ballot.decisionId)).outcome === "Adoptée").length
   const openCount = ballots.filter((ballot) => ballot.state === "Ouvert").length
 
   function updateSelected(updater: (ballot: BallotSession) => BallotSession) {
@@ -65,7 +64,7 @@ export function VotesClient() {
       const newPresence = isPresent
         ? Array.from(new Set([...ballot.presentMemberIds, memberId]))
         : ballot.presentMemberIds.filter((id) => id !== memberId)
-      const seats = seatRepresentations(initialMembers, committeeSeats, meetingDateFor(ballot.decisionId), newPresence)
+      const seats = seatRepresentations(members, committeeSeats, meetingDateFor(ballot.decisionId), newPresence)
       return { ...ballot, presentMemberIds: newPresence, votes: removeStaleVotes(ballot.votes, seats) }
     })
   }
@@ -73,7 +72,7 @@ export function VotesClient() {
   function changeVote(seatId: string, memberId: string, choice: VoteChoice | null) {
     updateSelected((ballot) => {
       if (ballot.state === "Clôturé") return ballot
-      const seats = seatRepresentations(initialMembers, committeeSeats, meetingDateFor(ballot.decisionId), ballot.presentMemberIds)
+      const seats = seatRepresentations(members, committeeSeats, meetingDateFor(ballot.decisionId), ballot.presentMemberIds)
       if (!seats.some((seat) => seat.seatId === seatId && seat.representativeId === memberId)) return ballot
       const votes = { ...ballot.votes }
       if (choice === null) delete votes[seatId]
@@ -242,10 +241,10 @@ export function VotesClient() {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="vote" className="mt-0">
-              <BallotPanel ballot={selected} summary={summary} members={initialMembers} onTogglePresence={changePresence} onVote={changeVote} />
+              <BallotPanel ballot={selected} summary={summary} members={members} onTogglePresence={changePresence} onVote={changeVote} />
             </TabsContent>
             <TabsContent value="resultats" className="mt-0">
-              <ResultsPanel ballot={selected} summary={summary} members={initialMembers} />
+              <ResultsPanel ballot={selected} summary={summary} members={members} />
             </TabsContent>
           </Tabs>
         </section>

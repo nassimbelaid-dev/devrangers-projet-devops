@@ -1,5 +1,7 @@
 "use client"
 
+import { useDemoData } from "@/lib/demo-store"
+
 import { useState } from "react"
 import type { FormEvent } from "react"
 
@@ -13,7 +15,6 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { initialMembers } from "@/features/members/mock-data"
 import { ACTION_PRIORITIES, ACTION_STATUSES } from "./types"
 import type { ActionPriority, ActionRecord, ActionStatus, DecisionRecord } from "./types"
 
@@ -36,6 +37,7 @@ function blankAction(defaultStatus: ActionStatus, defaultDecisionId: string): Ac
 }
 
 export function ActionForm({ open, initial, decisions, defaultStatus, defaultDecisionId, onOpenChange, onSave }: ActionFormProps) {
+  const { members } = useDemoData()
   const [form, setForm] = useState<ActionRecord>(() => initial ? { ...initial } : blankAction(defaultStatus, defaultDecisionId))
   const [error, setError] = useState("")
 
@@ -95,7 +97,7 @@ export function ActionForm({ open, initial, decisions, defaultStatus, defaultDec
               <Select value={form.assigneeId} onValueChange={(value) => change("assigneeId", value)}>
                 <SelectTrigger id="action-assignee"><SelectValue placeholder="Sélectionner un membre" /></SelectTrigger>
                 <SelectContent>
-                  {initialMembers.map((member) => <SelectItem key={member.id} value={member.id}>{member.name}</SelectItem>)}
+                  {members.map((member) => <SelectItem key={member.id} value={member.id}>{member.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

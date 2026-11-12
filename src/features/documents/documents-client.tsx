@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { useDemoCollection, useDemoData } from "@/lib/demo-store"
 import { Archive, FileText, FolderOpen, Plus, Search, ScrollText } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -9,10 +10,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { initialMeetings } from "@/features/meetings/mock-data"
 import { DocumentDetails } from "./document-details"
 import { DocumentForm } from "./document-form"
-import { initialDocuments, initialMinutes } from "./mock-data"
 import { MinutesEditor } from "./minutes-editor"
 import { DOCUMENT_TYPES } from "./types"
 import type { CommitteeDocument, DocumentType, MeetingMinutes } from "./types"
@@ -21,9 +20,10 @@ import { formatDate, makeId, meetingLabel, today } from "./utils"
 type View = "library" | "minutes"
 
 export function DocumentsClient() {
+  const { meetings } = useDemoData()
   const [view, setView] = useState<View>("library")
-  const [documents, setDocuments] = useState<CommitteeDocument[]>(initialDocuments)
-  const [minutes, setMinutes] = useState<MeetingMinutes[]>(initialMinutes)
+  const [documents, setDocuments] = useDemoCollection("documents")
+  const [minutes, setMinutes] = useDemoCollection("minutes")
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null)
   const [selectedMinutesId, setSelectedMinutesId] = useState<string>(initialMinutes[0]?.id ?? "")
   const [formOpen, setFormOpen] = useState(false)
@@ -43,7 +43,7 @@ export function DocumentsClient() {
 
   const selectedDocument = documents.find((doc) => doc.id === selectedDocId) ?? null
   const selectedMinutes = minutes.find((pv) => pv.id === selectedMinutesId) ?? minutes[0]
-  const eligibleMeetings = initialMeetings.filter((meeting) => !minutes.some((pv) => pv.meetingId === meeting.id))
+  const eligibleMeetings = meetings.filter((meeting) => !minutes.some((pv) => pv.meetingId === meeting.id))
   const visibleDocuments = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("fr")
     return documents.filter((doc) => {
@@ -72,7 +72,7 @@ export function DocumentsClient() {
   }
   function createMinutes() {
     if (!newMeetingId || !eligibleMeetings.some((meeting) => meeting.id === newMeetingId)) return
-    const meeting = initialMeetings.find((item) => item.id === newMeetingId)
+    const meeting = meetings.find((item) => item.id === newMeetingId)
     if (!meeting) return
     const id = `pv-${makeId()}`
     const next: MeetingMinutes = {

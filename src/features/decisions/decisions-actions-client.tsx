@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { useDemoCollection, useDemoData } from "@/lib/demo-store"
 import {
   CalendarClock, CheckCircle2, ClipboardCheck, Eye, LayoutGrid, List, Pencil, Plus,
   Search, Trash2, TriangleAlert,
@@ -21,12 +22,9 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"
 
-import { initialMeetings } from "@/features/meetings/mock-data"
-import { initialMembers } from "@/features/members/mock-data"
 import { ActionForm } from "./action-form"
 import { ActionsKanban } from "./actions-kanban"
 import { DecisionForm } from "./decision-form"
-import { initialActions, initialDecisions } from "./mock-data"
 import { ACTION_PRIORITIES, ACTION_STATUSES, DECISION_STATUSES } from "./types"
 import type { ActionPriority, ActionRecord, ActionStatus, BoardView, DecisionRecord, DecisionStatus } from "./types"
 import { dateToday, formatDate, isOverdue, moveAction, nextDecisionReference, normalizedOrder } from "./utils"
@@ -53,12 +51,13 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: number; 
   )
 }
 
-const memberLabel = (id: string) => initialMembers.find((member) => member.id === id)?.name ?? "Membre inconnu"
-const meetingLabel = (id: string) => initialMeetings.find((meeting) => meeting.id === id)?.title ?? "Réunion inconnue"
 
 export function DecisionsActionsClient() {
-  const [decisions, setDecisions] = useState<DecisionRecord[]>(initialDecisions)
-  const [actions, setActions] = useState<ActionRecord[]>(initialActions)
+  const { meetings: linkedMeetings, members: linkedMembers } = useDemoData()
+  const memberLabel = (id: string) => linkedMembers.find((member) => member.id === id)?.name ?? "Membre inconnu"
+  const meetingLabel = (id: string) => linkedMeetings.find((meeting) => meeting.id === id)?.title ?? "Réunion inconnue"
+  const [decisions, setDecisions] = useDemoCollection("decisions")
+  const [actions, setActions] = useDemoCollection("actions")
   const [view, setView] = useState<BoardView>("kanban")
   const [search, setSearch] = useState("")
   const [priorityFilter, setPriorityFilter] = useState<(typeof actionFilters)[number]>("Toutes les priorités")
@@ -89,7 +88,7 @@ export function DecisionsActionsClient() {
       const haystack = `${action.title} ${action.description} ${memberLabel(action.assigneeId)} ${related?.reference ?? ""}`.toLocaleLowerCase("fr")
       return (!query || haystack.includes(query)) && (priorityFilter === "Toutes les priorités" || action.priority === priorityFilter)
     })
-  }, [actions, decisions, search, priorityFilter])
+  }, [actions, decisions, search, priorityFilter, linkedMembers])
 
   const filteredDecisions = useMemo(() => {
     const query = search.toLocaleLowerCase("fr").trim()
@@ -97,7 +96,7 @@ export function DecisionsActionsClient() {
       const haystack = `${decision.reference} ${decision.title} ${decision.description} ${meetingLabel(decision.meetingId)}`.toLocaleLowerCase("fr")
       return (!query || haystack.includes(query)) && (decisionFilter === "Toutes les décisions" || decision.status === decisionFilter)
     }).sort((a, b) => b.date.localeCompare(a.date))
-  }, [decisions, search, decisionFilter])
+  }, [decisions, search, decisionFilter, linkedMeetings])
 
   const ongoing = actions.filter((action) => action.status === "En cours").length
   const completed = actions.filter((action) => action.status === "Terminée").length

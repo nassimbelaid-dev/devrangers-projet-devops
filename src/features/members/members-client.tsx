@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { useDemoCollection } from "@/lib/demo-store"
 import { Eye, Pencil, Plus, Search, Trash2, Users, UserCheck, UserRoundPlus, CalendarClock } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 
@@ -20,7 +21,7 @@ import {
 
 import { MemberDetails } from "./member-details"
 import { MemberForm } from "./member-form"
-import { committeeSeats, initialMembers } from "./mock-data"
+import { committeeSeats } from "./mock-data"
 import { SeatsPanel } from "./seats-panel"
 import { MEMBER_ROLES } from "./types"
 import type { CommitteeMemberRecord, MandateStatus, MemberRole } from "./types"
@@ -37,7 +38,7 @@ function StatusBadge({ status }: { status: MandateStatus }) {
 }
 
 export function MembersClient() {
-  const [members, setMembers] = useState<CommitteeMemberRecord[]>(initialMembers)
+  const [members, setMembers] = useDemoCollection("members")
   const [search, setSearch] = useState("")
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("Tous les rôles")
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("Tous les mandats")

@@ -1,83 +1,78 @@
-/**
- * Tableau de bord de démonstration, sans API ni base de données.
- * Les chiffres sont calculés UNE FOIS à partir des données fictives initiales des
- * modules 01/02/03/05/07 : ils ne suivent PAS les changements effectués sur
- * ces pages tant que leur état React n'est pas centralisé.
- * Date de référence constante pour rendre la démonstration reproductible.
- */
-import { initialMeetings } from "@/features/meetings/mock-data"
-import { initialMembers } from "@/features/members/mock-data"
-import {
-  initialActions,
-  initialDecisions,
-} from "@/features/decisions/mock-data"
-import { initialNotifications } from "@/features/notifications/mock-data"
+"use client"
+
+import { useDemoData } from "@/lib/demo-store"
 
 export const DEMO_REFERENCE_DATE = "2026-11-12"
 
-export const dashboardMeetings = [...initialMeetings]
-  .filter((meeting) => meeting.status === "Planifiée")
-  .sort((a, b) =>
-    `${a.date}T${a.startTime}`.localeCompare(`${b.date}T${b.startTime}`)
-  )
-  .slice(0, 3)
+export function useDashboardData() {
+  const { meetings, members, decisions, actions, notifications } = useDemoData()
+  const dashboardMeetings = [...meetings]
+    .filter((meeting) => meeting.status === "Planifiée")
+    .sort((a, b) =>
+      `${a.date}T${a.startTime}`.localeCompare(`${b.date}T${b.startTime}`)
+    )
+    .slice(0, 3)
 
-export const dashboardMembers = initialMembers
+  const dashboardMembers = members
 
-export const dashboardActionCounts = {
-  todo: initialActions.filter((action) => action.status === "À faire").length,
-  inProgress: initialActions.filter((action) => action.status === "En cours")
-    .length,
-  done: initialActions.filter((action) => action.status === "Terminée").length,
-}
+  const dashboardActionCounts = {
+    todo: actions.filter((action) => action.status === "À faire").length,
+    inProgress: actions.filter((action) => action.status === "En cours")
+      .length,
+    done: actions.filter((action) => action.status === "Terminée").length,
+  }
 
-export const dashboardDecisionCounts = {
-  adopted: initialDecisions.filter((decision) => decision.status === "Adoptée")
-    .length,
-  pending: initialDecisions.filter((decision) => decision.status === "En attente")
-    .length,
-  rejected: initialDecisions.filter((decision) => decision.status === "Rejetée")
-    .length,
-}
+  const dashboardDecisionCounts = {
+    adopted: decisions.filter((decision) => decision.status === "Adoptée")
+      .length,
+    pending: decisions.filter((decision) => decision.status === "En attente")
+      .length,
+    rejected: decisions.filter((decision) => decision.status === "Rejetée")
+      .length,
+  }
 
-export const dashboardActionTotal = initialActions.length
-export const dashboardDecisionTotal = initialDecisions.length
+  const dashboardActionTotal = actions.length
+  const dashboardDecisionTotal = decisions.length
 
-export const dashboardPendingActions = [...initialActions]
-  .filter((action) => action.status !== "Terminée")
-  .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
-  .slice(0, 4)
-  .map((action) => ({
-    ...action,
-    assignee:
-      dashboardMembers.find((member) => member.id === action.assigneeId)
-        ?.name ?? "Non attribuée",
-    overdue: action.dueDate < DEMO_REFERENCE_DATE,
-  }))
+  const dashboardPendingActions = [...actions]
+    .filter((action) => action.status !== "Terminée")
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+    .slice(0, 4)
+    .map((action) => ({
+      ...action,
+      assignee:
+        dashboardMembers.find((member) => member.id === action.assigneeId)
+          ?.name ?? "Non attribuée",
+      overdue: action.dueDate < DEMO_REFERENCE_DATE,
+    }))
 
-export const dashboardActiveMembers = initialMembers.filter(
-  (member) =>
-    member.mandateStart <= DEMO_REFERENCE_DATE &&
-    member.mandateEnd >= DEMO_REFERENCE_DATE
-).length
+  const dashboardActiveMembers = members.filter(
+    (member) =>
+      member.mandateStart <= DEMO_REFERENCE_DATE &&
+      member.mandateEnd >= DEMO_REFERENCE_DATE
+  ).length
 
-export const dashboardNotifications = [...initialNotifications]
-  .filter((notification) => !notification.archived)
-  .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  const dashboardNotifications = [...notifications]
+    .filter((notification) => !notification.archived)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 
-export const dashboardUnreadCount = dashboardNotifications.filter(
-  (notification) => !notification.read
-).length
+  const dashboardUnreadCount = dashboardNotifications.filter(
+    (notification) => !notification.read
+  ).length
 
-export const dashboardRecentNotifications = dashboardNotifications.slice(0, 3)
+  const dashboardRecentNotifications = dashboardNotifications.slice(0, 3)
 
-export const dashboardMetrics = {
-  scheduledMeetings: dashboardMeetings.length,
-  openActions:
-    dashboardActionCounts.todo + dashboardActionCounts.inProgress,
-  adoptedDecisions: dashboardDecisionCounts.adopted,
-  unreadNotifications: dashboardUnreadCount,
-  activeMembers: dashboardActiveMembers,
+  const dashboardMetrics = {
+    scheduledMeetings: dashboardMeetings.length,
+    openActions:
+      dashboardActionCounts.todo + dashboardActionCounts.inProgress,
+    adoptedDecisions: dashboardDecisionCounts.adopted,
+    unreadNotifications: dashboardUnreadCount,
+    activeMembers: dashboardActiveMembers,
+  }
+
+
+  return { dashboardMeetings, dashboardMembers, dashboardActionCounts, dashboardDecisionCounts, dashboardActionTotal, dashboardDecisionTotal, dashboardPendingActions, dashboardActiveMembers, dashboardNotifications, dashboardUnreadCount, dashboardRecentNotifications, dashboardMetrics }
 }
 
 export function frenchDate(isoDate: string, options?: Intl.DateTimeFormatOptions) {

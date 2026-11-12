@@ -1,5 +1,7 @@
 "use client"
 
+import { useDemoData } from "@/lib/demo-store"
+
 import { useEffect, useState } from "react"
 import { CheckCircle2, Download, RotateCcw, Save } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -7,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { initialMeetings, committeeMembers } from "@/features/meetings/mock-data"
 import type { MeetingMinutes } from "./types"
 import { memberName, printMinutes, today } from "./utils"
 import { MinutesPreview } from "./minutes-preview"
@@ -18,9 +19,10 @@ interface Props {
 }
 
 export function MinutesEditor({ minutes, onSave }: Props) {
+  const { meetings, members } = useDemoData()
   const [form, setForm] = useState<MeetingMinutes>(() => ({ ...minutes, presentMemberIds: [...minutes.presentMemberIds] }))
   const [feedback, setFeedback] = useState("")
-  const meeting = initialMeetings.find((item) => item.id === form.meetingId)
+  const meeting = meetings.find((item) => item.id === form.meetingId)
   const isLocked = form.status === "Validé"
 
   useEffect(() => { setForm({ ...minutes, presentMemberIds: [...minutes.presentMemberIds] }) }, [minutes])
@@ -73,10 +75,10 @@ export function MinutesEditor({ minutes, onSave }: Props) {
               <Label>Présents à la réunion</Label>
               <div className="divide-y rounded-xl border px-4">
                 {(meeting?.participantIds ?? []).map((id) => {
-                  const member = committeeMembers.find((item) => item.id === id)
+                  const member = members.find((item) => item.id === id)
                   return <label key={id} className="flex min-h-12 cursor-pointer items-center gap-3 py-3 text-sm">
                     <input type="checkbox" checked={form.presentMemberIds.includes(id)} onChange={(event) => togglePresent(id, event.target.checked)} className="size-4 accent-primary" />
-                    <span className="font-medium">{memberName(id)}</span><span className="ml-auto text-xs text-muted-foreground">{member?.role ?? "Membre"}</span>
+                    <span className="font-medium">{(members.find((item) => item.id === id)?.name ?? "Inconnu")}</span><span className="ml-auto text-xs text-muted-foreground">{member?.role ?? "Membre"}</span>
                   </label>
                 })}
               </div>

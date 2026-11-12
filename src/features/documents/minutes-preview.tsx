@@ -1,12 +1,12 @@
-import { initialMeetings, committeeMembers } from "@/features/meetings/mock-data"
-import { initialDecisions } from "@/features/decisions/mock-data"
+import { useDemoData } from "@/lib/demo-store"
 import type { MeetingMinutes } from "./types"
 import { formatDate, memberName } from "./utils"
 
 export function MinutesPreview({ minutes: pv }: { minutes: MeetingMinutes }) {
-  const meeting = initialMeetings.find((item) => item.id === pv.meetingId)
+  const { meetings, members, decisions } = useDemoData()
+  const meeting = meetings.find((item) => item.id === pv.meetingId)
   if (!meeting) return <p className="text-sm text-muted-foreground">Réunion introuvable.</p>
-  const decisions = initialDecisions.filter((item) => item.meetingId === meeting.id)
+  const relatedDecisions = decisions.filter((item) => item.meetingId === meeting.id)
   const absent = meeting.participantIds.filter((id) => !pv.presentMemberIds.includes(id))
   return (
     <article className="space-y-7 rounded-xl border bg-card px-6 py-8 text-sm leading-7 sm:px-8 sm:py-10">
@@ -22,8 +22,8 @@ export function MinutesPreview({ minutes: pv }: { minutes: MeetingMinutes }) {
       </div>
       <section className="space-y-2">
         <h4 className="font-semibold">Présents</h4>
-        <p className="text-muted-foreground">{pv.presentMemberIds.map(memberName).join(", ") || "Aucun"}</p>
-        {absent.length > 0 && <p className="text-muted-foreground">Absents parmi les invités : {absent.map(memberName).join(", ")}</p>}
+        <p className="text-muted-foreground">{pv.presentMemberIds.map((id) => members.find((m) => m.id === id)?.name ?? "Inconnu").join(", ") || "Aucun"}</p>
+        {absent.length > 0 && <p className="text-muted-foreground">Absents parmi les invités : {absent.map((id) => members.find((m) => m.id === id)?.name ?? "Inconnu").join(", ")}</p>}
       </section>
       <section className="space-y-2">
         <h4 className="font-semibold">Ordre du jour</h4>
@@ -37,8 +37,8 @@ export function MinutesPreview({ minutes: pv }: { minutes: MeetingMinutes }) {
       </section>
       <section className="space-y-2">
         <h4 className="font-semibold">Décisions</h4>
-        {decisions.length ? (
-          <ul className="space-y-2 text-muted-foreground">{decisions.map((item) => <li key={item.id}><span className="font-medium text-foreground">{item.reference}</span> · {item.title} ({item.status})</li>)}</ul>
+        {relatedDecisions.length ? (
+          <ul className="space-y-2 text-muted-foreground">{relatedDecisions.map((item) => <li key={item.id}><span className="font-medium text-foreground">{item.reference}</span> · {item.title} ({item.status})</li>)}</ul>
         ) : <p className="text-muted-foreground">Aucune décision fictive associée.</p>}
       </section>
       <section className="space-y-2"><h4 className="font-semibold">Suites à donner</h4><p className="whitespace-pre-wrap text-muted-foreground">{pv.nextSteps || "À compléter…"}</p></section>
@@ -46,7 +46,7 @@ export function MinutesPreview({ minutes: pv }: { minutes: MeetingMinutes }) {
         <div><p className="text-xs text-muted-foreground">Secrétaire</p><p className="font-medium">{pv.secretary || "—"}</p></div>
         <div><p className="text-xs text-muted-foreground">Président</p><p className="font-medium">{pv.president || "—"}</p></div>
       </div>
-      <p className="text-xs text-muted-foreground">{committeeMembers.length} membres dans le jeu de démonstration. Aucun document officiel n'est produit.</p>
+      <p className="text-xs text-muted-foreground">{members.length} membres dans le jeu de démonstration. Aucun document officiel n'est produit.</p>
     </article>
   )
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { useDemoCollection, useDemoData } from "@/lib/demo-store"
 import { ArrowDown, ArrowUp, Check, Eye, FileText, ListOrdered, Pencil, Plus, RotateCcw, Search, X } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -15,10 +16,8 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 
-import { committeeMembers, initialMeetings } from "@/features/meetings/mock-data"
 import { AgendaDetails } from "./agenda-details"
 import { AgendaForm } from "./agenda-form"
-import { initialAgendaProposals } from "./mock-data"
 import type { AgendaProposal, AgendaTab } from "./types"
 import { formatAgendaDate, makeAgendaId, memberLabel, moveValidatedPoint, sortAgenda } from "./utils"
 
@@ -35,7 +34,9 @@ function statusBadge(status: AgendaProposal["status"]) {
 }
 
 export function AgendaClient() {
-  const [items, setItems] = useState<AgendaProposal[]>(initialAgendaProposals)
+  const { meetings, members } = useDemoData()
+  const committeeMembers = members
+  const [items, setItems] = useDemoCollection("agenda")
   const [meetingId, setMeetingId] = useState("r1")
   const [actorId, setActorId] = useState("m3")
   const [tab, setTab] = useState<AgendaTab>("proposals")
@@ -48,7 +49,7 @@ export function AgendaClient() {
   const [rejectNote, setRejectNote] = useState("")
   const [rejectError, setRejectError] = useState("")
 
-  const currentMeeting = initialMeetings.find((meeting) => meeting.id === meetingId) ?? initialMeetings[0]
+  const currentMeeting = meetings.find((meeting) => meeting.id === meetingId) ?? meetings[0]
   const currentActor = committeeMembers.find((member) => member.id === actorId) ?? committeeMembers[0]
   const president = currentActor.role === "Président"
   const editableMeeting = currentMeeting.status === "Planifiée"
@@ -68,7 +69,7 @@ export function AgendaClient() {
     if (!query) return subset
     return subset.filter((item) => `${item.title} ${item.description} ${memberLabel(item.proposedById, committeeMembers)}`
       .toLocaleLowerCase("fr").includes(query))
-  }, [currentItems, tab, search])
+  }, [currentItems, tab, search, committeeMembers])
   const editing = items.find((item) => item.id === editingId) ?? null
   const details = items.find((item) => item.id === detailsId) ?? null
   const rejectedItem = items.find((item) => item.id === rejectId) ?? null
@@ -178,7 +179,7 @@ export function AgendaClient() {
             <Label htmlFor="agenda-meeting">Réunion</Label>
             <Select value={meetingId} onValueChange={changeMeeting}>
               <SelectTrigger id="agenda-meeting" className="w-full"><SelectValue /></SelectTrigger>
-              <SelectContent>{initialMeetings.map((meeting) => <SelectItem key={meeting.id} value={meeting.id}>{meeting.title}</SelectItem>)}</SelectContent>
+              <SelectContent>{meetings.map((meeting) => <SelectItem key={meeting.id} value={meeting.id}>{meeting.title}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-2">

@@ -1,5 +1,7 @@
 "use client"
 
+import { useDemoData } from "@/lib/demo-store"
+
 import { useState } from "react"
 import type { FormEvent } from "react"
 
@@ -13,7 +15,6 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { initialMeetings } from "@/features/meetings/mock-data"
 import { DECISION_STATUSES } from "./types"
 import type { DecisionRecord, DecisionStatus } from "./types"
 import { dateToday } from "./utils"
@@ -34,6 +35,7 @@ function blankDecision(reference: string): DecisionRecord {
 }
 
 export function DecisionForm({ open, initial, reference, onOpenChange, onSave }: DecisionFormProps) {
+  const { meetings } = useDemoData()
   const [form, setForm] = useState<DecisionRecord>(() => initial ? { ...initial } : blankDecision(reference))
   const [error, setError] = useState("")
 
@@ -86,7 +88,7 @@ export function DecisionForm({ open, initial, reference, onOpenChange, onSave }:
             <Select value={form.meetingId} onValueChange={(value) => change("meetingId", value)}>
               <SelectTrigger id="decision-meeting"><SelectValue placeholder="Sélectionner une réunion" /></SelectTrigger>
               <SelectContent>
-                {initialMeetings.map((meeting) => (
+                {meetings.map((meeting) => (
                   <SelectItem key={meeting.id} value={meeting.id}>
                     {meeting.title} ({meeting.date})
                   </SelectItem>

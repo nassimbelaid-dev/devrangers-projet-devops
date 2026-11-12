@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import type { ReactNode } from "react"
 import {
@@ -20,18 +22,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 
-import {
-  dashboardActionCounts,
-  dashboardActionTotal,
-  dashboardDecisionCounts,
-  dashboardDecisionTotal,
-  dashboardMeetings,
-  dashboardMetrics,
-  dashboardNotifications,
-  dashboardPendingActions,
-  dashboardRecentNotifications,
-  frenchDate,
-} from "./dashboard-data"
+import { useDashboardData, frenchDate } from "./dashboard-data"
 
 type DashboardProps = { lang: string }
 type Tone = "blue" | "amber" | "emerald" | "violet"
@@ -153,6 +144,7 @@ function Panel({
 }
 
 function MeetingList({ lang }: DashboardProps) {
+  const { dashboardMeetings } = useDashboardData()
   return (
     <Panel>
       <SectionHeading
@@ -206,6 +198,7 @@ function MeetingList({ lang }: DashboardProps) {
 }
 
 function ActionBreakdown({ lang }: DashboardProps) {
+  const { dashboardActionTotal, dashboardActionCounts } = useDashboardData()
   const total = dashboardActionTotal || 1
   const items = [
     { label: "À faire", value: dashboardActionCounts.todo, color: "bg-amber-400", text: "text-amber-600 dark:text-amber-400" },
@@ -264,6 +257,7 @@ function ActionBreakdown({ lang }: DashboardProps) {
 }
 
 function PriorityActions({ lang }: DashboardProps) {
+  const { dashboardPendingActions } = useDashboardData()
   return (
     <Panel>
       <SectionHeading
@@ -311,6 +305,7 @@ function PriorityActions({ lang }: DashboardProps) {
 }
 
 function DecisionBreakdown({ lang }: DashboardProps) {
+  const { dashboardDecisionTotal, dashboardDecisionCounts } = useDashboardData()
   const total = dashboardDecisionTotal || 1
   const adopted = (dashboardDecisionCounts.adopted / total) * 360
   const pending = adopted + (dashboardDecisionCounts.pending / total) * 360
@@ -361,6 +356,7 @@ function DecisionBreakdown({ lang }: DashboardProps) {
 }
 
 function RecentActivity({ lang }: DashboardProps) {
+  const { dashboardRecentNotifications } = useDashboardData()
   return (
     <Panel>
       <SectionHeading
@@ -448,6 +444,13 @@ function QuickAccess({ lang }: DashboardProps) {
 }
 
 export function DashboardOverview({ lang }: DashboardProps) {
+  const { dashboardMetrics, dashboardDecisionTotal, dashboardNotifications } = useDashboardData()
+  const { dashboardMetrics, dashboardDecisionTotal, dashboardNotifications } = useDashboardData()
+  const { dashboardMetrics, dashboardDecisionTotal, dashboardNotifications } = useDashboardData()
+  const { dashboardMetrics, dashboardDecisionTotal, dashboardNotifications } = useDashboardData()
+  const { dashboardMetrics, dashboardDecisionTotal, dashboardNotifications } = useDashboardData()
+  const { dashboardMetrics, dashboardDecisionTotal, dashboardNotifications } = useDashboardData()
+  const { dashboardMetrics, dashboardDecisionTotal, dashboardNotifications } = useDashboardData()
   const stats: {
     title: string
     value: number

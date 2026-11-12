@@ -1,5 +1,7 @@
 "use client"
 
+import { useDemoData } from "@/lib/demo-store"
+
 import { Draggable, DragDropContext, Droppable } from "@hello-pangea/dnd"
 import type { DropResult } from "@hello-pangea/dnd"
 import { CalendarDays, Eye, GripVertical, Plus, UserRound } from "lucide-react"
@@ -7,7 +9,6 @@ import { CalendarDays, Eye, GripVertical, Plus, UserRound } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { initialMembers } from "@/features/members/mock-data"
 import { ACTION_STATUSES } from "./types"
 import type { ActionRecord, ActionStatus, DecisionRecord } from "./types"
 import { dateToday, formatDate, isOverdue } from "./utils"
@@ -26,11 +27,10 @@ const borderColors: Record<ActionStatus, string> = {
   "Terminée": "border-t-emerald-500",
 }
 
-function memberName(id: string) {
-  return initialMembers.find((member) => member.id === id)?.name ?? "Non attribué"
-}
 
 export function ActionsKanban({ actions, decisions, onMove, onAdd, onDetails }: ActionsKanbanProps) {
+  const { members } = useDemoData()
+  const memberName = (id: string) => members.find((member) => member.id === id)?.name ?? "Non attribué"
   const today = dateToday()
   const columns = ACTION_STATUSES.map((status) => ({
     status,

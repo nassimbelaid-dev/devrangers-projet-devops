@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { useDemoCollection } from "@/lib/demo-store"
 import { usePathname } from "next/navigation"
 import {
   Archive, ArchiveRestore, Bell, CheckCheck, Inbox, Plus, RotateCcw, Search,
@@ -40,7 +41,7 @@ function Count({ title, value }: { title: string; value: number }) {
 }
 
 export function NotificationsClient() {
-  const [items, setItems] = useState<CommitteeNotification[]>(initialNotifications)
+  const [items, setItems] = useDemoCollection("notifications")
   const [tab, setTab] = useState<NotificationTab>("toutes")
   const [kindFilter, setKindFilter] = useState<NotificationKindFilter>("tous")
   const [query, setQuery] = useState("")

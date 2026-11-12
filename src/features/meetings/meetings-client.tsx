@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { useDemoCollection } from "@/lib/demo-store"
 import { CalendarDays, CheckCircle2, Eye, Pencil, Plus, Search, Users } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -14,7 +15,6 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"
 
-import { initialMeetings } from "./mock-data"
 import { MeetingCalendar } from "./meeting-calendar"
 import { MeetingDetails } from "./meeting-details"
 import { MeetingForm } from "./meeting-form"
@@ -36,7 +36,7 @@ function statusBadge(status: MeetingStatus) {
 }
 
 export function MeetingsClient() {
-  const [meetings, setMeetings] = useState<Meeting[]>(initialMeetings)
+  const [meetings, setMeetings] = useDemoCollection("meetings")
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState<StatusFilter>("Toutes")
   const [formOpen, setFormOpen] = useState(false)

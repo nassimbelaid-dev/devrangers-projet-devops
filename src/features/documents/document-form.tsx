@@ -1,5 +1,7 @@
 "use client"
 
+import { useDemoData } from "@/lib/demo-store"
+
 import { useState } from "react"
 import type { FormEvent } from "react"
 import { Button } from "@/components/ui/button"
@@ -8,7 +10,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { initialMeetings } from "@/features/meetings/mock-data"
 import { DOCUMENT_STATUSES, DOCUMENT_TYPES, VISIBILITIES } from "./types"
 import type { CommitteeDocument, DocumentStatus, DocumentType, DocumentVisibility } from "./types"
 import { makeId, today } from "./utils"
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export function DocumentForm({ open, initial, reference, onOpenChange, onSave }: Props) {
+  const { meetings } = useDemoData()
   const [title, setTitle] = useState(initial?.title ?? "")
   const [type, setType] = useState<DocumentType>(initial?.type ?? "Rapport")
   const [status, setStatus] = useState<DocumentStatus>(initial?.status ?? "Brouillon")
@@ -90,7 +92,7 @@ export function DocumentForm({ open, initial, reference, onOpenChange, onSave }:
                 <SelectTrigger id="document-meeting"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="aucune">Non rattaché</SelectItem>
-                  {initialMeetings.map((meeting) => <SelectItem key={meeting.id} value={meeting.id}>{meeting.title}</SelectItem>)}
+                  {meetings.map((meeting) => <SelectItem key={meeting.id} value={meeting.id}>{meeting.title}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
