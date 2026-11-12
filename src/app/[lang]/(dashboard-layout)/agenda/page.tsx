@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { CommitteeShell } from "@/components/committee-ui/committee-shell"
 
 import { AgendaClient } from "@/features/agenda/agenda-client"
 
@@ -8,5 +9,5 @@ export const metadata: Metadata = {
 }
 
 export default function AgendaPage() {
-  return <AgendaClient />
+  return <CommitteeShell module="agenda"><AgendaClient /></CommitteeShell>
 }

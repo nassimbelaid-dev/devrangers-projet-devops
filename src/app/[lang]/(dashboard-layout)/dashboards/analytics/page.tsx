@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { CommitteeShell } from "@/components/committee-ui/committee-shell"
 
 import { DashboardOverview } from "@/features/dashboard/dashboard-overview"
 
@@ -18,5 +19,5 @@ export default async function AnalyticsPage({
   params: Promise<{ lang: string }>
 }) {
   const { lang } = await params
-  return <DashboardOverview lang={lang} />
+  return <CommitteeShell module="dashboard"><DashboardOverview lang={lang} /></CommitteeShell>
 }

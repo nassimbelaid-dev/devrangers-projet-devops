@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { CommitteeShell } from "@/components/committee-ui/committee-shell"
 import { VotesClient } from "@/features/votes/votes-client"
 
 export const metadata: Metadata = {
@@ -7,5 +8,5 @@ export const metadata: Metadata = {
 }
 
 export default function VotesPage() {
-  return <VotesClient />
+  return <CommitteeShell module="votes"><VotesClient /></CommitteeShell>
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { CommitteeShell } from "@/components/committee-ui/committee-shell"
 import { DocumentsClient } from "@/features/documents/documents-client"
 
 export const metadata: Metadata = {
@@ -7,5 +8,5 @@ export const metadata: Metadata = {
 }
 
 export default function DocumentsPage() {
-  return <DocumentsClient />
+  return <CommitteeShell module="documents"><DocumentsClient /></CommitteeShell>
 }

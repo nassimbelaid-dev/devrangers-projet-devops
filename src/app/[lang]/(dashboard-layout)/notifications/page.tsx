@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { CommitteeShell } from "@/components/committee-ui/committee-shell"
 import { NotificationsClient } from "@/features/notifications/notifications-client"
 
 export const metadata: Metadata = {
@@ -7,5 +8,5 @@ export const metadata: Metadata = {
 }
 
 export default function NotificationsPage() {
-  return <NotificationsClient />
+  return <CommitteeShell module="notifications"><NotificationsClient /></CommitteeShell>
 }

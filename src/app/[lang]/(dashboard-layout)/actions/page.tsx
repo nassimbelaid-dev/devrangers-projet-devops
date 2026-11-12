@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { CommitteeShell } from "@/components/committee-ui/committee-shell"
 import { DecisionsActionsClient } from "@/features/decisions/decisions-actions-client"
 
 export const metadata: Metadata = {
@@ -7,5 +8,5 @@ export const metadata: Metadata = {
 }
 
 export default function ActionsPage() {
-  return <DecisionsActionsClient />
+  return <CommitteeShell module="actions"><DecisionsActionsClient /></CommitteeShell>
 }
