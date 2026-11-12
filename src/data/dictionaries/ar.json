@@ -7,6 +7,7 @@
     "modulesÀAdapter": "Modules à adapter",
     "membres(prototype)": "Membres (prototype)",
     "ordreDuJour(prototype)": "Ordre du jour (prototype)",
+    "votesEtRésultats": "Votes et résultats",
     "procès-verbaux(prototype)": "Procès-verbaux (prototype)",
     "documents(prototype)": "Documents (prototype)",
     "statistiques": "Statistiques",
@@ -16,6 +17,7 @@
     "compte": "Compte",
     "monProfil": "Mon profil",
     "paramètres": "Paramètres",
+    "notifications": "Notifications",
     "dashboards": "لوحات التحكم",
     "analytics": "التحليلات",
     "crm": "إدارة علاقات العملاء",
@@ -156,7 +158,7 @@
       "light": "فاتح",
       "system": "النظام"
     },
-    "notifications": {
+    "notification": {
       "notifications": "الإشعارات",
       "dismissAll": "إغلاق الكل",
       "seeAllNotifications": "عرض جميع الإشعارات"

@@ -32,18 +32,23 @@ export const navigationsData: NavigationType[] = [
       },
       {
         title: "Ordre du jour (prototype)",
-        href: "/forms/form-layouts",
+        href: "/agenda",
         iconName: "TextCursorInput",
       },
       {
-        title: "Procès-verbaux (prototype)",
-        href: "/extended-ui/editor",
-        iconName: "FileText",
+        title: "Votes et résultats",
+        href: "/votes",
+        iconName: "ChartPie",
       },
       {
         title: "Documents (prototype)",
-        href: "/extended-ui/file-dropzone",
+        href: "/documents",
         iconName: "FolderOpen",
+      },
+      {
+        title: "Procès-verbaux (prototype)",
+        href: "/documents#pv",
+        iconName: "FileText",
       },
       {
         title: "Statistiques",
@@ -55,6 +60,11 @@ export const navigationsData: NavigationType[] = [
   {
     title: "Communication",
     items: [
+      {
+        title: "Notifications",
+        href: "/notifications",
+        iconName: "Bell",
+      },
       {
         title: "E-mails",
         href: "/apps/email",
