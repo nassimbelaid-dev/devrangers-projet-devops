@@ -167,7 +167,12 @@
       "profile": "الملف الشخصي",
       "settings": "الإعدادات",
       "signOut": "تسجيل الخروج"
-    }
+    },
+    "membres": "Membres",
+    "ordreDuJour": "Ordre du jour",
+    "décisionsEtActions": "Décisions et actions",
+    "documents": "Documents",
+    "centreDeNotifications": "Notifications"
   },
   "label": {
     "soon": "قريبًا",

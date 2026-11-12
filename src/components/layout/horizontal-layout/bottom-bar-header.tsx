@@ -1,7 +1,7 @@
 "use client"
 
-import Image from "next/image"
 import Link from "next/link"
+import { Landmark } from "lucide-react"
 import { useParams } from "next/navigation"
 
 import type { DictionaryType } from "@/lib/get-dictionary"
@@ -31,14 +31,8 @@ export function BottomBarHeader({
         href={ensureLocalizedPathname("/", locale)}
         className="hidden text-foreground font-black lg:flex"
       >
-        <Image
-          src="/images/icons/shadboard.svg"
-          alt=""
-          height={24}
-          width={24}
-          className="dark:invert"
-        />
-        <span>Shadboard</span>
+        <Landmark className="me-2 size-5 text-indigo-600" aria-hidden="true" />
+        <span>Comité scientifique</span>
       </Link>
       <div className="flex gap-2">
         <NotificationDropdown dictionary={dictionary} />

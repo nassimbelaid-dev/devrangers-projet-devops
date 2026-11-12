@@ -167,7 +167,12 @@
       "profile": "Profile",
       "settings": "Settings",
       "signOut": "Sign out"
-    }
+    },
+    "membres": "Membres",
+    "ordreDuJour": "Ordre du jour",
+    "décisionsEtActions": "Décisions et actions",
+    "documents": "Documents",
+    "centreDeNotifications": "Notifications"
   },
   "label": {
     "soon": "Soon",

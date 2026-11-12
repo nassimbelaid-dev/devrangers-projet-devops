@@ -1,8 +1,5 @@
 import { Cairo, Lato } from "next/font/google"
-import { getServerSession } from "next-auth"
-
 import { i18n } from "@/configs/i18n"
-import { authOptions } from "@/configs/next-auth"
 import { cn } from "@/lib/utils"
 
 import "../globals.css"
@@ -20,8 +17,8 @@ import { Toaster } from "@/components/ui/toaster"
 // More info: https://nextjs.org/docs/app/building-your-application/optimizing/metadata
 export const metadata: Metadata = {
   title: {
-    template: "%s | Shadboard",
-    default: "Shadboard",
+    template: "%s | Gestion du comité scientifique",
+    default: "Gestion du comité scientifique",
   },
   description: "",
   metadataBase: new URL(process.env.BASE_URL as string),
@@ -49,8 +46,6 @@ export default async function RootLayout(props: {
   const params = await props.params
 
   const { children } = props
-
-  const session = await getServerSession(authOptions)
   const direction = i18n.localeDirection[params.lang]
 
   return (
@@ -63,7 +58,7 @@ export default async function RootLayout(props: {
           cairoFont.variable // Include Cairo font variable
         )}
       >
-        <Providers locale={params.lang} direction={direction} session={session}>
+        <Providers locale={params.lang} direction={direction}>
           {children}
           <Toaster />
           <Sonner />
