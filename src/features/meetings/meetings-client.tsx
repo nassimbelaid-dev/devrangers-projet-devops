@@ -97,10 +97,7 @@ export function MeetingsClient() {
         </Button>
       </div>
 
-      <div className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">
-        Démonstration frontend : les changements restent en mémoire et seront perdus après actualisation.
-        Aucun appel API et aucune sauvegarde en base de données.
-      </div>
+      
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card><CardContent className="flex items-center gap-4 p-5">

@@ -27,7 +27,7 @@ export function VotesClient() {
   const meetingById = (id: string) => meetings.find((item) => item.id === id)
   const meetingDateFor = (decisionId: string) => meetingById(decisionById(decisionId)?.meetingId ?? "")?.date ?? ""
   const [ballots, setBallots] = useDemoCollection("ballots")
-  const [selectedId, setSelectedId] = useState(initialBallots[0]?.id ?? "")
+  const [selectedId, setSelectedId] = useState("")
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState("all")
   const [createOpen, setCreateOpen] = useState(false)
@@ -102,9 +102,9 @@ export function VotesClient() {
         <div className="max-w-2xl space-y-3">
           <h1 className="text-3xl font-semibold tracking-tight">Votes et résultats</h1>
           <p className="text-sm leading-7 text-muted-foreground sm:text-base">
-            Gérez les simulations de vote et consultez leurs résultats.
+            Organisez les scrutins et consultez leurs résultats.
           </p>
-          <p className="text-xs text-muted-foreground">Mode démonstration · Données fictives · Aucune sauvegarde</p>
+          
         </div>
         <Button onClick={() => setCreateOpen(true)} className="shrink-0">
           <Plus className="mr-2 size-4" /> Nouveau scrutin
@@ -188,7 +188,7 @@ export function VotesClient() {
                 </>
               ) : (
                 <Button variant="outline" onClick={() => updateSelected((ballot) => ({ ...ballot, state: "Ouvert" }))}>
-                  <LockOpen className="mr-2 size-4" /> Rouvrir la simulation
+                  <LockOpen className="mr-2 size-4" /> Rouvrir le scrutin
                 </Button>
               )}
             </div>

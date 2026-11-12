@@ -42,7 +42,7 @@ export function CreateBallotDialog({ open, onOpenChange, availableDecisions, onC
                 ))}
               </SelectContent>
             </Select>
-          ) : <p className="rounded-md bg-muted p-3 text-sm text-muted-foreground">Toutes les décisions de démonstration possèdent déjà un scrutin.</p>}
+          ) : <p className="rounded-md bg-muted p-3 text-sm text-muted-foreground">Toutes les décisions possèdent déjà un scrutin.</p>}
           <p className="text-xs text-muted-foreground">Une seule simulation par décision pour cette première version.</p>
         </div>
         <DialogFooter>

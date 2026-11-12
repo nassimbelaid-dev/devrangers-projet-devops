@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 
 import "./committee-ui.css"
+import { CommitteeFeedback } from "./committee-feedback"
 
 type CommitteeModule =
   | "dashboard"
@@ -25,7 +26,10 @@ export function CommitteeShell({
 }) {
   return (
     <div className="committee-ui" data-module={module}>
-      <div className="committee-ui__content">{children}</div>
+      <div className="committee-ui__content">
+        <CommitteeFeedback />
+        {children}
+      </div>
     </div>
   )
 }

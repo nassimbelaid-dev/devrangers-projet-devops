@@ -18,7 +18,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 
-import { committeeMembers } from "./mock-data"
+import { useDemoData } from "@/lib/demo-store"
 import type { AgendaItem, AgendaStatus, Meeting, MeetingStatus } from "./types"
 
 type MeetingFormProps = {
@@ -52,6 +52,7 @@ export function MeetingForm({
   onOpenChange,
   onSave,
 }: MeetingFormProps) {
+  const { members: committeeMembers } = useDemoData()
   // Le composant est remonté avec une clé différente lors d'une ouverture.
   const [form, setForm] = useState<Meeting>(() =>
     initialMeeting
@@ -148,7 +149,7 @@ export function MeetingForm({
             {initialMeeting ? "Modifier la réunion" : "Créer une réunion"}
           </DialogTitle>
           <DialogDescription>
-            Informations, participants et ordre du jour — démonstration locale.
+            Informations, participants et ordre du jour.
           </DialogDescription>
         </DialogHeader>
 

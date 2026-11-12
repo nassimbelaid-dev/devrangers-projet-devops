@@ -111,7 +111,7 @@ export function ResultsPanel({ ballot, summary, members }: Props) {
       </details>
 
       <p className="text-xs leading-6 text-muted-foreground">
-        Règles de démonstration : quorum sur les sièges représentés et majorité simple (Pour &gt; Contre).
+        Mode de calcul : quorum sur les sièges représentés et majorité simple (Pour &gt; Contre).
         Les abstentions comptent pour le quorum, pas pour la majorité. Le règlement réel devra être vérifié avant tout usage officiel.
       </p>
     </div>

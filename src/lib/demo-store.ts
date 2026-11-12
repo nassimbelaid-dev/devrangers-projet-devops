@@ -10,9 +10,11 @@ import { initialBallots } from "@/features/votes/mock-data"
 import { initialDocuments, initialMinutes } from "@/features/documents/mock-data"
 import { initialAgendaProposals } from "@/features/agenda/mock-data"
 import { initialNotifications } from "@/features/notifications/mock-data"
+import { applyDemoChange } from "./demo-business"
+import type { DemoState } from "./demo-business"
 
-// Magasin partagé entre les pages du navigateur (pas de persistance après rechargement).
-const initial = {
+// État commun à l'application pendant la navigation ; aucune persistance serveur.
+const initial: DemoState = {
   meetings: initialMeetings,
   members: initialMembers,
   decisions: initialDecisions,
@@ -24,15 +26,15 @@ const initial = {
   notifications: initialNotifications,
 }
 
-type DemoState = typeof initial
 let current: DemoState = initial
+let feedback = ""
 const listeners = new Set<() => void>()
 
 function subscribe(listener: () => void) {
   listeners.add(listener)
   return () => { listeners.delete(listener) }
 }
-
+function notify() { listeners.forEach((listener) => listener()) }
 function snapshot() { return current }
 function serverSnapshot() { return initial }
 
@@ -40,6 +42,7 @@ export function useDemoData() {
   return useSyncExternalStore(subscribe, snapshot, serverSnapshot)
 }
 
+/** Les composants existants conservent leur interface [valeur, setter]. */
 export function useDemoCollection<K extends keyof DemoState>(key: K) {
   const value = useSyncExternalStore(
     subscribe,
@@ -51,14 +54,28 @@ export function useDemoCollection<K extends keyof DemoState>(key: K) {
     const updated = typeof next === "function"
       ? (next as (previous: DemoState[K]) => DemoState[K])(previous)
       : next
-    if (Object.is(previous, updated)) return
-    current = { ...current, [key]: updated }
-    listeners.forEach((listener) => listener())
+    const result = applyDemoChange(current, key, updated)
+    feedback = result.error ?? ""
+    if (!Object.is(current, result.state) || result.error) {
+      current = result.state
+      notify()
+    }
   }, [key])
   return [value, setValue] as const
 }
 
+export function useDemoFeedback() {
+  return useSyncExternalStore(subscribe, () => feedback, () => "")
+}
+
+export function clearDemoFeedback() {
+  if (!feedback) return
+  feedback = ""
+  notify()
+}
+
 export function resetDemoData() {
   current = initial
-  listeners.forEach((listener) => listener())
+  feedback = ""
+  notify()
 }

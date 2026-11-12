@@ -117,10 +117,7 @@ export function MembersClient() {
         </Button>
       </div>
 
-      <div className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">
-        Prototype frontend : ajouts, modifications et suppressions restent en mémoire dans cette page.
-        Aucun compte utilisateur n'est créé, aucun contrôle RBAC n'est appliqué et rien n'est envoyé au serveur.
-      </div>
+      
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard title="Total des membres" value={members.length} icon={Users} />
@@ -231,8 +228,7 @@ export function MembersClient() {
           <DialogHeader>
             <DialogTitle>Supprimer ce membre ?</DialogTitle>
             <DialogDescription>
-              {toDelete?.name} sera retiré uniquement de la liste en mémoire.
-              Cette action n'affecte pas les réunions existantes ni les comptes utilisateurs.
+              {toDelete?.name} sera retiré de l'annuaire, à condition de ne pas être référencé par une réunion, un scrutin ou une action.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

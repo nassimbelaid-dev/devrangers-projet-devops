@@ -80,7 +80,7 @@ export function MemberForm({ open, initialMember, onOpenChange, onSave }: Member
         <DialogHeader>
           <DialogTitle>{initialMember ? "Modifier un membre" : "Ajouter un membre"}</DialogTitle>
           <DialogDescription>
-            Coordonnées, rôle et affectation d'un siège — données fictives en mémoire.
+            Coordonnées, rôle et affectation d'un siège.
           </DialogDescription>
         </DialogHeader>
 

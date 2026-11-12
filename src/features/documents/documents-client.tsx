@@ -25,7 +25,7 @@ export function DocumentsClient() {
   const [documents, setDocuments] = useDemoCollection("documents")
   const [minutes, setMinutes] = useDemoCollection("minutes")
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null)
-  const [selectedMinutesId, setSelectedMinutesId] = useState<string>(initialMinutes[0]?.id ?? "")
+  const [selectedMinutesId, setSelectedMinutesId] = useState<string>("")
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<CommitteeDocument | null>(null)
   const [newMinutesOpen, setNewMinutesOpen] = useState(false)
@@ -97,7 +97,7 @@ export function DocumentsClient() {
       <header className="space-y-3">
         <h1 className="text-3xl font-semibold tracking-tight">Documents et procès-verbaux</h1>
         <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">Retrouvez les documents du comité et préparez les comptes rendus des réunions dans un espace de travail clair.</p>
-        <p className="text-xs text-muted-foreground">Mode démonstration · Données fictives · Aucune sauvegarde sur serveur</p>
+        
       </header>
 
       <Tabs value={view} onValueChange={selectView} className="space-y-9">
@@ -148,7 +148,7 @@ export function DocumentsClient() {
               </div>
               {!visibleDocuments.length && <div className="py-14 text-center text-sm text-muted-foreground">Aucun document ne correspond à ces critères.</div>}
             </div>
-            <p className="flex items-center gap-2 text-xs text-muted-foreground"><Archive className="size-4" />La visibilité « Comité / Présidence / Archives » est uniquement illustrative. Aucun accès n'est réellement restreint.</p>
+            
           </section>
         </TabsContent>
 
@@ -172,8 +172,8 @@ export function DocumentsClient() {
       <DocumentDetails document={selectedDocument} open={Boolean(selectedDocument)} onOpenChange={(value) => { if (!value) setSelectedDocId(null) }} onAddVersion={addVersion} onEdit={() => { setEditing(selectedDocument); setSelectedDocId(null); setFormOpen(true) }} onDelete={deleteDocument} />
 
       <Dialog open={newMinutesOpen} onOpenChange={setNewMinutesOpen}>
-        <DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle>Nouveau procès-verbal</DialogTitle><DialogDescription>Sélectionnez une réunion fictive sans PV associé.</DialogDescription></DialogHeader>
-          <div className="space-y-3 py-5"><Label htmlFor="pv-meeting">Réunion *</Label><Select value={newMeetingId} onValueChange={setNewMeetingId}><SelectTrigger id="pv-meeting"><SelectValue placeholder="Choisir une réunion" /></SelectTrigger><SelectContent>{eligibleMeetings.map((item) => <SelectItem key={item.id} value={item.id}>{item.title}</SelectItem>)}</SelectContent></Select><p className="text-xs text-muted-foreground">Cette création ne synchronise pas la page Réunions.</p></div>
+        <DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle>Nouveau procès-verbal</DialogTitle><DialogDescription>Sélectionnez une réunion sans procès-verbal associé.</DialogDescription></DialogHeader>
+          <div className="space-y-3 py-5"><Label htmlFor="pv-meeting">Réunion *</Label><Select value={newMeetingId} onValueChange={setNewMeetingId}><SelectTrigger id="pv-meeting"><SelectValue placeholder="Choisir une réunion" /></SelectTrigger><SelectContent>{eligibleMeetings.map((item) => <SelectItem key={item.id} value={item.id}>{item.title}</SelectItem>)}</SelectContent></Select></div>
           <DialogFooter><Button variant="outline" onClick={() => setNewMinutesOpen(false)}>Annuler</Button><Button disabled={!newMeetingId} onClick={createMinutes}>Créer le brouillon</Button></DialogFooter>
         </DialogContent>
       </Dialog>

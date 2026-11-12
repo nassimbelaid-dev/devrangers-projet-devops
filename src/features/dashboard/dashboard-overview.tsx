@@ -156,7 +156,7 @@ function MeetingList({ lang }: DashboardProps) {
     <Panel>
       <SectionHeading
         title="Réunions planifiées"
-        hint="Les prochaines séances prévues dans les données de démonstration"
+        hint="Les prochaines réunions planifiées"
         href={`/${lang}/meetings`}
       />
       {dashboardMeetings.length === 0 ? (
@@ -297,7 +297,7 @@ function PriorityActions({ lang }: DashboardProps) {
     <Panel>
       <SectionHeading
         title="Actions à suivre"
-        hint="Les échéances les plus proches dans la démonstration"
+        hint="Les prochaines échéances à suivre"
         href={`/${lang}/actions`}
       />
       <div className="divide-y divide-border/70">
@@ -419,7 +419,7 @@ function RecentActivity({ lang }: DashboardProps) {
     <Panel>
       <SectionHeading
         title="Activité récente"
-        hint="Dernières notifications de démonstration"
+        hint="Dernières notifications"
         href={`/${lang}/notifications`}
       />
       <div className="divide-y divide-border/70">
@@ -610,7 +610,7 @@ export function DashboardOverview({ lang }: DashboardProps) {
         </div>
         <span className="inline-flex w-fit items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-700 dark:border-violet-900 dark:bg-violet-950/40 dark:text-violet-300">
           <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-          Démonstration · novembre 2026
+          Activité du comité · novembre 2026
         </span>
       </header>
 

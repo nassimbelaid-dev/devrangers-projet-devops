@@ -183,7 +183,7 @@ export function AgendaClient() {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="agenda-actor">Profil de démonstration</Label>
+            <Label htmlFor="agenda-actor">Profil actif</Label>
             <Select value={actorId} onValueChange={setActorId}>
               <SelectTrigger id="agenda-actor" className="w-full"><SelectValue /></SelectTrigger>
               <SelectContent>{committeeMembers.map((member) => <SelectItem key={member.id} value={member.id}>
@@ -198,11 +198,9 @@ export function AgendaClient() {
         </div>
       </div>
 
-      <p className="text-xs leading-5 text-muted-foreground">
-        Démonstration locale : choisissez un profil pour simuler les droits de proposition et de validation. Aucun contrôle d'accès réel ; aucune synchronisation avec les autres pages. Les changements disparaissent au rechargement.
-      </p>
+      
       {!editableMeeting && <div className="rounded-lg border border-dashed px-5 py-4 text-sm text-muted-foreground">
-        Cette réunion est {currentMeeting.status.toLowerCase()}. Son ordre du jour est consultable, mais sa modification est désactivée dans cette démonstration.
+        Cette réunion est {currentMeeting.status.toLowerCase()}. Son ordre du jour est consultable, mais sa modification est désactivée dans son état actuel.
       </div>}
 
       <div className="grid grid-cols-3 divide-x border-b pb-8">
@@ -304,7 +302,7 @@ export function AgendaClient() {
             <span className="w-6 shrink-0 tabular-nums text-muted-foreground">{String(index + 1).padStart(2, "0")}</span>
             <span>{item.title}</span>
           </li>)}</ol>}
-        <p className="pt-2 text-xs leading-5 text-muted-foreground">Les points sont classés à l'aide des flèches (profil Président). Cet aperçu ne modifie pas le module Réunions.</p>
+        <p className="pt-2 text-xs leading-5 text-muted-foreground">Les points sont classés à l'aide des flèches (profil Président). Cet ordre est repris dans la fiche de la réunion.</p>
       </section>
 
       {formOpen && <AgendaForm key={formVersion} open={formOpen} initial={editing}

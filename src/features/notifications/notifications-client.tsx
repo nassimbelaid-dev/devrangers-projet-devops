@@ -113,14 +113,11 @@ export function NotificationsClient() {
           </p>
         </div>
         <Button onClick={() => setSimulateOpen(true)} className="w-full shrink-0 sm:w-auto">
-          <Plus className="mr-2 size-4" aria-hidden="true" /> Simuler une notification
+          <Plus className="mr-2 size-4" aria-hidden="true" /> Créer une notification
         </Button>
       </header>
 
-      <p className="border-l-2 border-muted-foreground/30 pl-4 text-xs leading-6 text-muted-foreground">
-        Environnement de démonstration : aucune notification n'est envoyée par e-mail ou à un téléphone.
-        Les actions sont locales à cette page et seront réinitialisées au rechargement.
-      </p>
+      
 
       <section aria-label="Résumé des notifications" className="grid grid-cols-3 divide-x border-y py-7">
         <Count title="Actives" value={active} />
@@ -132,13 +129,13 @@ export function NotificationsClient() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <h2 id="inbox-title" className="text-lg font-semibold tracking-tight">Boîte de réception</h2>
-            <p className="text-sm text-muted-foreground">Consultez et classez les événements simulés.</p>
+            <p className="text-sm text-muted-foreground">Consultez et classez les dernières notifications.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="sm" onClick={markAllRead} disabled={!unread}>
               <CheckCheck className="mr-2 size-4" aria-hidden="true" /> Tout marquer lu
             </Button>
-            <Button variant="ghost" size="sm" onClick={reset} title="Réinitialiser les données de démonstration">
+            <Button variant="ghost" size="sm" onClick={reset} title="Réinitialiser les notifications">
               <RotateCcw className="mr-2 size-4" aria-hidden="true" /> Réinitialiser
             </Button>
           </div>

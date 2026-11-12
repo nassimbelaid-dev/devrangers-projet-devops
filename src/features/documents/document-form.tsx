@@ -36,7 +36,7 @@ export function DocumentForm({ open, initial, reference, onOpenChange, onSave }:
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!title.trim()) return setError("Le titre du document est obligatoire.")
-    if (file && file.size > 10 * 1024 * 1024) return setError("Taille maximale pour cette démonstration : 10 Mo.")
+    if (file && file.size > 10 * 1024 * 1024) return setError("Taille maximale : 10 Mo.")
     const date = today()
     const versions = initial ? initial.versions : file ? [{
       id: makeId(), number: 1, date, author: "Utilisateur démo", filename: file.name, note: "Version initiale", file,
@@ -105,7 +105,7 @@ export function DocumentForm({ open, initial, reference, onOpenChange, onSave }:
             <div className="space-y-2 border-t pt-5">
               <Label htmlFor="document-file">Fichier local (facultatif)</Label>
               <Input id="document-file" type="file" accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
-              <p className="text-xs leading-5 text-muted-foreground">Aucun envoi sur un serveur. 10 Mo maximum ; le fichier disparaît après rechargement.</p>
+              <p className="text-xs leading-5 text-muted-foreground">Taille maximale du fichier : 10 Mo.</p>
             </div>
           )}
           {initial && <p className="text-xs text-muted-foreground">Pour remplacer le fichier, utilisez « Ajouter une version » dans la fiche du document.</p>}

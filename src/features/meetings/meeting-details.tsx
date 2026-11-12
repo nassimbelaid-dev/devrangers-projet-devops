@@ -8,7 +8,7 @@ import {
   DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { committeeMembers } from "./mock-data"
+import { useDemoData } from "@/lib/demo-store"
 import type { Meeting } from "./types"
 
 interface MeetingDetailsProps {
@@ -24,6 +24,7 @@ function readableDate(date: string) {
 }
 
 export function MeetingDetails({ meeting, onClose, onEdit }: MeetingDetailsProps) {
+  const { members: committeeMembers } = useDemoData()
   if (!meeting) return null
 
   const participants = committeeMembers.filter((member) =>
@@ -35,7 +36,7 @@ export function MeetingDetails({ meeting, onClose, onEdit }: MeetingDetailsProps
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{meeting.title}</DialogTitle>
-          <DialogDescription>Fiche de la réunion — données fictives.</DialogDescription>
+          <DialogDescription>Informations et participants de la réunion.</DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="infos">

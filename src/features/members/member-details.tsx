@@ -31,7 +31,7 @@ export function MemberDetails({ member, members, onClose, onEdit }: MemberDetail
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{member.name}</DialogTitle>
-          <DialogDescription>Fiche du membre — informations de démonstration.</DialogDescription>
+          <DialogDescription>Informations sur le membre et son mandat.</DialogDescription>
         </DialogHeader>
         <div className="flex flex-wrap gap-2">
           <Badge variant="secondary">{member.role}</Badge>

@@ -174,10 +174,7 @@ export function DecisionsActionsClient() {
         </div>
       </div>
 
-      <div className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">
-        Prototype frontend : données fictives, formulaires et glisser-déposer locaux. Aucun appel API, aucun stockage et aucun contrôle RBAC.
-        Les réunions et membres affichés proviennent des données fictives des modules précédents.
-      </div>
+      
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Décisions adoptées" value={decisions.filter((item) => item.status === "Adoptée").length} icon={ClipboardCheck} />
