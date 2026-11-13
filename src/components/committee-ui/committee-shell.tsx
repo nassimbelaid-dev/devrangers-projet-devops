@@ -12,6 +12,7 @@ type CommitteeModule =
   | "documents"
   | "agenda"
   | "notifications"
+  | "profile"
 
 /**
  * Enveloppe visuelle partagée par les modules du comité scientifique.

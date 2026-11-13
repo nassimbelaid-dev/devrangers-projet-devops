@@ -33,7 +33,7 @@ export function MeetingDetails({ meeting, onClose, onEdit }: MeetingDetailsProps
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose() }}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="max-h-[85dvh] overflow-y-auto w-[calc(100vw-2rem)] sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{meeting.title}</DialogTitle>
           <DialogDescription>Informations et participants de la réunion.</DialogDescription>

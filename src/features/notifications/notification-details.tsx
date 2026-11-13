@@ -21,7 +21,7 @@ type Props = {
 export function NotificationDetails({ notification, locale, onClose, onToggleRead, onToggleArchive }: Props) {
   return (
     <Dialog open={Boolean(notification)} onOpenChange={(open) => { if (!open) onClose() }}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent className="max-h-[85dvh] overflow-y-auto w-[calc(100vw-2rem)] sm:max-w-md">
         {notification && (
           <>
             <DialogHeader className="space-y-3 text-left">

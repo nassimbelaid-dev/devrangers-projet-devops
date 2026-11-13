@@ -19,7 +19,7 @@ export function AgendaDetails({ item, onOpenChange }: Props) {
   const { meetings, members } = useDemoData()
   return (
     <Dialog open={Boolean(item)} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent className="max-h-[85dvh] overflow-y-auto w-[calc(100vw-2rem)] sm:max-w-lg">
         {item && <>
           <DialogHeader className="space-y-3">
             <Badge variant={item.status === "Rejeté" ? "destructive" : "secondary"} className="w-fit">

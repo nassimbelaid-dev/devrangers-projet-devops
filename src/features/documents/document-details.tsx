@@ -52,7 +52,7 @@ export function DocumentDetails({ document: item, open, onOpenChange, onEdit, on
 
   return (
     <Dialog open={open} onOpenChange={(value) => { onOpenChange(value); if (!value) { setShowUpload(false); setFile(null); setError("") } }}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="max-h-[85dvh] overflow-y-auto w-[calc(100vw-2rem)] sm:max-w-xl">
         <DialogHeader>
           <div className="flex flex-wrap items-center gap-3 pr-5">
             <span className="text-xs font-medium tracking-wide text-muted-foreground">{item.reference}</span>

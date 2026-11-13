@@ -28,7 +28,7 @@ export function MemberDetails({ member, members, onClose, onEdit }: MemberDetail
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose() }}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent className="max-h-[85dvh] overflow-y-auto w-[calc(100vw-2rem)] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{member.name}</DialogTitle>
           <DialogDescription>Informations sur le membre et son mandat.</DialogDescription>

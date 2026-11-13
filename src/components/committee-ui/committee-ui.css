@@ -238,3 +238,6 @@ body:has(.committee-ui) [role="dialog"] :is(input:not([type="checkbox"]):not([ty
 @media (prefers-reduced-motion: reduce) {
   .committee-ui table tbody tr { transition: none; }
 }
+
+/* Profil — accent indigo cohérent avec le dashboard. */
+.committee-ui[data-module="profile"] { --committee-accent: #6366f1; }

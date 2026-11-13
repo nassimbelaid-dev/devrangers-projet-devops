@@ -22,7 +22,7 @@ export function CreateBallotDialog({ open, onOpenChange, availableDecisions, onC
   const selected = availableDecisions.some((decision) => decision.id === decisionId) ? decisionId : ""
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[85dvh] overflow-y-auto w-[calc(100vw-2rem)] sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Nouveau scrutin simulé</DialogTitle>
           <DialogDescription>

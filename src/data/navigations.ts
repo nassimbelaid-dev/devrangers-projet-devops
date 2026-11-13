@@ -14,4 +14,10 @@ export const navigationsData: NavigationType[] = [
       { title: "Centre de notifications", href: "/notifications", iconName: "Bell" },
     ],
   },
+  {
+    title: "Compte",
+    items: [
+      { title: "Mon profil", href: "/profile", iconName: "User" },
+    ],
+  },
 ]

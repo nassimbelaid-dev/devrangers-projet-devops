@@ -76,7 +76,7 @@ export function MemberForm({ open, initialMember, onOpenChange, onSave }: Member
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="max-h-[85dvh] overflow-y-auto w-[calc(100vw-2rem)] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{initialMember ? "Modifier un membre" : "Ajouter un membre"}</DialogTitle>
           <DialogDescription>

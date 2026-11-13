@@ -54,7 +54,7 @@ export function DocumentForm({ open, initial, reference, onOpenChange, onSave }:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent className="max-h-[85dvh] overflow-y-auto w-[calc(100vw-2rem)] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{initial ? "Modifier le document" : "Ajouter un document"}</DialogTitle>
           <DialogDescription>Informations fictives conservées uniquement pendant cette session.</DialogDescription>

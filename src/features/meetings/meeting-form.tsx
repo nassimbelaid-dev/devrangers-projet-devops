@@ -143,7 +143,7 @@ export function MeetingForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+      <DialogContent className="max-h-[85dvh] overflow-y-auto w-[calc(100vw-2rem)] sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>
             {initialMeeting ? "Modifier la réunion" : "Créer une réunion"}
@@ -171,7 +171,7 @@ export function MeetingForm({
                   placeholder="Ex. Réunion ordinaire du comité"
                 />
               </div>
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="meeting-date">Date *</Label>
                   <Input id="meeting-date" type="date" value={form.date}
