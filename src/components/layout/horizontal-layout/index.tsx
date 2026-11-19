@@ -20,7 +20,7 @@ export function HorizontalLayout({
         <main className="min-h-[calc(100svh-9.85rem)] bg-muted/40">
           {children}
         </main>
-        <Footer />
+        <Footer dictionary={dictionary} />
       </div>
     </>
   )

@@ -19,7 +19,7 @@ export function Layout({
 
   return (
     <>
-      <Customizer />
+      <Customizer dictionary={dictionary} />
       {/* If the layout is vertical, render a vertical layout; otherwise, render a horizontal layout */}
       {isVertical ? (
         <VerticalLayout dictionary={dictionary}>{children}</VerticalLayout>

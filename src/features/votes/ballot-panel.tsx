@@ -4,6 +4,7 @@ import { ChevronDown, Info } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import type { CommitteeMemberRecord } from "@/features/members/types"
 import type { BallotSession, BallotSummary, VoteChoice } from "./types"
+import { useUiText } from "@/features/ui-text"
 
 const voteChoices: { value: VoteChoice; label: string }[] = [
   { value: "pour", label: "Pour" },
@@ -20,6 +21,7 @@ interface Props {
 }
 
 export function BallotPanel({ ballot, summary, members, onTogglePresence, onVote }: Props) {
+  const t = useUiText()
   const locked = ballot.state === "Clôturé"
   const membersById = new Map(members.map((member) => [member.id, member]))
   const present = new Set(ballot.presentMemberIds)
@@ -28,10 +30,10 @@ export function BallotPanel({ ballot, summary, members, onTogglePresence, onVote
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
         <div className="space-y-2">
-          <h3 className="text-lg font-semibold">Votes par siège</h3>
-          <p className="text-sm leading-6 text-muted-foreground">Chaque siège dispose d'une seule voix. Gérez les présences uniquement si nécessaire.</p>
+          <h3 className="text-lg font-semibold">{t("Votes par siège")}</h3>
+          <p className="text-sm leading-6 text-muted-foreground">{t("Chaque siège dispose d'une seule voix. Gérez les présences uniquement si nécessaire.")}</p>
         </div>
-        <p className="text-xs text-muted-foreground">{summary.votesCast} / {summary.representedSeatCount} bulletin(s) enregistré(s)</p>
+        <p className="text-xs text-muted-foreground">{t("{votes} / {seats} bulletin(s) enregistré(s)", { votes: summary.votesCast, seats: summary.representedSeatCount })}</p>
       </div>
 
       <div className="overflow-hidden rounded-2xl border bg-card">
@@ -47,16 +49,16 @@ export function BallotPanel({ ballot, summary, members, onTogglePresence, onVote
               <div className="flex flex-col gap-5 p-5 sm:p-7 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
                 <div className="min-w-0 flex-1 space-y-2">
                   <p className="text-xs font-medium tracking-wide text-muted-foreground">{seat.seatLabel}</p>
-                  <p className="text-base font-semibold">{representative?.name ?? "Aucun représentant présent"}</p>
+                  <p className="text-base font-semibold">{representative?.name ?? t("Aucun représentant présent")}</p>
                   <p className="text-xs text-muted-foreground">
                     {representative
-                      ? `${seat.representativeKind} habilité à voter`
-                      : "Activez la présence d'un titulaire ou suppléant pour voter"}
+                      ? t("{kind} habilité à voter", { kind: t(seat.representativeKind) })
+                      : t("Activez la présence d'un titulaire ou suppléant pour voter")}
                   </p>
                 </div>
                 <div className="shrink-0 space-y-2">
-                  <p className="text-xs text-muted-foreground lg:text-right">Choix du vote</p>
-                  <div className="inline-flex max-w-full flex-wrap items-center gap-1 rounded-xl border bg-muted/30 p-1" role="group" aria-label={`Vote du siège ${seat.seatLabel}`}>
+                  <p className="text-xs text-muted-foreground lg:text-right">{t("Choix du vote")}</p>
+                  <div className="inline-flex max-w-full flex-wrap items-center gap-1 rounded-xl border bg-muted/30 p-1" role="group" aria-label={t("Vote du siège {seat}", { seat: seat.seatLabel })}>
                     {voteChoices.map(({ value, label }) => (
                       <button
                         key={value}
@@ -71,38 +73,38 @@ export function BallotPanel({ ballot, summary, members, onTogglePresence, onVote
                           selected === value ? "bg-foreground text-background shadow-sm" : "text-muted-foreground hover:bg-background hover:text-foreground"
                         }`}
                       >
-                        {label}
+                        {t(label)}
                       </button>
                     ))}
                   </div>
-                  {selected && <p className="text-xs text-muted-foreground lg:text-right">Vote enregistré : {voteChoices.find((item) => item.value === selected)?.label}</p>}
+                  {selected && <p className="text-xs text-muted-foreground lg:text-right">{t("Vote enregistré : {vote}", { vote: t(voteChoices.find((item) => item.value === selected)?.label ?? "") })}</p>}
                 </div>
               </div>
 
               <details className="group border-t border-border/50 bg-muted/10 px-5 py-4 sm:px-7">
                 <summary className="flex cursor-pointer list-none items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
                   <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" />
-                  Gérer les présences
+                  {t("Gérer les présences")}
                 </summary>
                 <div className="mt-5 grid gap-6 pb-2 sm:grid-cols-2">
-                  <PresenceField label="Titulaire" member={titular} present={Boolean(titular && present.has(titular.id))} disabled={locked} onTogglePresence={onTogglePresence} />
-                  <PresenceField label="Suppléant" member={substitute} present={Boolean(substitute && present.has(substitute.id))} disabled={locked} onTogglePresence={onTogglePresence} />
+                  <PresenceField label={t("Titulaire")} member={titular} present={Boolean(titular && present.has(titular.id))} disabled={locked} onTogglePresence={onTogglePresence} />
+                  <PresenceField label={t("Suppléant")} member={substitute} present={Boolean(substitute && present.has(substitute.id))} disabled={locked} onTogglePresence={onTogglePresence} />
                 </div>
-                <p className="mt-4 text-xs leading-5 text-muted-foreground">Si les deux sont présents, le titulaire garde la priorité. Changer de représentant efface le vote précédent du siège.</p>
+                <p className="mt-4 text-xs leading-5 text-muted-foreground">{t("Si les deux sont présents, le titulaire garde la priorité. Changer de représentant efface le vote précédent du siège.")}</p>
               </details>
             </div>
           )
         })}
         {summary.activeSeatCount === 0 && (
-          <p className="px-6 py-14 text-center text-sm text-muted-foreground">Aucun siège actif pour la date de cette réunion.</p>
+          <p className="px-6 py-14 text-center text-sm text-muted-foreground">{t("Aucun siège actif pour la date de cette réunion.")}</p>
         )}
       </div>
 
       <p className="flex items-start gap-2 text-xs leading-6 text-muted-foreground">
         <Info className="mt-1 size-3.5 shrink-0" />
         {locked
-          ? "Le scrutin est clôturé. Rouvrez la simulation pour modifier les présences ou les votes."
-          : "Simulation locale : les choix et les présences ne sont pas enregistrés après actualisation de la page."}
+          ? t("Le scrutin est clôturé. Rouvrez la simulation pour modifier les présences ou les votes.")
+          : t("Simulation locale : les choix et les présences ne sont pas enregistrés après actualisation de la page.")}
       </p>
     </div>
   )
@@ -115,23 +117,24 @@ function PresenceField({ label, member, present, disabled, onTogglePresence }: {
   disabled: boolean
   onTogglePresence: (memberId: string, present: boolean) => void
 }) {
+  const t = useUiText()
   return (
     <div className="flex items-center justify-between gap-3">
       <div className="min-w-0 space-y-1">
         <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="truncate text-sm font-medium">{member?.name ?? "Non désigné"}</p>
+        <p className="truncate text-sm font-medium">{member?.name ?? t("Non désigné")}</p>
       </div>
       {member ? (
         <label className="flex shrink-0 cursor-pointer items-center gap-2 text-xs">
           <Checkbox
-            aria-label={`Présence de ${member.name}`}
+            aria-label={t("Présence de {name}", { name: member.name })}
             checked={present}
             disabled={disabled}
             onCheckedChange={(checked) => onTogglePresence(member.id, checked === true)}
           />
-          Présent
+          {t("Présent")}
         </label>
-      ) : <span className="text-xs text-muted-foreground">Vacant</span>}
+      ) : <span className="text-xs text-muted-foreground">{t("Vacant")}</span>}
     </div>
   )
 }

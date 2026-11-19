@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { useDemoCollection, useDemoData } from "@/lib/demo-store"
+import { useUiText } from "@/features/ui-text"
 import { CalendarDays, LockKeyhole, LockOpen, Plus, RotateCcw, Search } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -22,6 +23,7 @@ const readableDate = (date: string) => date
   : "Date non définie"
 
 export function VotesClient() {
+  const t = useUiText()
   const { meetings, members, decisions } = useDemoData()
   const decisionById = (id: string): DecisionRecord | undefined => decisions.find((item) => item.id === id)
   const meetingById = (id: string) => meetings.find((item) => item.id === id)
@@ -100,42 +102,42 @@ export function VotesClient() {
       {/* Header : une seule action principale, aucune carte décorative. */}
       <header className="flex flex-col justify-between gap-6 sm:flex-row sm:items-start">
         <div className="max-w-2xl space-y-3">
-          <h1 className="text-3xl font-semibold tracking-tight">Votes et résultats</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">{t("Votes et résultats")}</h1>
           <p className="text-sm leading-7 text-muted-foreground sm:text-base">
-            Organisez les scrutins et consultez leurs résultats.
+            {t("Organisez les scrutins et consultez leurs résultats.")}
           </p>
           
         </div>
         <Button onClick={() => setCreateOpen(true)} className="shrink-0">
-          <Plus className="mr-2 size-4" /> Nouveau scrutin
+          <Plus className="mr-2 size-4" /> {t("Nouveau scrutin")}
         </Button>
       </header>
 
       {/* Chiffres utiles, présentés sans succession de cartes. */}
-      <section aria-label="Aperçu des scrutins" className="grid grid-cols-3 divide-x rounded-xl border bg-card py-6 sm:py-8">
-        <SmallMetric label="Total" value={ballots.length} />
-        <SmallMetric label="En cours" value={openCount} />
-        <SmallMetric label="Adoptés" value={adoptedCount} />
+      <section aria-label={t("Aperçu des scrutins")} className="grid grid-cols-3 divide-x rounded-xl border bg-card py-6 sm:py-8">
+        <SmallMetric label={t("Total")} value={ballots.length} />
+        <SmallMetric label={t("En cours")} value={openCount} />
+        <SmallMetric label={t("Adoptés")} value={adoptedCount} />
       </section>
 
       {/* Tous les scrutins : grille lisible qui remplace le panneau latéral serré. */}
       <section aria-labelledby="ballots-heading" className="space-y-6">
         <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div className="space-y-2">
-            <h2 id="ballots-heading" className="text-xl font-semibold tracking-tight">Scrutins</h2>
-            <p className="text-sm text-muted-foreground">Sélectionnez une décision pour consulter ou modifier son vote.</p>
+            <h2 id="ballots-heading" className="text-xl font-semibold tracking-tight">{t("Scrutins")}</h2>
+            <p className="text-sm text-muted-foreground">{t("Sélectionnez une décision pour consulter ou modifier son vote.")}</p>
           </div>
           <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto">
             <div className="relative min-w-0 sm:w-64">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input aria-label="Rechercher un scrutin" placeholder="Rechercher…" className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <Input aria-label={t("Rechercher un scrutin")} placeholder={t("Rechercher…")} className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
             <Select value={filter} onValueChange={setFilter}>
-              <SelectTrigger aria-label="Filtrer les scrutins" className="w-full sm:w-40"><SelectValue /></SelectTrigger>
+              <SelectTrigger aria-label={t("Filtrer les scrutins")} className="w-full sm:w-40"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous</SelectItem>
-                <SelectItem value="Ouvert">En cours</SelectItem>
-                <SelectItem value="Clôturé">Clôturés</SelectItem>
+                <SelectItem value="all">{t("Tous")}</SelectItem>
+                <SelectItem value="Ouvert">{t("En cours")}</SelectItem>
+                <SelectItem value="Clôturé">{t("Clôturés")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -154,14 +156,14 @@ export function VotesClient() {
               >
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-xs font-medium tracking-wide text-muted-foreground">{linked?.reference ?? ballot.id}</span>
-                  <Badge variant={ballot.state === "Ouvert" ? "outline" : "secondary"} className="font-normal">{ballot.state}</Badge>
+                  <Badge variant={ballot.state === "Ouvert" ? "outline" : "secondary"} className="font-normal">{t(ballot.state)}</Badge>
                 </div>
-                <p className="mt-4 line-clamp-2 min-h-10 text-sm font-medium leading-5">{linked?.title ?? "Décision sans titre"}</p>
+                <p className="mt-4 line-clamp-2 min-h-10 text-sm font-medium leading-5">{linked?.title ?? t("Décision sans titre")}</p>
                 <p className="mt-4 text-xs text-muted-foreground">{readableDate(meetingDateFor(ballot.decisionId))}</p>
               </button>
             )
           })}
-          {visible.length === 0 && <p className="col-span-full rounded-xl border border-dashed px-6 py-12 text-center text-sm text-muted-foreground">Aucun scrutin ne correspond à cette recherche.</p>}
+          {visible.length === 0 && <p className="col-span-full rounded-xl border border-dashed px-6 py-12 text-center text-sm text-muted-foreground">{t("Aucun scrutin ne correspond à cette recherche.")}</p>}
         </div>
       </section>
 
@@ -170,25 +172,25 @@ export function VotesClient() {
           <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-start">
             <div className="max-w-3xl space-y-4">
               <div className="flex flex-wrap items-center gap-3">
-                <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Scrutin sélectionné</span>
-                <Badge variant={selected.state === "Ouvert" ? "outline" : "secondary"}>{selected.state}</Badge>
-                <span className="text-xs text-muted-foreground">{decision?.reference ?? "Décision"}</span>
+                <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{t("Scrutin sélectionné")}</span>
+                <Badge variant={selected.state === "Ouvert" ? "outline" : "secondary"}>{t(selected.state)}</Badge>
+                <span className="text-xs text-muted-foreground">{decision?.reference ?? t("Décision")}</span>
               </div>
-              <h2 id="active-ballot-heading" className="text-2xl font-semibold leading-snug tracking-tight">{decision?.title ?? "Décision inconnue"}</h2>
+              <h2 id="active-ballot-heading" className="text-2xl font-semibold leading-snug tracking-tight">{decision?.title ?? t("Décision inconnue")}</h2>
               {decision?.description && <p className="max-w-2xl text-sm leading-7 text-muted-foreground">{decision.description}</p>}
-              <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground"><CalendarDays className="size-4" />{meeting?.title ?? "Réunion inconnue"} · {readableDate(meeting?.date ?? "")}</p>
+              <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground"><CalendarDays className="size-4" />{meeting?.title ?? t("Réunion inconnue")} · {readableDate(meeting?.date ?? "")}</p>
             </div>
             <div className="flex flex-wrap gap-2 lg:justify-end">
               {selected.state === "Ouvert" ? (
                 <>
                   <Button variant="outline" onClick={() => updateSelected((ballot) => ({ ...ballot, votes: {} }))}>
-                    <RotateCcw className="mr-2 size-4" /> Effacer les votes
+                    <RotateCcw className="mr-2 size-4" /> {t("Effacer les votes")}
                   </Button>
-                  <Button onClick={() => setCloseOpen(true)}><LockKeyhole className="mr-2 size-4" /> Clôturer</Button>
+                  <Button onClick={() => setCloseOpen(true)}><LockKeyhole className="mr-2 size-4" /> {t("Clôturer")}</Button>
                 </>
               ) : (
                 <Button variant="outline" onClick={() => updateSelected((ballot) => ({ ...ballot, state: "Ouvert" }))}>
-                  <LockOpen className="mr-2 size-4" /> Rouvrir le scrutin
+                  <LockOpen className="mr-2 size-4" /> {t("Rouvrir le scrutin")}
                 </Button>
               )}
             </div>
@@ -199,45 +201,45 @@ export function VotesClient() {
             <div className="flex flex-col justify-between gap-7 lg:flex-row lg:items-center">
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-3">
-                  <h3 className="text-base font-semibold">Quorum de participation</h3>
+                  <h3 className="text-base font-semibold">{t("Quorum de participation")}</h3>
                   <span className={`text-xs font-medium ${summary.quorumReached ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}>
-                    {summary.quorumReached ? "● Atteint" : "○ Non atteint"}
+                    {t(summary.quorumReached ? "● Atteint" : "○ Non atteint")}
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  <span className="font-medium text-foreground">{summary.representedSeatCount} / {summary.activeSeatCount}</span> sièges représentés
-                  <span className="mx-2">·</span>minimum requis : {summary.quorumMinSeats}
+                  <span className="font-medium text-foreground">{summary.representedSeatCount} / {summary.activeSeatCount}</span> {t("sièges représentés")}
+                  <span className="mx-2">·</span>{t("minimum requis :")} {summary.quorumMinSeats}
                 </p>
               </div>
               <div className="space-y-2 lg:text-right">
-                <label htmlFor="quorum-percentage" className="block text-xs font-medium text-muted-foreground">Seuil requis</label>
+                <label htmlFor="quorum-percentage" className="block text-xs font-medium text-muted-foreground">{t("Seuil requis")}</label>
                 <Select value={String(selected.quorumPercent)} disabled={selected.state === "Clôturé"} onValueChange={(value) => updateSelected((ballot) => ({ ...ballot, quorumPercent: Number(value) }))}>
                   <SelectTrigger id="quorum-percentage" className="w-40"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="50">50 % des sièges</SelectItem>
-                    <SelectItem value="60">60 % des sièges</SelectItem>
-                    <SelectItem value="67">67 % des sièges</SelectItem>
-                    <SelectItem value="75">75 % des sièges</SelectItem>
+                    <SelectItem value="50">50 {t("% des sièges")}</SelectItem>
+                    <SelectItem value="60">60 {t("% des sièges")}</SelectItem>
+                    <SelectItem value="67">67 {t("% des sièges")}</SelectItem>
+                    <SelectItem value="75">75 {t("% des sièges")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
-            <div className="mt-7 h-2 overflow-hidden rounded-full bg-muted" role="progressbar" aria-label="Participation au quorum" aria-valuenow={summary.participationPercent} aria-valuemin={0} aria-valuemax={100}>
+            <div className="mt-7 h-2 overflow-hidden rounded-full bg-muted" role="progressbar" aria-label={t("Participation au quorum")} aria-valuenow={summary.participationPercent} aria-valuemin={0} aria-valuemax={100}>
               <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${summary.participationPercent}%` }} />
             </div>
             <div className="mt-3 flex flex-wrap justify-between gap-2 text-xs text-muted-foreground">
-              <span>Participation : {summary.participationPercent} %</span>
-              <span>{summary.votesCast} vote(s) enregistré(s)</span>
+              <span>{t("Participation : {percent} %", { percent: summary.participationPercent })}</span>
+              <span>{t("{count} vote(s) enregistré(s)", { count: summary.votesCast })}</span>
             </div>
           </div>
 
           <Tabs value={tab} onValueChange={setTab} className="space-y-8">
             <TabsList className="h-auto w-full justify-start gap-6 rounded-none border-b bg-transparent p-0 sm:gap-10">
               <TabsTrigger value="vote" className="rounded-none border-b-2 border-transparent bg-transparent px-0 py-4 text-sm data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
-                Présences et votes
+                {t("Présences et votes")}
               </TabsTrigger>
               <TabsTrigger value="resultats" className="rounded-none border-b-2 border-transparent bg-transparent px-0 py-4 text-sm data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none">
-                Résultats
+                {t("Résultats")}
               </TabsTrigger>
             </TabsList>
             <TabsContent value="vote" className="mt-0">
@@ -249,22 +251,22 @@ export function VotesClient() {
           </Tabs>
         </section>
       ) : (
-        <div className="rounded-xl border border-dashed px-8 py-16 text-center text-sm text-muted-foreground">Créez un scrutin pour commencer.</div>
+        <div className="rounded-xl border border-dashed px-8 py-16 text-center text-sm text-muted-foreground">{t("Créez un scrutin pour commencer.")}</div>
       )}
 
       <CreateBallotDialog open={createOpen} onOpenChange={setCreateOpen} availableDecisions={availableDecisions} onCreate={createBallot} />
       <Dialog open={closeOpen} onOpenChange={setCloseOpen}>
         <DialogContent className="gap-6 p-7 sm:max-w-lg sm:p-8">
           <DialogHeader className="space-y-3">
-            <DialogTitle>Clôturer le scrutin ?</DialogTitle>
+            <DialogTitle>{t("Clôturer le scrutin ?")}</DialogTitle>
             <DialogDescription className="leading-6">
-              Le résultat sera calculé à partir des présences et des votes enregistrés. Un quorum non atteint empêchera l'adoption. Cette simulation pourra être rouverte.
+              {t("Le résultat sera calculé à partir des présences et des votes enregistrés. Un quorum non atteint empêchera l'adoption. Cette simulation pourra être rouverte.")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setCloseOpen(false)}>Annuler</Button>
+            <Button variant="outline" onClick={() => setCloseOpen(false)}>{t("Annuler")}</Button>
             <Button onClick={() => { updateSelected((ballot) => ({ ...ballot, state: "Clôturé" })); setCloseOpen(false); setTab("resultats") }}>
-              <LockKeyhole className="mr-2 size-4" /> Clôturer
+              <LockKeyhole className="mr-2 size-4" /> {t("Clôturer")}
             </Button>
           </DialogFooter>
         </DialogContent>

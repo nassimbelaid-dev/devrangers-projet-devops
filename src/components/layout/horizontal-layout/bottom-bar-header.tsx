@@ -32,7 +32,7 @@ export function BottomBarHeader({
         className="hidden text-foreground font-black lg:flex"
       >
         <Landmark className="me-2 size-5 text-indigo-600" aria-hidden="true" />
-        <span>Comité scientifique</span>
+        <span>{dictionary.navigation.comitéScientifique}</span>
       </Link>
       <div className="flex gap-2">
         <NotificationDropdown dictionary={dictionary} />

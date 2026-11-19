@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { committeeSeats } from "./mock-data"
 import { formatDate, mandateStatus, todayIso } from "./utils"
 import type { CommitteeMemberRecord } from "./types"
+import { useUiText } from "@/features/ui-text"
 
 type MemberDetailsProps = {
   member: CommitteeMemberRecord
@@ -19,6 +20,7 @@ type MemberDetailsProps = {
 }
 
 export function MemberDetails({ member, members, onClose, onEdit }: MemberDetailsProps) {
+  const t = useUiText()
   const seatName = committeeSeats.find((seat) => seat.id === member.seatId)?.label ?? "—"
   const colleague = members.find((other) =>
     other.id !== member.id && other.seatId === member.seatId && other.kind !== member.kind &&
@@ -31,37 +33,37 @@ export function MemberDetails({ member, members, onClose, onEdit }: MemberDetail
       <DialogContent className="max-h-[85dvh] overflow-y-auto w-[calc(100vw-2rem)] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{member.name}</DialogTitle>
-          <DialogDescription>Informations sur le membre et son mandat.</DialogDescription>
+          <DialogDescription>{t("Informations sur le membre et son mandat.")}</DialogDescription>
         </DialogHeader>
         <div className="flex flex-wrap gap-2">
-          <Badge variant="secondary">{member.role}</Badge>
-          <Badge variant="outline">{member.kind}</Badge>
-          <Badge variant={status === "En cours" ? "default" : "secondary"}>{status}</Badge>
+          <Badge variant="secondary">{t(member.role)}</Badge>
+          <Badge variant="outline">{t(member.kind)}</Badge>
+          <Badge variant={status === "En cours" ? "default" : "secondary"}>{t(status)}</Badge>
         </div>
         <Tabs defaultValue="identity">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="identity">Coordonnées</TabsTrigger>
-            <TabsTrigger value="mandate">Mandat et siège</TabsTrigger>
+            <TabsTrigger value="identity">{t("Coordonnées")}</TabsTrigger>
+            <TabsTrigger value="mandate">{t("Mandat et siège")}</TabsTrigger>
           </TabsList>
           <TabsContent value="identity" className="space-y-3 pt-4 text-sm">
-            <Info label="Nom complet" value={member.name} />
-            <Info label="Adresse e-mail" value={member.email} />
-            <Info label="Téléphone" value={member.phone || "Non renseigné"} />
-            <Info label="Fonction" value={member.role} />
-            <Info label="Observations" value={member.notes || "Aucune"} />
+            <Info label={t("Nom complet")} value={member.name} />
+            <Info label={t("Adresse e-mail")} value={member.email} />
+            <Info label={t("Téléphone")} value={member.phone || t("Non renseigné")} />
+            <Info label={t("Fonction")} value={t(member.role)} />
+            <Info label={t("Observations")} value={member.notes || t("Aucune")} />
           </TabsContent>
           <TabsContent value="mandate" className="space-y-3 pt-4 text-sm">
-            <Info label="Siège" value={seatName} />
-            <Info label="Qualité" value={member.kind} />
-            <Info label="Début du mandat" value={formatDate(member.mandateStart)} />
-            <Info label="Fin du mandat" value={formatDate(member.mandateEnd)} />
-            <Info label={member.kind === "Titulaire" ? "Suppléant associé" : "Titulaire associé"}
-              value={colleague?.name ?? "Aucun membre associé sur cette période"} />
+            <Info label={t("Siège")} value={seatName} />
+            <Info label={t("Qualité")} value={t(member.kind)} />
+            <Info label={t("Début du mandat")} value={formatDate(member.mandateStart)} />
+            <Info label={t("Fin du mandat")} value={formatDate(member.mandateEnd)} />
+            <Info label={t(member.kind === "Titulaire" ? "Suppléant associé" : "Titulaire associé")}
+              value={colleague?.name ?? t("Aucun membre associé sur cette période")} />
           </TabsContent>
         </Tabs>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Fermer</Button>
-          <Button onClick={() => onEdit(member)}>Modifier le membre</Button>
+          <Button variant="outline" onClick={onClose}>{t("Fermer")}</Button>
+          <Button onClick={() => onEdit(member)}>{t("Modifier le membre")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

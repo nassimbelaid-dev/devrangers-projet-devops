@@ -4,6 +4,8 @@ import "server-only"
 import type { LocaleType } from "@/types"
 
 const dictionaries = {
+  fr: () =>
+    import("@/data/dictionaries/fr.json").then((module) => module.default),
   en: () =>
     import("@/data/dictionaries/en.json").then((module) => module.default),
   ar: () =>

@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { DOCUMENT_STATUSES, DOCUMENT_TYPES, VISIBILITIES } from "./types"
 import type { CommitteeDocument, DocumentStatus, DocumentType, DocumentVisibility } from "./types"
 import { makeId, today } from "./utils"
+import { useUiText } from "@/features/ui-text"
 
 interface Props {
   open: boolean
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export function DocumentForm({ open, initial, reference, onOpenChange, onSave }: Props) {
+  const t = useUiText()
   const { meetings } = useDemoData()
   const [title, setTitle] = useState(initial?.title ?? "")
   const [type, setType] = useState<DocumentType>(initial?.type ?? "Rapport")
@@ -35,8 +37,8 @@ export function DocumentForm({ open, initial, reference, onOpenChange, onSave }:
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!title.trim()) return setError("Le titre du document est obligatoire.")
-    if (file && file.size > 10 * 1024 * 1024) return setError("Taille maximale : 10 Mo.")
+    if (!title.trim()) return setError(t("Le titre du document est obligatoire."))
+    if (file && file.size > 10 * 1024 * 1024) return setError(t("Taille maximale : 10 Mo."))
     const date = today()
     const versions = initial ? initial.versions : file ? [{
       id: makeId(), number: 1, date, author: "Utilisateur démo", filename: file.name, note: "Version initiale", file,
@@ -56,63 +58,63 @@ export function DocumentForm({ open, initial, reference, onOpenChange, onSave }:
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85dvh] overflow-y-auto w-[calc(100vw-2rem)] sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{initial ? "Modifier le document" : "Ajouter un document"}</DialogTitle>
-          <DialogDescription>Informations fictives conservées uniquement pendant cette session.</DialogDescription>
+          <DialogTitle>{t(initial ? "Modifier le document" : "Ajouter un document")}</DialogTitle>
+          <DialogDescription>{t("Informations fictives conservées uniquement pendant cette session.")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-6 pt-2">
           <div className="space-y-2">
-            <Label htmlFor="document-title">Titre *</Label>
-            <Input id="document-title" maxLength={150} value={title} onChange={(event) => { setTitle(event.target.value); setError("") }} placeholder="Ex. Rapport de la commission pédagogique" />
+            <Label htmlFor="document-title">{t("Titre *")}</Label>
+            <Input id="document-title" maxLength={150} value={title} onChange={(event) => { setTitle(event.target.value); setError("") }} placeholder={t("Ex. Rapport de la commission pédagogique")} />
           </div>
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="document-type">Type</Label>
+              <Label htmlFor="document-type">{t("Type")}</Label>
               <Select value={type} onValueChange={(value) => setType(value as DocumentType)}>
                 <SelectTrigger id="document-type"><SelectValue /></SelectTrigger>
-                <SelectContent>{DOCUMENT_TYPES.map((value) => <SelectItem value={value} key={value}>{value}</SelectItem>)}</SelectContent>
+                <SelectContent>{DOCUMENT_TYPES.map((value) => <SelectItem value={value} key={value}>{t(value)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="document-status">Statut</Label>
+              <Label htmlFor="document-status">{t("Statut")}</Label>
               <Select value={status} onValueChange={(value) => setStatus(value as DocumentStatus)}>
                 <SelectTrigger id="document-status"><SelectValue /></SelectTrigger>
-                <SelectContent>{DOCUMENT_STATUSES.map((value) => <SelectItem value={value} key={value}>{value}</SelectItem>)}</SelectContent>
+                <SelectContent>{DOCUMENT_STATUSES.map((value) => <SelectItem value={value} key={value}>{t(value)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="document-visibility">Accès (simulation)</Label>
+              <Label htmlFor="document-visibility">{t("Accès (simulation)")}</Label>
               <Select value={visibility} onValueChange={(value) => setVisibility(value as DocumentVisibility)}>
                 <SelectTrigger id="document-visibility"><SelectValue /></SelectTrigger>
-                <SelectContent>{VISIBILITIES.map((value) => <SelectItem value={value} key={value}>{value}</SelectItem>)}</SelectContent>
+                <SelectContent>{VISIBILITIES.map((value) => <SelectItem value={value} key={value}>{t(value)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="document-meeting">Réunion</Label>
+              <Label htmlFor="document-meeting">{t("Réunion")}</Label>
               <Select value={meetingId || "aucune"} onValueChange={(value) => setMeetingId(value === "aucune" ? "" : value)}>
                 <SelectTrigger id="document-meeting"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="aucune">Non rattaché</SelectItem>
+                  <SelectItem value="aucune">{t("Non rattaché")}</SelectItem>
                   {meetings.map((meeting) => <SelectItem key={meeting.id} value={meeting.id}>{meeting.title}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="document-description">Description</Label>
-            <Textarea id="document-description" rows={3} value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Objet ou résumé du document…" />
+            <Label htmlFor="document-description">{t("Description")}</Label>
+            <Textarea id="document-description" rows={3} value={description} onChange={(event) => setDescription(event.target.value)} placeholder={t("Objet ou résumé du document…")} />
           </div>
           {!initial && (
             <div className="space-y-2 border-t pt-5">
-              <Label htmlFor="document-file">Fichier local (facultatif)</Label>
+              <Label htmlFor="document-file">{t("Fichier local (facultatif)")}</Label>
               <Input id="document-file" type="file" accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
-              <p className="text-xs leading-5 text-muted-foreground">Taille maximale du fichier : 10 Mo.</p>
+              <p className="text-xs leading-5 text-muted-foreground">{t("Taille maximale du fichier : 10 Mo.")}</p>
             </div>
           )}
-          {initial && <p className="text-xs text-muted-foreground">Pour remplacer le fichier, utilisez « Ajouter une version » dans la fiche du document.</p>}
+          {initial && <p className="text-xs text-muted-foreground">{t("Pour remplacer le fichier, utilisez « Ajouter une version » dans la fiche du document.")}</p>}
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
-            <Button type="submit">{initial ? "Enregistrer" : "Ajouter le document"}</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("Annuler")}</Button>
+            <Button type="submit">{t(initial ? "Enregistrer" : "Ajouter le document")}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

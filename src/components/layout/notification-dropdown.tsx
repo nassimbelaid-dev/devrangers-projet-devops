@@ -42,7 +42,7 @@ export function NotificationDropdown({ dictionary: _dictionary }: { dictionary: 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative rounded-xl" aria-label={`Notifications, ${unreadCount} non lues`}>
+        <Button variant="ghost" size="icon" className="relative rounded-xl" aria-label={`${_dictionary.navigation.notification.notifications}, ${unreadCount} ${_dictionary.navigation.notification.unread}`}>
           <Bell className="size-4" aria-hidden="true" />
           {unreadCount > 0 && (
             <span className="absolute -right-1 -top-1 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-indigo-600 px-1 text-[10px] font-semibold text-white" aria-live="polite">
@@ -54,17 +54,17 @@ export function NotificationDropdown({ dictionary: _dictionary }: { dictionary: 
       <PopoverContent align="end" className="w-[min(380px,calc(100vw-1.5rem))] overflow-hidden rounded-2xl p-0 shadow-lg">
         <div className="flex items-center justify-between gap-3 border-b px-4 py-4">
           <div className="space-y-1">
-            <p className="text-sm font-semibold">Notifications</p>
-            <p className="text-xs text-muted-foreground">{unreadCount ? `${unreadCount} non lue${unreadCount > 1 ? "s" : ""}` : "Tout est à jour"}</p>
+            <p className="text-sm font-semibold">{_dictionary.navigation.notification.notifications}</p>
+            <p className="text-xs text-muted-foreground">{unreadCount ? `${unreadCount} ${_dictionary.navigation.notification.unread}` : _dictionary.navigation.notification.allUpToDate}</p>
           </div>
           <Button variant="ghost" size="sm" onClick={markAllRead} disabled={!unreadCount} className="gap-1.5 text-xs">
-            <CheckCheck className="size-3.5" /> Tout marquer lu
+            <CheckCheck className="size-3.5" /> {_dictionary.navigation.notification.markAllRead}
           </Button>
         </div>
         <div className="max-h-[min(420px,65vh)] overflow-y-auto">
           {recent.length === 0 ? (
             <div className="flex flex-col items-center gap-3 px-6 py-10 text-center text-sm text-muted-foreground">
-              <Inbox className="size-7 opacity-60" /> Aucune notification pour le moment.
+              <Inbox className="size-7 opacity-60" /> {_dictionary.navigation.notification.empty}
             </div>
           ) : (
             <ul className="divide-y divide-border/60">
@@ -79,7 +79,7 @@ export function NotificationDropdown({ dictionary: _dictionary }: { dictionary: 
                     <span className="min-w-0 flex-1 space-y-1">
                       <span className="flex items-start justify-between gap-3">
                         <span className="line-clamp-1 text-xs font-medium text-muted-foreground">{kindLabels[item.kind]}</span>
-                        {!item.read && <span className="mt-1 size-2 shrink-0 rounded-full bg-indigo-500" aria-label="Non lue" />}
+                        {!item.readAt && <span className="mt-1 size-2 shrink-0 rounded-full bg-indigo-500" aria-label={_dictionary.navigation.notification.unread} />}
                       </span>
                       <span className="block text-sm font-medium leading-5">{item.title}</span>
                       <span className="block line-clamp-2 text-xs leading-5 text-muted-foreground">{item.preview}</span>
@@ -93,7 +93,7 @@ export function NotificationDropdown({ dictionary: _dictionary }: { dictionary: 
         <div className="border-t p-2">
           <Button variant="ghost" className="w-full gap-2 text-indigo-600 dark:text-indigo-400" asChild>
             <Link href={`/${lang}/notifications`} onClick={() => setOpen(false)}>
-              Voir toutes les notifications <ExternalLink className="size-3.5" />
+              {_dictionary.navigation.notification.seeAllNotifications} <ExternalLink className="size-3.5" />
             </Link>
           </Button>
         </div>

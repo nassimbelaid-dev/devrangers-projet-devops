@@ -20,6 +20,7 @@ import type {
 import { NotificationIcon } from "./notification-icon"
 import { NotificationDetails } from "./notification-details"
 import { NotificationSimulator } from "./notification-simulator"
+import { useUiText } from "../ui-text"
 import {
   createDemoNotification, filterNotifications, formatNotificationDate, kindLabels, unreadTotal,
 } from "./utils"
@@ -41,6 +42,7 @@ function Count({ title, value }: { title: string; value: number }) {
 }
 
 export function NotificationsClient() {
+  const t = useUiText()
   const [items, setItems] = useDemoCollection("notifications")
   const [tab, setTab] = useState<NotificationTab>("toutes")
   const [kindFilter, setKindFilter] = useState<NotificationKindFilter>("tous")
@@ -106,43 +108,43 @@ export function NotificationsClient() {
     <div className="mx-auto max-w-6xl space-y-10 px-4 py-6 md:px-8 md:py-9">
       <header className="flex flex-col justify-between gap-6 lg:flex-row lg:items-start">
         <div className="max-w-2xl space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Comité scientifique</p>
-          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Centre de notifications</h1>
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("Comité scientifique")}</p>
+          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{t("Centre de notifications")}</h1>
           <p className="text-sm leading-6 text-muted-foreground">
-            Retrouvez les convocations, rappels, échéances des actions et avis de décisions du comité.
+            {t("Retrouvez les convocations, rappels, échéances des actions et avis de décisions du comité.")}
           </p>
         </div>
         <Button onClick={() => setSimulateOpen(true)} className="w-full shrink-0 sm:w-auto">
-          <Plus className="mr-2 size-4" aria-hidden="true" /> Créer une notification
+          <Plus className="mr-2 size-4" aria-hidden="true" /> {t("Créer une notification")}
         </Button>
       </header>
 
       
 
-      <section aria-label="Résumé des notifications" className="grid grid-cols-3 divide-x border-y py-7">
-        <Count title="Actives" value={active} />
-        <Count title="Non lues" value={unread} />
-        <Count title="Archivées" value={archived} />
+      <section aria-label={t("Résumé des notifications")} className="grid grid-cols-3 divide-x border-y py-7">
+        <Count title={t("Actives")} value={active} />
+        <Count title={t("Non lues")} value={unread} />
+        <Count title={t("Archivées")} value={archived} />
       </section>
 
       <section className="space-y-7" aria-labelledby="inbox-title">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
-            <h2 id="inbox-title" className="text-lg font-semibold tracking-tight">Boîte de réception</h2>
-            <p className="text-sm text-muted-foreground">Consultez et classez les dernières notifications.</p>
+            <h2 id="inbox-title" className="text-lg font-semibold tracking-tight">{t("Boîte de réception")}</h2>
+            <p className="text-sm text-muted-foreground">{t("Consultez et classez les dernières notifications.")}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="sm" onClick={markAllRead} disabled={!unread}>
-              <CheckCheck className="mr-2 size-4" aria-hidden="true" /> Tout marquer lu
+              <CheckCheck className="mr-2 size-4" aria-hidden="true" /> {t("Tout marquer lu")}
             </Button>
-            <Button variant="ghost" size="sm" onClick={reset} title="Réinitialiser les notifications">
-              <RotateCcw className="mr-2 size-4" aria-hidden="true" /> Réinitialiser
+            <Button variant="ghost" size="sm" onClick={reset} title={t("Réinitialiser les notifications")}>
+              <RotateCcw className="mr-2 size-4" aria-hidden="true" /> {t("Réinitialiser")}
             </Button>
           </div>
         </div>
 
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div role="tablist" aria-label="État des notifications" className="flex max-w-full gap-1 overflow-x-auto border-b">
+          <div role="tablist" aria-label={t("État des notifications")} className="flex max-w-full gap-1 overflow-x-auto border-b">
             {tabs.map((entry) => (
               <button
                 key={entry.value}
@@ -156,7 +158,7 @@ export function NotificationsClient() {
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {entry.label}
+                {t(entry.label)}
                 {entry.value === "non-lues" && unread > 0 && (
                   <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-foreground">{unread}</span>
                 )}
@@ -169,18 +171,18 @@ export function NotificationsClient() {
               <Input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Rechercher une notification..."
-                aria-label="Rechercher une notification"
+                placeholder={t("Rechercher une notification...")}
+                aria-label={t("Rechercher une notification")}
                 className="pl-9"
               />
             </div>
             <Select value={kindFilter} onValueChange={(value) => setKindFilter(value as NotificationKindFilter)}>
-              <SelectTrigger aria-label="Filtrer par type" className="w-full sm:w-48">
-                <SelectValue placeholder="Tous les types" />
+              <SelectTrigger aria-label={t("Filtrer par type")} className="w-full sm:w-48">
+                <SelectValue placeholder={t("Tous les types")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="tous">Tous les types</SelectItem>
-                {kinds.map((kind) => <SelectItem value={kind} key={kind}>{kindLabels[kind]}</SelectItem>)}
+                <SelectItem value="tous">{t("Tous les types")}</SelectItem>
+                {kinds.map((kind) => <SelectItem value={kind} key={kind}>{t(kindLabels[kind])}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -188,17 +190,17 @@ export function NotificationsClient() {
 
         <div aria-live="polite" className="min-h-64">
           <p className="mb-3 text-xs text-muted-foreground">
-            {visible.length} notification{visible.length > 1 ? "s" : ""} affichée{visible.length > 1 ? "s" : ""}
+            {t(visible.length > 1 ? "{count} notifications affichées" : "{count} notification affichée", { count: visible.length })}
           </p>
           {visible.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 border-y px-5 py-16 text-center">
               <Inbox className="size-8 text-muted-foreground/70" aria-hidden="true" />
-              <p className="font-medium">Aucune notification à afficher</p>
+              <p className="font-medium">{t("Aucune notification à afficher")}</p>
               <p className="max-w-sm text-sm leading-6 text-muted-foreground">
-                Modifiez les filtres, consultez un autre onglet ou simulez un nouvel événement.
+                {t("Modifiez les filtres, consultez un autre onglet ou simulez un nouvel événement.")}
               </p>
               <Button variant="outline" size="sm" onClick={() => { setQuery(""); setKindFilter("tous"); setTab("toutes") }}>
-                Réinitialiser les filtres
+                {t("Réinitialiser les filtres")}
               </Button>
             </div>
           ) : (
@@ -208,12 +210,12 @@ export function NotificationsClient() {
                   <NotificationIcon kind={item.kind} />
                   <div className="min-w-0 flex-1 space-y-2">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <span className="text-xs font-medium text-muted-foreground">{kindLabels[item.kind]}</span>
+                      <span className="text-xs font-medium text-muted-foreground">{t(kindLabels[item.kind])}</span>
                       {item.priority === "importante" && (
-                        <span className="text-xs font-medium text-foreground/80">À surveiller</span>
+                            <span className="text-xs font-medium text-foreground/80">{t("À surveiller")}</span>
                       )}
                       {!item.read && !item.archived && (
-                        <span className="size-2 rounded-full bg-foreground" aria-label="Non lue" title="Non lue" />
+                            <span className="size-2 rounded-full bg-foreground" aria-label={t("Non lue")} title={t("Non lue")} />
                       )}
                     </div>
                     <button
@@ -232,8 +234,11 @@ export function NotificationsClient() {
                     size="icon"
                     className="shrink-0"
                     onClick={() => toggleArchive(item.id)}
-                    title={item.archived ? "Restaurer la notification" : "Archiver la notification"}
-                    aria-label={`${item.archived ? "Restaurer" : "Archiver"} : ${item.title}`}
+                    title={t(item.archived ? "Restaurer la notification" : "Archiver la notification")}
+                    aria-label={t("{action} : {title}", {
+                      action: t(item.archived ? "Restaurer" : "Archiver"),
+                      title: item.title,
+                    })}
                   >
                     {item.archived ? <ArchiveRestore className="size-4" /> : <Archive className="size-4" />}
                   </Button>
@@ -247,8 +252,7 @@ export function NotificationsClient() {
       <div className="flex items-start gap-3 border-t pt-6 text-sm text-muted-foreground">
         <Bell className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
         <p className="leading-6">
-          Les exemples sont indépendants des autres modules. Les changements de réunions, d'actions et de décisions
-          ne déclenchent pas automatiquement de notifications dans cette maquette.
+          {t("Les exemples sont indépendants des autres modules. Les changements de réunions, d'actions et de décisions ne déclenchent pas automatiquement de notifications dans cette maquette.")}
         </p>
       </div>
 

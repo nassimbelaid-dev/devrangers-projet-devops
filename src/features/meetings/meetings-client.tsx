@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { useDemoCollection } from "@/lib/demo-store"
+import { useUiText } from "@/features/ui-text"
 import { CalendarDays, CheckCircle2, Eye, Pencil, Plus, Search, Users } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -29,13 +30,14 @@ function readableDate(date: string) {
   }).format(new Date(`${date}T12:00:00Z`))
 }
 
-function statusBadge(status: MeetingStatus) {
-  if (status === "Annulée") return <Badge variant="destructive">Annulée</Badge>
-  if (status === "Terminée") return <Badge variant="secondary">Terminée</Badge>
-  return <Badge variant="outline">Planifiée</Badge>
+function statusBadge(status: MeetingStatus, t: (source: string) => string) {
+  if (status === "Annulée") return <Badge variant="destructive">{t(status)}</Badge>
+  if (status === "Terminée") return <Badge variant="secondary">{t(status)}</Badge>
+  return <Badge variant="outline">{t(status)}</Badge>
 }
 
 export function MeetingsClient() {
+  const t = useUiText()
   const [meetings, setMeetings] = useDemoCollection("meetings")
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState<StatusFilter>("Toutes")
@@ -87,13 +89,13 @@ export function MeetingsClient() {
     <div className="space-y-6 p-4 md:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Gestion des réunions</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("Gestion des réunions")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Planifiez les réunions du comité, sélectionnez les participants et préparez les ordres du jour.
+            {t("Planifiez les réunions du comité, sélectionnez les participants et préparez les ordres du jour.")}
           </p>
         </div>
         <Button onClick={openCreate}>
-          <Plus className="mr-2 size-4" /> Nouvelle réunion
+          <Plus className="mr-2 size-4" /> {t("Nouvelle réunion")}
         </Button>
       </div>
 
@@ -102,17 +104,17 @@ export function MeetingsClient() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card><CardContent className="flex items-center gap-4 p-5">
           <CalendarDays className="size-8 text-muted-foreground" />
-          <div><p className="text-sm text-muted-foreground">Total réunions</p>
+          <div><p className="text-sm text-muted-foreground">{t("Total réunions")}</p>
             <p className="text-2xl font-bold">{meetings.length}</p></div>
         </CardContent></Card>
         <Card><CardContent className="flex items-center gap-4 p-5">
           <Users className="size-8 text-muted-foreground" />
-          <div><p className="text-sm text-muted-foreground">Planifiées</p>
+          <div><p className="text-sm text-muted-foreground">{t("Planifiées")}</p>
             <p className="text-2xl font-bold">{planned}</p></div>
         </CardContent></Card>
         <Card><CardContent className="flex items-center gap-4 p-5">
           <CheckCircle2 className="size-8 text-muted-foreground" />
-          <div><p className="text-sm text-muted-foreground">Terminées</p>
+          <div><p className="text-sm text-muted-foreground">{t("Terminée")}</p>
             <p className="text-2xl font-bold">{finished}</p></div>
         </CardContent></Card>
       </div>
@@ -121,21 +123,21 @@ export function MeetingsClient() {
         <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <Button variant={view === "list" ? "default" : "outline"} size="sm"
-              onClick={() => setView("list")}>Liste</Button>
+              onClick={() => setView("list")}>{t("Liste")}</Button>
             <Button variant={view === "calendar" ? "default" : "outline"} size="sm"
-              onClick={() => setView("calendar")}>Calendrier</Button>
+              onClick={() => setView("calendar")}>{t("Calendrier")}</Button>
           </div>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             <div className="relative sm:w-72">
               <Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-muted-foreground" />
-              <Input className="pl-9" placeholder="Rechercher une réunion..."
-                aria-label="Rechercher une réunion" value={search}
+              <Input className="pl-9" placeholder={t("Rechercher une réunion...")}
+                aria-label={t("Rechercher une réunion")} value={search}
                 onChange={(event) => setSearch(event.target.value)} />
             </div>
             <Select value={filter} onValueChange={(value) => setFilter(value as StatusFilter)}>
-              <SelectTrigger className="sm:w-40"><SelectValue placeholder="Filtrer par statut" /></SelectTrigger>
+              <SelectTrigger className="sm:w-40"><SelectValue placeholder={t("Filtrer par statut")} /></SelectTrigger>
               <SelectContent>{statuses.map((status) => (
-                <SelectItem key={status} value={status}>{status}</SelectItem>
+                <SelectItem key={status} value={status}>{t(status)}</SelectItem>
               ))}</SelectContent>
             </Select>
           </div>
@@ -143,17 +145,17 @@ export function MeetingsClient() {
         {view === "list" ? <>
         <Table>
           <TableHeader><TableRow>
-            <TableHead>Réunion</TableHead>
-            <TableHead>Date et heure</TableHead>
-            <TableHead>Salle</TableHead>
-            <TableHead>Participants</TableHead>
-            <TableHead>Statut</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead>{t("Réunion")}</TableHead>
+            <TableHead>{t("Date et heure")}</TableHead>
+            <TableHead>{t("Salle")}</TableHead>
+            <TableHead>{t("Participants")}</TableHead>
+            <TableHead>{t("Statut")}</TableHead>
+            <TableHead className="text-right">{t("Actions")}</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {filteredMeetings.length === 0 ? (
               <TableRow><TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
-                Aucune réunion ne correspond aux filtres.
+                {t("Aucune réunion ne correspond aux filtres.")}
               </TableCell></TableRow>
             ) : filteredMeetings.map((meeting) => (
               <TableRow key={meeting.id}>
@@ -166,14 +168,14 @@ export function MeetingsClient() {
                 </TableCell>
                 <TableCell className="min-w-36">{meeting.location}</TableCell>
                 <TableCell>{meeting.participantIds.length}</TableCell>
-                <TableCell>{statusBadge(meeting.status)}</TableCell>
+                <TableCell>{statusBadge(meeting.status, t)}</TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-1">
                     <Button variant="ghost" size="sm" onClick={() => setSelectedId(meeting.id)}>
-                      <Eye className="mr-1 size-4" /> Détails
+                      <Eye className="mr-1 size-4" /> {t("Détails")}
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => openEdit(meeting)}>
-                      <Pencil className="mr-1 size-4" /> Modifier
+                      <Pencil className="mr-1 size-4" /> {t("Modifier")}
                     </Button>
                   </div>
                 </TableCell>
@@ -182,7 +184,7 @@ export function MeetingsClient() {
           </TableBody>
         </Table>
         <p className="p-4 text-xs text-muted-foreground">
-          {filteredMeetings.length} réunion(s) affichée(s) sur {meetings.length}.
+          {t("{count} réunion(s) affichée(s) sur {total}.", { count: filteredMeetings.length, total: meetings.length })}
         </p>
         </> : <MeetingCalendar meetings={filteredMeetings}
           onSelectMeeting={(id) => setSelectedId(id)} />}

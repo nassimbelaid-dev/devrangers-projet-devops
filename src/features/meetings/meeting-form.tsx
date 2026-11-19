@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 
 import { useDemoData } from "@/lib/demo-store"
+import { useUiText } from "@/features/ui-text"
 import type { AgendaItem, AgendaStatus, Meeting, MeetingStatus } from "./types"
 
 type MeetingFormProps = {
@@ -52,6 +53,7 @@ export function MeetingForm({
   onOpenChange,
   onSave,
 }: MeetingFormProps) {
+  const t = useUiText()
   const { members: committeeMembers } = useDemoData()
   // Le composant est remonté avec une clé différente lors d'une ouverture.
   const [form, setForm] = useState<Meeting>(() =>
@@ -126,15 +128,15 @@ export function MeetingForm({
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!form.title.trim() || !form.date || !form.startTime || !form.endTime || !form.location.trim()) {
-      setError("Renseigne le titre, la date, les horaires et la salle.")
+      setError(t("Renseigne le titre, la date, les horaires et la salle."))
       return
     }
     if (form.endTime <= form.startTime) {
-      setError("L'heure de fin doit être postérieure à l'heure de début.")
+      setError(t("L'heure de fin doit être postérieure à l'heure de début."))
       return
     }
     if (form.agenda.some((item) => !item.title.trim())) {
-      setError("Les points de l'ordre du jour ne peuvent pas être vides.")
+      setError(t("Les points de l'ordre du jour ne peuvent pas être vides."))
       return
     }
     onSave({ ...form, title: form.title.trim(), location: form.location.trim() })
@@ -146,79 +148,79 @@ export function MeetingForm({
       <DialogContent className="max-h-[85dvh] overflow-y-auto w-[calc(100vw-2rem)] sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>
-            {initialMeeting ? "Modifier la réunion" : "Créer une réunion"}
+            {t(initialMeeting ? "Modifier la réunion" : "Créer une réunion")}
           </DialogTitle>
           <DialogDescription>
-            Informations, participants et ordre du jour.
+            {t("Informations, participants et ordre du jour.")}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <Tabs defaultValue="general">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="general">Informations</TabsTrigger>
-              <TabsTrigger value="participants">Participants ({form.participantIds.length})</TabsTrigger>
-              <TabsTrigger value="agenda">Ordre du jour ({form.agenda.length})</TabsTrigger>
+              <TabsTrigger value="general">{t("Informations")}</TabsTrigger>
+              <TabsTrigger value="participants">{t("Participants")} ({form.participantIds.length})</TabsTrigger>
+              <TabsTrigger value="agenda">{t("Ordre du jour")} ({form.agenda.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="general" className="space-y-4 pt-3">
               <div className="space-y-2">
-                <Label htmlFor="meeting-title">Titre *</Label>
+                <Label htmlFor="meeting-title">{t("Titre *")}</Label>
                 <Input
                   id="meeting-title"
                   value={form.title}
                   onChange={(e) => update("title", e.target.value)}
-                  placeholder="Ex. Réunion ordinaire du comité"
+                  placeholder={t("Ex. Réunion ordinaire du comité")}
                 />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="meeting-date">Date *</Label>
+                  <Label htmlFor="meeting-date">{t("Date *")}</Label>
                   <Input id="meeting-date" type="date" value={form.date}
                     onChange={(e) => update("date", e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="meeting-start">Début *</Label>
+                  <Label htmlFor="meeting-start">{t("Début *")}</Label>
                   <Input id="meeting-start" type="time" value={form.startTime}
                     onChange={(e) => update("startTime", e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="meeting-end">Fin *</Label>
+                  <Label htmlFor="meeting-end">{t("Fin *")}</Label>
                   <Input id="meeting-end" type="time" value={form.endTime}
                     onChange={(e) => update("endTime", e.target.value)} />
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="meeting-location">Salle / lieu *</Label>
+                  <Label htmlFor="meeting-location">{t("Salle / lieu *")}</Label>
                   <Input id="meeting-location" value={form.location}
                     onChange={(e) => update("location", e.target.value)}
-                    placeholder="Ex. Salle B12" />
+                    placeholder={t("Ex. Salle B12")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Statut</Label>
+                  <Label>{t("Statut")}</Label>
                   <Select value={form.status}
                     onValueChange={(value) => update("status", value as MeetingStatus)}>
-                    <SelectTrigger><SelectValue placeholder="Statut" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("Statut")} /></SelectTrigger>
                     <SelectContent>
                       {statuses.map((status) => (
-                        <SelectItem key={status} value={status}>{status}</SelectItem>
+                        <SelectItem key={status} value={status}>{t(status)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="meeting-description">Description</Label>
+                <Label htmlFor="meeting-description">{t("Description")}</Label>
                 <Textarea id="meeting-description" rows={3} value={form.description}
                   onChange={(e) => update("description", e.target.value)}
-                  placeholder="Objectifs et contexte de la réunion" />
+                  placeholder={t("Objectifs et contexte de la réunion")} />
               </div>
             </TabsContent>
 
             <TabsContent value="participants" className="space-y-3 pt-3">
               <p className="text-sm text-muted-foreground">
-                Sélectionne les membres invités à cette réunion.
+                {t("Sélectionne les membres invités à cette réunion.")}
               </p>
               <div className="grid gap-2 sm:grid-cols-2">
                 {committeeMembers.map((member) => (
@@ -239,13 +241,13 @@ export function MeetingForm({
 
             <TabsContent value="agenda" className="space-y-4 pt-3">
               <p className="text-sm text-muted-foreground">
-                Ajoute les points à discuter, choisis leur auteur et leur état de validation.
+                {t("Ajoute les points à discuter, choisis leur auteur et leur état de validation.")}
               </p>
               <div className="space-y-3 rounded-lg border p-3">
-                <Label htmlFor="agenda-title">Nouveau point à l'ordre du jour</Label>
+                <Label htmlFor="agenda-title">{t("Nouveau point à l'ordre du jour")}</Label>
                 <Input id="agenda-title" value={agendaTitle}
                   onChange={(e) => setAgendaTitle(e.target.value)}
-                  placeholder="Ex. Présentation des dossiers pédagogiques" />
+                  placeholder={t("Ex. Présentation des dossiers pédagogiques")} />
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <Select value={agendaAuthor} onValueChange={setAgendaAuthor}>
                     <SelectTrigger className="sm:flex-1"><SelectValue /></SelectTrigger>
@@ -256,37 +258,37 @@ export function MeetingForm({
                     </SelectContent>
                   </Select>
                   <Button type="button" variant="secondary" onClick={addAgendaItem}>
-                    <Plus className="mr-2 size-4" /> Ajouter le point
+                    <Plus className="mr-2 size-4" /> {t("Ajouter le point")}
                   </Button>
                 </div>
               </div>
               <div className="space-y-2">
                 {form.agenda.length === 0 ? (
                   <p className="rounded-lg border border-dashed p-5 text-center text-sm text-muted-foreground">
-                    Aucun point ajouté.
+                    {t("Aucun point ajouté.")}
                   </p>
                 ) : form.agenda.map((item, index) => (
                   <div key={item.id} className="rounded-lg border p-3">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="min-w-0 flex-1 space-y-1">
-                        <Label htmlFor={`agenda-item-${item.id}`}>Point {index + 1}</Label>
+                        <Label htmlFor={`agenda-item-${item.id}`}>{t("Point {number}", { number: index + 1 })}</Label>
                         <Input id={`agenda-item-${item.id}`} value={item.title}
                           onChange={(e) => changeAgendaTitle(item.id, e.target.value)} />
                         <p className="text-xs text-muted-foreground">
-                          Proposé par {committeeMembers.find((member) => member.id === item.proposedById)?.name ?? "Membre"}
+                          {t("Proposé par {name}", { name: committeeMembers.find((member) => member.id === item.proposedById)?.name ?? t("Membre") })}
                         </p>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Button type="button" size="icon" variant="ghost" aria-label="Monter"
+                        <Button type="button" size="icon" variant="ghost" aria-label={t("Monter")}
                           disabled={index === 0} onClick={() => moveAgendaItem(index, -1)}>
                           <ArrowUp className="size-4" />
                         </Button>
-                        <Button type="button" size="icon" variant="ghost" aria-label="Descendre"
+                        <Button type="button" size="icon" variant="ghost" aria-label={t("Descendre")}
                           disabled={index === form.agenda.length - 1}
                           onClick={() => moveAgendaItem(index, 1)}>
                           <ArrowDown className="size-4" />
                         </Button>
-                        <Button type="button" size="icon" variant="ghost" aria-label="Supprimer"
+                        <Button type="button" size="icon" variant="ghost" aria-label={t("Supprimer")}
                           onClick={() => removeAgendaItem(item.id)}>
                           <Trash2 className="size-4" />
                         </Button>
@@ -298,7 +300,7 @@ export function MeetingForm({
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {agendaStatuses.map((status) => (
-                            <SelectItem key={status} value={status}>{status}</SelectItem>
+                            <SelectItem key={status} value={status}>{t(status)}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -312,10 +314,10 @@ export function MeetingForm({
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              {t("Annuler")}
             </Button>
             <Button type="submit">
-              {initialMeeting ? "Enregistrer les modifications" : "Créer la réunion"}
+              {t(initialMeeting ? "Enregistrer les modifications" : "Créer la réunion")}
             </Button>
           </DialogFooter>
         </form>

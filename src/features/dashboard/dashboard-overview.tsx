@@ -24,6 +24,7 @@ import type { LucideIcon } from "lucide-react"
 import type { ReactNode } from "react"
 
 import { frenchDate, useDashboardData } from "./dashboard-data"
+import { useUiText } from "@/features/ui-text"
 
 type DashboardProps = { lang: string }
 type Tone = "blue" | "amber" | "emerald" | "violet"
@@ -106,13 +107,14 @@ function SectionHeading({
   title,
   hint,
   href,
-  linkLabel = "Voir tout",
+  linkLabel,
 }: {
   title: string
   hint?: string
   href?: string
   linkLabel?: string
 }) {
+  const t = useUiText()
   return (
     <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
       <div className="space-y-1">
@@ -126,7 +128,7 @@ function SectionHeading({
           href={href}
           className="inline-flex items-center gap-1 text-sm font-medium text-indigo-700 transition-colors hover:text-indigo-900 dark:text-indigo-300 dark:hover:text-indigo-200"
         >
-          {linkLabel}
+          {linkLabel ?? t("Voir tout")}
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
       ) : null}
@@ -151,17 +153,18 @@ function Panel({
 }
 
 function MeetingList({ lang }: DashboardProps) {
+  const t = useUiText()
   const { dashboardMeetings } = useDashboardData()
   return (
     <Panel>
       <SectionHeading
-        title="Réunions planifiées"
-        hint="Les prochaines réunions planifiées"
+        title={t("Réunions planifiées")}
+        hint={t("Les prochaines réunions planifiées")}
         href={`/${lang}/meetings`}
       />
       {dashboardMeetings.length === 0 ? (
         <p className="py-8 text-sm text-muted-foreground">
-          Aucune réunion planifiée.
+          {t("Aucune réunion planifiée.")}
         </p>
       ) : (
         <div className="divide-y divide-border/70">
@@ -215,23 +218,24 @@ function MeetingList({ lang }: DashboardProps) {
 }
 
 function ActionBreakdown({ lang }: DashboardProps) {
+  const t = useUiText()
   const { dashboardActionTotal, dashboardActionCounts } = useDashboardData()
   const total = dashboardActionTotal || 1
   const items = [
     {
-      label: "À faire",
+      label: t("À faire"),
       value: dashboardActionCounts.todo,
       color: "bg-amber-400",
       text: "text-amber-600 dark:text-amber-400",
     },
     {
-      label: "En cours",
+      label: t("En cours"),
       value: dashboardActionCounts.inProgress,
       color: "bg-blue-500",
       text: "text-blue-600 dark:text-blue-400",
     },
     {
-      label: "Terminées",
+      label: t("Terminées"),
       value: dashboardActionCounts.done,
       color: "bg-emerald-500",
       text: "text-emerald-600 dark:text-emerald-400",
@@ -241,27 +245,27 @@ function ActionBreakdown({ lang }: DashboardProps) {
   return (
     <Panel>
       <SectionHeading
-        title="Avancement des actions"
-        hint="Répartition par statut"
+        title={t("Avancement des actions")}
+        hint={t("Répartition par statut")}
         href={`/${lang}/actions`}
-        linkLabel="Kanban"
+        linkLabel={t("Kanban")}
       />
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="text-4xl font-semibold tabular-nums text-foreground">
             {dashboardActionTotal}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">actions au total</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("actions au total")}</p>
         </div>
         <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
           <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-          {Math.round((dashboardActionCounts.done / total) * 100)} % terminées
+          {t("{percent} % terminées", { percent: Math.round((dashboardActionCounts.done / total) * 100) })}
         </div>
       </div>
       <div
         className="mt-7 flex h-3 w-full overflow-hidden rounded-full bg-muted"
         role="img"
-        aria-label={`Actions : ${dashboardActionCounts.todo} à faire, ${dashboardActionCounts.inProgress} en cours et ${dashboardActionCounts.done} terminées`}
+        aria-label={t("Actions : {todo} à faire, {progress} en cours et {done} terminées", { todo: dashboardActionCounts.todo, progress: dashboardActionCounts.inProgress, done: dashboardActionCounts.done })}
       >
         {items.map((item) => (
           <div
@@ -292,12 +296,13 @@ function ActionBreakdown({ lang }: DashboardProps) {
 }
 
 function PriorityActions({ lang }: DashboardProps) {
+  const t = useUiText()
   const { dashboardPendingActions } = useDashboardData()
   return (
     <Panel>
       <SectionHeading
-        title="Actions à suivre"
-        hint="Les prochaines échéances à suivre"
+        title={t("Actions à suivre")}
+        hint={t("Les prochaines échéances à suivre")}
         href={`/${lang}/actions`}
       />
       <div className="divide-y divide-border/70">
@@ -334,10 +339,10 @@ function PriorityActions({ lang }: DashboardProps) {
                 className={`text-[11px] ${action.overdue ? "font-medium text-rose-600 dark:text-rose-400" : "text-muted-foreground"}`}
               >
                 {action.overdue
-                  ? "En retard"
+                  ? t("En retard")
                   : action.priority === "Haute"
-                    ? "Priorité haute"
-                    : "À suivre"}
+                    ? t("Priorité haute")
+                    : t("À suivre")}
               </span>
             </div>
           </Link>
@@ -348,6 +353,7 @@ function PriorityActions({ lang }: DashboardProps) {
 }
 
 function DecisionBreakdown({ lang }: DashboardProps) {
+  const t = useUiText()
   const { dashboardDecisionTotal, dashboardDecisionCounts } = useDashboardData()
   const total = dashboardDecisionTotal || 1
   const adopted = (dashboardDecisionCounts.adopted / total) * 360
@@ -357,39 +363,43 @@ function DecisionBreakdown({ lang }: DashboardProps) {
   return (
     <Panel>
       <SectionHeading
-        title="Décisions du comité"
-        hint="Bilan des décisions enregistrées"
+        title={t("Décisions du comité")}
+        hint={t("Bilan des décisions enregistrées")}
         href={`/${lang}/votes`}
-        linkLabel="Votes"
+        linkLabel={t("Votes")}
       />
       <div className="flex flex-wrap items-center justify-center gap-7 py-2 sm:flex-nowrap">
         <div
           className="relative flex h-40 w-40 shrink-0 items-center justify-center rounded-full"
           style={{ background }}
           role="img"
-          aria-label={`${dashboardDecisionCounts.adopted} décisions adoptées, ${dashboardDecisionCounts.pending} en attente, ${dashboardDecisionCounts.rejected} rejetées`}
+          aria-label={t("{adopted} décisions adoptées, {pending} en attente, {rejected} rejetées", {
+            adopted: dashboardDecisionCounts.adopted,
+            pending: dashboardDecisionCounts.pending,
+            rejected: dashboardDecisionCounts.rejected,
+          })}
         >
           <div className="flex h-[122px] w-[122px] flex-col items-center justify-center rounded-full bg-card">
             <span className="text-3xl font-semibold tabular-nums text-foreground">
               {dashboardDecisionTotal}
             </span>
-            <span className="text-[11px] text-muted-foreground">décisions</span>
+            <span className="text-[11px] text-muted-foreground">{t("décisions")}</span>
           </div>
         </div>
         <div className="min-w-[148px] flex-1 space-y-4">
           {[
             {
-              name: "Adoptées",
+              name: t("Adoptées"),
               count: dashboardDecisionCounts.adopted,
               dot: "bg-emerald-500",
             },
             {
-              name: "En attente",
+              name: t("En attente"),
               count: dashboardDecisionCounts.pending,
               dot: "bg-amber-400",
             },
             {
-              name: "Rejetées",
+              name: t("Rejetées"),
               count: dashboardDecisionCounts.rejected,
               dot: "bg-rose-400",
             },
@@ -414,12 +424,13 @@ function DecisionBreakdown({ lang }: DashboardProps) {
 }
 
 function RecentActivity({ lang }: DashboardProps) {
+  const t = useUiText()
   const { dashboardRecentNotifications } = useDashboardData()
   return (
     <Panel>
       <SectionHeading
-        title="Activité récente"
-        hint="Dernières notifications"
+        title={t("Activité récente")}
+        hint={t("Dernières notifications")}
         href={`/${lang}/notifications`}
       />
       <div className="divide-y divide-border/70">
@@ -471,6 +482,7 @@ function RecentActivity({ lang }: DashboardProps) {
 }
 
 function QuickAccess({ lang }: DashboardProps) {
+  const t = useUiText()
   const routes: {
     name: string
     label: string
@@ -479,29 +491,29 @@ function QuickAccess({ lang }: DashboardProps) {
     tone: string
   }[] = [
     {
-      name: "Ordres du jour",
-      label: "Propositions et validations",
+      name: t("Ordres du jour"),
+      label: t("Propositions et validations"),
       href: "/agenda",
       icon: ClipboardList,
       tone: "bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300",
     },
     {
-      name: "Membres",
-      label: "Annuaire et mandats",
+      name: t("Membres"),
+      label: t("Annuaire et mandats"),
       href: "/members",
       icon: UsersRound,
       tone: "bg-cyan-100 text-cyan-700 dark:bg-cyan-950/50 dark:text-cyan-300",
     },
     {
-      name: "Documents",
-      label: "PV et rapports",
+      name: t("Documents"),
+      label: t("PV et rapports"),
       href: "/documents",
       icon: FolderOpen,
       tone: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300",
     },
     {
-      name: "Votes",
-      label: "Scrutins et résultats",
+      name: t("Votes"),
+      label: t("Scrutins et résultats"),
       href: "/votes",
       icon: Vote,
       tone: "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300",
@@ -511,8 +523,8 @@ function QuickAccess({ lang }: DashboardProps) {
   return (
     <Panel>
       <SectionHeading
-        title="Accès rapides"
-        hint="Retrouver les principaux espaces du comité"
+        title={t("Accès rapides")}
+        hint={t("Retrouver les principaux espaces du comité")}
       />
       <div className="grid gap-3 sm:grid-cols-2">
         {routes.map(({ name, label, href, icon: Icon, tone }) => (
@@ -546,6 +558,7 @@ function QuickAccess({ lang }: DashboardProps) {
 }
 
 export function DashboardOverview({ lang }: DashboardProps) {
+  const t = useUiText()
   const { dashboardMetrics, dashboardDecisionTotal, dashboardNotifications } =
     useDashboardData()
 
@@ -560,33 +573,33 @@ export function DashboardOverview({ lang }: DashboardProps) {
     href: string
   }[] = [
     {
-      title: "Réunions planifiées",
+      title: t("Réunions planifiées"),
       value: dashboardMetrics.scheduledMeetings,
-      description: "Séances à venir dans la démo",
+      description: t("Séances à venir dans la démo"),
       icon: CalendarDays,
       tone: "blue",
       href: `/${lang}/meetings`,
     },
     {
-      title: "Actions à suivre",
+      title: t("Actions à suivre"),
       value: dashboardMetrics.openActions,
-      description: "À faire ou en cours",
+      description: t("À faire ou en cours"),
       icon: ListChecks,
       tone: "amber",
       href: `/${lang}/actions`,
     },
     {
-      title: "Décisions adoptées",
+      title: t("Décisions adoptées"),
       value: dashboardMetrics.adoptedDecisions,
-      description: `Parmi ${dashboardDecisionTotal} décisions`,
+      description: t("Parmi {count} décisions", { count: dashboardDecisionTotal }),
       icon: CheckCircle2,
       tone: "emerald",
       href: `/${lang}/votes`,
     },
     {
-      title: "Notifications non lues",
+      title: t("Notifications non lues"),
       value: dashboardMetrics.unreadNotifications,
-      description: `${dashboardNotifications.length} notifications actives`,
+      description: t("{count} notifications actives", { count: dashboardNotifications.length }),
       icon: Bell,
       tone: "violet",
       href: `/${lang}/notifications`,
@@ -598,19 +611,18 @@ export function DashboardOverview({ lang }: DashboardProps) {
       <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-600 dark:text-indigo-400">
-            Département d'informatique
+            {t("Département d'informatique")}
           </p>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-            Tableau de bord
+            {t("Tableau de bord")}
           </h1>
           <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-            Vue d'ensemble des réunions, décisions et actions du comité
-            scientifique.
+            {t("Vue d'ensemble des réunions, décisions et actions du comité scientifique.")}
           </p>
         </div>
         <span className="inline-flex w-fit items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-700 dark:border-violet-900 dark:bg-violet-950/40 dark:text-violet-300">
           <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-          Activité du comité · novembre 2026
+          {t("Activité du comité · novembre 2026")}
         </span>
       </header>
 
@@ -627,14 +639,13 @@ export function DashboardOverview({ lang }: DashboardProps) {
           <div className="max-w-2xl space-y-3">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white/95">
               <CircleDot className="h-3.5 w-3.5" aria-hidden="true" />
-              Espace du comité scientifique
+              {t("Espace du comité scientifique")}
             </div>
             <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
-              Pilotez les activités du comité en un seul endroit.
+              {t("Pilotez les activités du comité en un seul endroit.")}
             </h2>
             <p className="max-w-xl text-sm leading-6 text-indigo-50">
-              Consultez les réunions à venir, suivez les décisions et gardez un
-              œil sur les actions prioritaires.
+              {t("Consultez les réunions à venir, suivez les décisions et gardez un œil sur les actions prioritaires.")}
             </p>
           </div>
           <Link
@@ -642,13 +653,13 @@ export function DashboardOverview({ lang }: DashboardProps) {
             className="inline-flex h-10 w-fit shrink-0 items-center justify-center gap-2 rounded-lg bg-white px-4 text-sm font-semibold text-indigo-700 shadow-sm transition-colors hover:bg-indigo-50"
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
-            Gérer les réunions
+            {t("Gérer les réunions")}
           </Link>
         </div>
       </div>
 
       <section
-        aria-label="Indicateurs principaux"
+        aria-label={t("Indicateurs principaux")}
         className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
       >
         {stats.map((stat) => (
@@ -685,11 +696,10 @@ export function DashboardOverview({ lang }: DashboardProps) {
 
       <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border/70 pt-4 text-xs text-muted-foreground">
         <span>
-          {dashboardMetrics.activeMembers} membres avec mandat en cours ·
-          Données fictives au 12 novembre 2026
+          {dashboardMetrics.activeMembers} {t("membres avec mandat en cours · Données fictives au 12 novembre 2026")}
         </span>
         <span>
-          Les changements des autres modules ne sont pas encore synchronisés.
+          {t("Les changements des autres modules ne sont pas encore synchronisés.")}
         </span>
       </footer>
     </main>

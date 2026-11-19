@@ -52,7 +52,7 @@ export default async function RootLayout(props: {
     <html lang={params.lang} dir={direction} suppressHydrationWarning>
       <body
         className={cn(
-          "[&:lang(en)]:font-lato [&:lang(ar)]:font-cairo", // Set font styles based on the language
+          "[&:lang(fr)]:font-lato [&:lang(en)]:font-lato [&:lang(ar)]:font-cairo", // Keep the existing family per script
           "bg-background text-foreground antialiased overscroll-none", // Set background, text, , anti-aliasing styles, and overscroll behavior
           latoFont.variable, // Include Lato font variable
           cairoFont.variable // Include Cairo font variable

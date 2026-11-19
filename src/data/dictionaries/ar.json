@@ -1,23 +1,23 @@
 {
   "navigation": {
-    "comitéScientifique": "Comité scientifique",
-    "tableauDeBord": "Tableau de bord",
-    "réunions": "Réunions",
-    "suiviDesActions": "Suivi des actions",
-    "modulesÀAdapter": "Modules à adapter",
-    "membres(prototype)": "Membres (prototype)",
-    "ordreDuJour(prototype)": "Ordre du jour (prototype)",
-    "votesEtRésultats": "Votes et résultats",
-    "procès-verbaux(prototype)": "Procès-verbaux (prototype)",
-    "documents(prototype)": "Documents (prototype)",
-    "statistiques": "Statistiques",
-    "communication": "Communication",
-    "e-mails": "E-mails",
-    "messagerie": "Messagerie",
-    "compte": "Compte",
-    "monProfil": "Mon profil",
-    "paramètres": "Paramètres",
-    "notifications": "Notifications",
+    "comitéScientifique": "اللجنة العلمية",
+    "tableauDeBord": "لوحة التحكم",
+    "réunions": "الاجتماعات",
+    "suiviDesActions": "متابعة الإجراءات",
+    "modulesÀAdapter": "الوحدات المطلوب تكييفها",
+    "membres(prototype)": "الأعضاء (نموذج أولي)",
+    "ordreDuJour(prototype)": "جدول الأعمال (نموذج أولي)",
+    "votesEtRésultats": "التصويت والنتائج",
+    "procès-verbaux(prototype)": "محاضر الاجتماعات (نموذج أولي)",
+    "documents(prototype)": "الوثائق (نموذج أولي)",
+    "statistiques": "الإحصائيات",
+    "communication": "التواصل",
+    "e-mails": "البريد الإلكتروني",
+    "messagerie": "الرسائل",
+    "compte": "الحساب",
+    "monProfil": "ملفي الشخصي",
+    "paramètres": "الإعدادات",
+    "notifications": "الإشعارات",
     "dashboards": "لوحات التحكم",
     "analytics": "التحليلات",
     "crm": "إدارة علاقات العملاء",
@@ -149,6 +149,7 @@
     "customers": "العملاء",
     "language": {
       "language": "اللغة",
+      "french": "الفرنسية",
       "english": "الإنجليزية",
       "arabic": "العربية"
     },
@@ -161,18 +162,22 @@
     "notification": {
       "notifications": "الإشعارات",
       "dismissAll": "إغلاق الكل",
-      "seeAllNotifications": "عرض جميع الإشعارات"
+      "seeAllNotifications": "عرض جميع الإشعارات",
+      "unread": "غير مقروءة",
+      "allUpToDate": "كل شيء محدث",
+      "markAllRead": "تحديد الكل كمقروء",
+      "empty": "لا توجد إشعارات بعد."
     },
     "userNav": {
       "profile": "الملف الشخصي",
       "settings": "الإعدادات",
       "signOut": "تسجيل الخروج"
     },
-    "membres": "Membres",
-    "ordreDuJour": "Ordre du jour",
-    "décisionsEtActions": "Décisions et actions",
-    "documents": "Documents",
-    "centreDeNotifications": "Notifications"
+    "membres": "الأعضاء",
+    "ordreDuJour": "جدول الأعمال",
+    "décisionsEtActions": "القرارات والإجراءات",
+    "documents": "الوثائق",
+    "centreDeNotifications": "الإشعارات"
   },
   "label": {
     "soon": "قريبًا",

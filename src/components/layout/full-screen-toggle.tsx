@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useParams } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { DynamicIcon } from "@/components/dynamic-icon"
@@ -22,6 +23,8 @@ declare global {
 
 export function FullscreenToggle() {
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const locale = (useParams().lang as string) || "fr"
+  const label = locale === "ar" ? "ملء الشاشة" : locale === "en" ? "Fullscreen" : "Plein écran"
 
   const toggleFullscreen = () => {
     const element = document.documentElement
@@ -87,7 +90,7 @@ export function FullscreenToggle() {
       variant="ghost"
       size="icon"
       onClick={toggleFullscreen}
-      aria-label="Toggle Fullscreen"
+      aria-label={label}
       className="hidden md:inline-flex"
     >
       <DynamicIcon

@@ -1,5 +1,15 @@
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
+## Langues
+
+L'interface est disponible en français, anglais et arabe :
+
+- `/fr` : français (langue par défaut)
+- `/en` : anglais
+- `/ar` : arabe, avec affichage RTL
+
+Le sélecteur de langue conserve la page courante et la préférence dans le cookie `settings`. Les textes du shell sont chargés depuis `src/data/dictionaries/`; les modules métier conservent leurs données fictives cohérentes avec le comité scientifique.
+
 ## Getting Started
 
 First, run the development server:

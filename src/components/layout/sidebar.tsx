@@ -133,7 +133,7 @@ export function Sidebar({ dictionary }: { dictionary: DictionaryType }) {
           onClick={() => isMobile && setOpenMobile(!openMobile)}
         >
           <Landmark className="me-2 size-5 text-indigo-600" aria-hidden="true" />
-          <span>Comité scientifique</span>
+          <span>{dictionary.navigation.comitéScientifique}</span>
         </Link>
         <CommandMenu dictionary={dictionary} buttonClassName="max-w-full" />
       </SidebarHeader>

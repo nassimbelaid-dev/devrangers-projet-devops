@@ -1,12 +1,15 @@
 "use client"
 
 import { PanelLeft } from "lucide-react"
+import { useParams } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { useSidebar } from "@/components/ui/sidebar"
 
 export function ToggleMobileSidebar() {
   const { isMobile, openMobile, setOpenMobile } = useSidebar()
+  const locale = (useParams().lang as string) || "fr"
+  const label = locale === "ar" ? "تبديل الشريط الجانبي" : locale === "en" ? "Toggle sidebar" : "Afficher la barre latérale"
 
   if (isMobile) {
     return (
@@ -15,7 +18,7 @@ export function ToggleMobileSidebar() {
         variant="ghost"
         size="icon"
         onClick={() => setOpenMobile(!openMobile)}
-        aria-label="Toggle Sidebar"
+        aria-label={label}
       >
         <PanelLeft className="h-4 w-4" />
       </Button>

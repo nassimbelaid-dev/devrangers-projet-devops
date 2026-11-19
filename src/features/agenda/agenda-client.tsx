@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { useDemoCollection, useDemoData } from "@/lib/demo-store"
+import { useUiText } from "@/features/ui-text"
 import { ArrowDown, ArrowUp, Check, Eye, FileText, ListOrdered, Pencil, Plus, RotateCcw, Search, X } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -21,19 +22,18 @@ import { AgendaForm } from "./agenda-form"
 import type { AgendaProposal, AgendaTab } from "./types"
 import { formatAgendaDate, makeAgendaId, memberLabel, moveValidatedPoint, sortAgenda } from "./utils"
 
-const tabs: { id: AgendaTab; title: string }[] = [
-  { id: "proposals", title: "À examiner" },
-  { id: "validated", title: "Ordre du jour validé" },
-  { id: "all", title: "Tous les points" },
-]
-
-function statusBadge(status: AgendaProposal["status"]) {
-  if (status === "Rejeté") return <Badge variant="destructive">Rejeté</Badge>
-  if (status === "Validé") return <Badge variant="secondary">Validé</Badge>
-  return <Badge variant="outline">Proposé</Badge>
-}
-
 export function AgendaClient() {
+  const t = useUiText()
+  const tabs: { id: AgendaTab; title: string }[] = [
+    { id: "proposals", title: t("À examiner") },
+    { id: "validated", title: t("Ordre du jour validé") },
+    { id: "all", title: t("Tous les points") },
+  ]
+  function statusBadge(status: AgendaProposal["status"]) {
+    if (status === "Rejeté") return <Badge variant="destructive">{t(status)}</Badge>
+    if (status === "Validé") return <Badge variant="secondary">{t(status)}</Badge>
+    return <Badge variant="outline">{t(status)}</Badge>
+  }
   const { meetings, members } = useDemoData()
   const committeeMembers = members
   const [items, setItems] = useDemoCollection("agenda")
@@ -131,7 +131,7 @@ export function AgendaClient() {
   function reject() {
     if (!president || !editableMeeting || !rejectedItem || rejectedItem.status !== "Proposé") return
     if (!rejectNote.trim()) {
-      setRejectError("Indiquez un motif pour expliquer le rejet au membre.")
+      setRejectError(t("Indiquez un motif pour expliquer le rejet au membre."))
       return
     }
     setItems((current) => current.map((item) => item.id === rejectedItem.id && item.status === "Proposé"
@@ -162,28 +162,28 @@ export function AgendaClient() {
     <div className="mx-auto max-w-6xl space-y-10 px-4 py-6 md:px-8 md:py-9">
       <header className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
         <div className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Comité scientifique</p>
-          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Ordres du jour</h1>
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("Comité scientifique")}</p>
+          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{t("Ordres du jour")}</h1>
           <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-            Proposez des sujets, examinez les demandes et organisez les points retenus pour chaque réunion.
+            {t("Proposez des sujets, examinez les demandes et organisez les points retenus pour chaque réunion.")}
           </p>
         </div>
         <Button onClick={openCreate} disabled={!editableMeeting} className="shrink-0">
-          <Plus className="mr-2 size-4" /> Proposer un point
+          <Plus className="mr-2 size-4" /> {t("Proposer un point")}
         </Button>
       </header>
 
       <div className="flex flex-col gap-5 border-y py-5 lg:flex-row lg:items-end lg:justify-between lg:gap-10">
         <div className="grid flex-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="agenda-meeting">Réunion</Label>
+            <Label htmlFor="agenda-meeting">{t("Réunion")}</Label>
             <Select value={meetingId} onValueChange={changeMeeting}>
               <SelectTrigger id="agenda-meeting" className="w-full"><SelectValue /></SelectTrigger>
               <SelectContent>{meetings.map((meeting) => <SelectItem key={meeting.id} value={meeting.id}>{meeting.title}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="agenda-actor">Profil actif</Label>
+            <Label htmlFor="agenda-actor">{t("Profil actif")}</Label>
             <Select value={actorId} onValueChange={setActorId}>
               <SelectTrigger id="agenda-actor" className="w-full"><SelectValue /></SelectTrigger>
               <SelectContent>{committeeMembers.map((member) => <SelectItem key={member.id} value={member.id}>
@@ -200,29 +200,29 @@ export function AgendaClient() {
 
       
       {!editableMeeting && <div className="rounded-lg border border-dashed px-5 py-4 text-sm text-muted-foreground">
-        Cette réunion est {currentMeeting.status.toLowerCase()}. Son ordre du jour est consultable, mais sa modification est désactivée dans son état actuel.
+        {t("Cette réunion est {status}. Son ordre du jour est consultable, mais sa modification est désactivée dans son état actuel.", { status: t(currentMeeting.status).toLowerCase() })}
       </div>}
 
       <div className="grid grid-cols-3 divide-x border-b pb-8">
-        <Metric label="À examiner" count={pending.length} />
-        <Metric label="Validés" count={validated.length} />
-        <Metric label="Rejetés" count={rejected.length} />
+        <Metric label={t("À examiner")} count={pending.length} />
+        <Metric label={t("Validés")} count={validated.length} />
+        <Metric label={t("Rejetés")} count={rejected.length} />
       </div>
 
       <section className="space-y-6">
         <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
           <div className="space-y-1">
-            <h2 className="text-lg font-semibold">Points de la réunion</h2>
-            <p className="text-sm text-muted-foreground">Examinez les propositions et consultez l'ordre du jour officiel.</p>
+            <h2 className="text-lg font-semibold">{t("Points de la réunion")}</h2>
+            <p className="text-sm text-muted-foreground">{t("Examinez les propositions et consultez l'ordre du jour officiel.")}</p>
           </div>
           <div className="relative w-full sm:max-w-sm">
             <Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-muted-foreground" />
-            <Input className="pl-9" aria-label="Rechercher un point" placeholder="Rechercher un point…"
+            <Input className="pl-9" aria-label={t("Rechercher un point")} placeholder={t("Rechercher un point…")}
               value={search} onChange={(event) => setSearch(event.target.value)} />
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Afficher les points">
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label={t("Afficher les points")}>
           {tabs.map((option) => <Button key={option.id} role="tab" aria-selected={tab === option.id}
             variant={tab === option.id ? "default" : "ghost"} size="sm" onClick={() => setTab(option.id)}>
             {option.title}{option.id === "proposals" ? ` (${pending.length})` : option.id === "validated" ? ` (${validated.length})` : ` (${currentItems.length})`}
@@ -232,9 +232,9 @@ export function AgendaClient() {
         <div className="overflow-hidden rounded-xl border bg-card">
           {visibleItems.length === 0 ? <div className="flex min-h-64 flex-col items-center justify-center gap-3 px-6 text-center">
             <ListOrdered className="size-8 text-muted-foreground/60" />
-            <h3 className="text-sm font-medium">Aucun point à afficher</h3>
+            <h3 className="text-sm font-medium">{t("Aucun point à afficher")}</h3>
             <p className="max-w-md text-sm leading-6 text-muted-foreground">
-              {search.trim() ? "Essayez une autre recherche." : tab === "proposals" ? "Les propositions à examiner apparaîtront ici." : tab === "validated" ? "Le président n'a pas encore validé de point." : "Aucun point pour cette réunion."}
+              {t(search.trim() ? "Essayez une autre recherche." : tab === "proposals" ? "Les propositions à examiner apparaîtront ici." : tab === "validated" ? "Le président n'a pas encore validé de point." : "Aucun point pour cette réunion.")}
             </p>
           </div> : <div className="divide-y">
             {visibleItems.map((item) => {
@@ -253,56 +253,56 @@ export function AgendaClient() {
                       <h3 className="text-sm font-semibold leading-6 md:text-base">{item.title}</h3>
                       {statusBadge(item.status)}
                     </div>
-                    <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">{item.description || "Aucune description renseignée."}</p>
+                    <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">{item.description || t("Aucune description renseignée.")}</p>
                     <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                       <span>{memberLabel(item.proposedById, committeeMembers)}</span>
                       <span>·</span><span>{formatAgendaDate(item.createdAt)}</span>
-                      {item.attachments.length > 0 && <><span>·</span><span>{item.attachments.length} pièce(s) jointe(s)</span></>}
+                      {item.attachments.length > 0 && <><span>·</span><span>{t("Pièces jointes")} ({item.attachments.length})</span></>}
                     </p>
                   </div>
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-1 self-end md:max-w-96 md:justify-end md:self-center">
                   {item.status === "Validé" && president && editableMeeting && <div className="mr-1 flex items-center">
-                    <Button variant="ghost" size="icon" title="Monter ce point" aria-label={`Monter ${item.title}`}
+                    <Button variant="ghost" size="icon" title={t("Monter ce point")} aria-label={t("Monter {title}", { title: item.title })}
                       disabled={rank === 0} onClick={() => move(item.id, -1)}><ArrowUp className="size-4" /></Button>
-                    <Button variant="ghost" size="icon" title="Descendre ce point" aria-label={`Descendre ${item.title}`}
+                    <Button variant="ghost" size="icon" title={t("Descendre ce point")} aria-label={t("Descendre {title}", { title: item.title })}
                       disabled={rank === validated.length - 1} onClick={() => move(item.id, 1)}><ArrowDown className="size-4" /></Button>
                   </div>}
                   <Button variant="ghost" size="sm" onClick={() => setDetailsId(item.id)}>
-                    <Eye className="mr-1.5 size-4" /> Voir
+                    <Eye className="mr-1.5 size-4" /> {t("Voir")}
                   </Button>
                   {canEdit && <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
-                    <Pencil className="mr-1.5 size-4" /> Modifier
+                    <Pencil className="mr-1.5 size-4" /> {t("Modifier")}
                   </Button>}
                   {canReview && <>
                     <Button variant="outline" size="sm" onClick={() => { setRejectId(item.id); setRejectNote(""); setRejectError("") }}>
-                      <X className="mr-1.5 size-4" /> Rejeter
+                      <X className="mr-1.5 size-4" /> {t("Rejeter")}
                     </Button>
                     <Button size="sm" onClick={() => approve(item.id)}>
-                      <Check className="mr-1.5 size-4" /> Valider
+                      <Check className="mr-1.5 size-4" /> {t("Valider")}
                     </Button>
                   </>}
                   {canReopen && <Button variant="outline" size="sm" onClick={() => reopen(item)}>
-                    <RotateCcw className="mr-1.5 size-4" /> {president ? "Réexaminer" : "Resoumettre"}
+                    <RotateCcw className="mr-1.5 size-4" /> {t(president ? "Réexaminer" : "Resoumettre")}
                   </Button>}
                 </div>
               </article>
             })}
           </div>}
           <div className="border-t px-6 py-3 text-xs text-muted-foreground">
-            {visibleItems.length} point(s) affiché(s) sur {currentItems.length} pour cette réunion.
+            {t("{count} point(s) affiché(s) sur {total} pour cette réunion.", { count: visibleItems.length, total: currentItems.length })}
           </div>
         </div>
       </section>
 
-      <section className="space-y-4 rounded-xl bg-muted/40 px-6 py-6 md:px-8" aria-label="Résumé de l'ordre du jour">
-        <div className="flex items-center gap-2"><ListOrdered className="size-5 text-muted-foreground" /><h2 className="font-semibold">Aperçu de l'ordre du jour validé</h2></div>
-        {validated.length === 0 ? <p className="text-sm text-muted-foreground">Aucun point validé pour cette réunion.</p> :
+      <section className="space-y-4 rounded-xl bg-muted/40 px-6 py-6 md:px-8" aria-label={t("Aperçu de l'ordre du jour validé")}>
+        <div className="flex items-center gap-2"><ListOrdered className="size-5 text-muted-foreground" /><h2 className="font-semibold">{t("Aperçu de l'ordre du jour validé")}</h2></div>
+        {validated.length === 0 ? <p className="text-sm text-muted-foreground">{t("Aucun point validé pour cette réunion.")}</p> :
           <ol className="space-y-3">{validated.map((item, index) => <li key={item.id} className="flex gap-4 text-sm leading-6">
             <span className="w-6 shrink-0 tabular-nums text-muted-foreground">{String(index + 1).padStart(2, "0")}</span>
             <span>{item.title}</span>
           </li>)}</ol>}
-        <p className="pt-2 text-xs leading-5 text-muted-foreground">Les points sont classés à l'aide des flèches (profil Président). Cet ordre est repris dans la fiche de la réunion.</p>
+        <p className="pt-2 text-xs leading-5 text-muted-foreground">{t("Les points sont classés à l'aide des flèches (profil Président). Cet ordre est repris dans la fiche de la réunion.")}</p>
       </section>
 
       {formOpen && <AgendaForm key={formVersion} open={formOpen} initial={editing}
@@ -313,19 +313,19 @@ export function AgendaClient() {
       <Dialog open={Boolean(rejectedItem)} onOpenChange={(open) => { if (!open) { setRejectId(null); setRejectError("") } }}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Rejeter la proposition</DialogTitle>
+            <DialogTitle>{t("Rejeter la proposition")}</DialogTitle>
             <DialogDescription>{rejectedItem?.title}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-4">
-            <Label htmlFor="agenda-rejection-note">Motif du rejet *</Label>
+            <Label htmlFor="agenda-rejection-note">{t("Motif du rejet *")}</Label>
             <Textarea id="agenda-rejection-note" rows={4} value={rejectNote} maxLength={600}
               onChange={(event) => { setRejectNote(event.target.value); setRejectError("") }}
-              placeholder="Précisez pourquoi ce sujet n'est pas retenu…" />
+              placeholder={t("Précisez pourquoi ce sujet n'est pas retenu…")} />
             {rejectError && <p role="alert" className="text-sm text-destructive">{rejectError}</p>}
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setRejectId(null)}>Annuler</Button>
-            <Button variant="destructive" onClick={reject}>Confirmer le rejet</Button>
+            <Button variant="outline" onClick={() => setRejectId(null)}>{t("Annuler")}</Button>
+            <Button variant="destructive" onClick={reject}>{t("Confirmer le rejet")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

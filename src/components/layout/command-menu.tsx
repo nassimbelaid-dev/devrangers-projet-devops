@@ -162,7 +162,7 @@ export function CommandMenu({
         <Keyboard className="ms-auto">K</Keyboard>
       </Button>
       <CommandDialog open={open} onOpenChange={setOpen} {...props}>
-        <DialogTitle className="sr-only">Search Menu</DialogTitle>
+        <DialogTitle className="sr-only">{dictionary.search.search}</DialogTitle>
         <CommandInput placeholder={dictionary.search.typeCommand} />
         <CommandList>
           <CommandEmpty>{dictionary.search.noResults}</CommandEmpty>

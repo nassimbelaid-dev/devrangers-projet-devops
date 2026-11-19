@@ -5,6 +5,10 @@ import listPlugin from "@fullcalendar/list"
 import FullCalendar from "@fullcalendar/react"
 import timeGridPlugin from "@fullcalendar/timegrid"
 import frLocale from "@fullcalendar/core/locales/fr"
+import enLocale from "@fullcalendar/core/locales/en-gb"
+import arLocale from "@fullcalendar/core/locales/ar"
+import { useParams } from "next/navigation"
+import { useUiText } from "@/features/ui-text"
 
 import type { Meeting } from "./types"
 
@@ -14,18 +18,21 @@ interface MeetingCalendarProps {
 }
 
 export function MeetingCalendar({ meetings, onSelectMeeting }: MeetingCalendarProps) {
+  const { lang } = useParams<{ lang: string }>()
+  const t = useUiText()
+  const locale = lang === "ar" ? arLocale : lang === "en" ? enLocale : frLocale
   return (
     <div className="overflow-x-auto p-4">
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, listPlugin]}
-        locale={frLocale}
+        locale={locale}
         initialView="dayGridMonth"
         headerToolbar={{
           left: "prev,next today",
           center: "title",
           right: "dayGridMonth,timeGridWeek,listWeek",
         }}
-        buttonText={{ month: "Mois", week: "Semaine", list: "Liste" }}
+        buttonText={{ today: t("Aujourd'hui"), month: t("Mois"), week: t("Semaine"), list: t("Liste") }}
         height="auto"
         dayMaxEvents={3}
         events={meetings.map((meeting) => ({

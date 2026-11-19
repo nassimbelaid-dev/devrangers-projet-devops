@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { useDemoCollection, useDemoData } from "@/lib/demo-store"
+import { useUiText } from "@/features/ui-text"
 import {
   CalendarClock, CheckCircle2, ClipboardCheck, Eye, LayoutGrid, List, Pencil, Plus,
   Search, Trash2, TriangleAlert,
@@ -34,12 +35,12 @@ const decisionFilters = ["Toutes les décisions", ...DECISION_STATUSES] as const
 
 type ToDelete = { kind: "decision" | "action"; id: string }
 
-function decisionBadge(status: DecisionStatus) {
-  return <Badge variant={status === "Rejetée" ? "destructive" : status === "Adoptée" ? "default" : "outline"}>{status}</Badge>
+function decisionBadge(status: DecisionStatus, t: (source: string) => string) {
+  return <Badge variant={status === "Rejetée" ? "destructive" : status === "Adoptée" ? "default" : "outline"}>{t(status)}</Badge>
 }
 
-function actionBadge(status: ActionStatus) {
-  return <Badge variant={status === "Terminée" ? "default" : status === "En cours" ? "secondary" : "outline"}>{status}</Badge>
+function actionBadge(status: ActionStatus, t: (source: string) => string) {
+  return <Badge variant={status === "Terminée" ? "default" : status === "En cours" ? "secondary" : "outline"}>{t(status)}</Badge>
 }
 
 function StatCard({ label, value, icon: Icon }: { label: string; value: number; icon: LucideIcon }) {
@@ -53,6 +54,7 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: number; 
 
 
 export function DecisionsActionsClient() {
+  const t = useUiText()
   const { meetings: linkedMeetings, members: linkedMembers } = useDemoData()
   const memberLabel = (id: string) => linkedMembers.find((member) => member.id === id)?.name ?? "Membre inconnu"
   const meetingLabel = (id: string) => linkedMeetings.find((meeting) => meeting.id === id)?.title ?? "Réunion inconnue"
@@ -111,7 +113,7 @@ export function DecisionsActionsClient() {
 
   function saveDecision(item: DecisionRecord): string | null {
     if (item.status !== "Adoptée" && actions.some((action) => action.decisionId === item.id)) {
-      return "Cette décision est liée à des actions. Elle doit rester adoptée ou ces actions doivent être dissociées."
+      return t("Cette décision est liée à des actions. Elle doit rester adoptée ou ces actions doivent être dissociées.")
     }
     setDecisions((current) => current.some((old) => old.id === item.id)
       ? current.map((old) => old.id === item.id ? item : old)
@@ -163,55 +165,55 @@ export function DecisionsActionsClient() {
     <div className="space-y-6 p-4 md:p-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Décisions et suivi des actions</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("Décisions et suivi des actions")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Consultez les décisions adoptées et suivez les responsabilités et les échéances sur un tableau Kanban.
+            {t("Consultez les décisions adoptées et suivez les responsabilités et les échéances sur un tableau Kanban.")}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => openDecisionForm()}><Plus className="mr-2 size-4" /> Décision</Button>
-          <Button onClick={() => openActionForm()}><Plus className="mr-2 size-4" /> Nouvelle action</Button>
+          <Button variant="outline" onClick={() => openDecisionForm()}><Plus className="mr-2 size-4" /> {t("Décision")}</Button>
+          <Button onClick={() => openActionForm()}><Plus className="mr-2 size-4" /> {t("Nouvelle action")}</Button>
         </div>
       </div>
 
       
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Décisions adoptées" value={decisions.filter((item) => item.status === "Adoptée").length} icon={ClipboardCheck} />
-        <StatCard label="Actions en cours" value={ongoing} icon={CalendarClock} />
-        <StatCard label="Actions terminées" value={completed} icon={CheckCircle2} />
-        <StatCard label="Actions en retard" value={overdue} icon={TriangleAlert} />
+        <StatCard label={t("Décisions adoptées")} value={decisions.filter((item) => item.status === "Adoptée").length} icon={ClipboardCheck} />
+        <StatCard label={t("Actions en cours")} value={ongoing} icon={CalendarClock} />
+        <StatCard label={t("Actions terminées")} value={completed} icon={CheckCircle2} />
+        <StatCard label={t("Actions en retard")} value={overdue} icon={TriangleAlert} />
       </div>
 
       <Card>
         <div className="flex flex-col justify-between gap-3 border-b p-4 lg:flex-row lg:items-center">
           <div className="flex flex-wrap gap-2">
             <Button size="sm" variant={view === "kanban" ? "default" : "outline"} onClick={() => changeTab("kanban")}>
-              <LayoutGrid className="mr-2 size-4" /> Kanban
+              <LayoutGrid className="mr-2 size-4" /> {t("Kanban")}
             </Button>
             <Button size="sm" variant={view === "list" ? "default" : "outline"} onClick={() => changeTab("list")}>
-              <List className="mr-2 size-4" /> Liste des actions
+              <List className="mr-2 size-4" /> {t("Liste des actions")}
             </Button>
             <Button size="sm" variant={view === "decisions" ? "default" : "outline"} onClick={() => changeTab("decisions")}>
-              <ClipboardCheck className="mr-2 size-4" /> Décisions
+              <ClipboardCheck className="mr-2 size-4" /> {t("Décisions")}
             </Button>
           </div>
           <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
             <div className="relative sm:min-w-64">
               <Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-muted-foreground" />
               <Input className="pl-9" value={search} onChange={(event) => setSearch(event.target.value)}
-                placeholder={view === "decisions" ? "Chercher une décision..." : "Chercher une action..."}
-                aria-label="Rechercher" />
+                placeholder={t(view === "decisions" ? "Chercher une décision..." : "Chercher une action...")}
+                aria-label={t("Rechercher")} />
             </div>
             {view === "decisions" ? (
               <Select value={decisionFilter} onValueChange={(value) => setDecisionFilter(value as (typeof decisionFilters)[number])}>
                 <SelectTrigger className="sm:w-48"><SelectValue /></SelectTrigger>
-                <SelectContent>{decisionFilters.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}</SelectContent>
+                <SelectContent>{decisionFilters.map((status) => <SelectItem key={status} value={status}>{t(status)}</SelectItem>)}</SelectContent>
               </Select>
             ) : (
               <Select value={priorityFilter} onValueChange={(value) => setPriorityFilter(value as (typeof actionFilters)[number])}>
                 <SelectTrigger className="sm:w-48"><SelectValue /></SelectTrigger>
-                <SelectContent>{actionFilters.map((priority) => <SelectItem key={priority} value={priority}>{priority}</SelectItem>)}</SelectContent>
+                <SelectContent>{actionFilters.map((priority) => <SelectItem key={priority} value={priority}>{t(priority)}</SelectItem>)}</SelectContent>
               </Select>
             )}
           </div>
@@ -229,12 +231,12 @@ export function DecisionsActionsClient() {
           <div className="overflow-x-auto">
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Action</TableHead><TableHead>Décision</TableHead><TableHead>Responsable</TableHead>
-                <TableHead>Échéance</TableHead><TableHead>Priorité</TableHead><TableHead>Statut</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t("Action")}</TableHead><TableHead>{t("Décision")}</TableHead><TableHead>{t("Responsable")}</TableHead>
+                <TableHead>{t("Échéance")}</TableHead><TableHead>{t("Priorité")}</TableHead><TableHead>{t("Statut")}</TableHead>
+                <TableHead className="text-right">{t("Actions")}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {filteredActions.length === 0 ? <TableRow><TableCell colSpan={7} className="py-12 text-center text-muted-foreground">Aucune action trouvée.</TableCell></TableRow>
+                {filteredActions.length === 0 ? <TableRow><TableCell colSpan={7} className="py-12 text-center text-muted-foreground">{t("Aucune action trouvée.")}</TableCell></TableRow>
                   : filteredActions.map((action) => {
                     const linked = decisions.find((decision) => decision.id === action.decisionId)
                     return <TableRow key={action.id}>
@@ -242,20 +244,20 @@ export function DecisionsActionsClient() {
                       <TableCell className="whitespace-nowrap">{linked?.reference ?? "—"}</TableCell>
                       <TableCell className="whitespace-nowrap">{memberLabel(action.assigneeId)}</TableCell>
                       <TableCell className={`whitespace-nowrap ${isOverdue(action, today) ? "font-medium text-destructive" : ""}`}>
-                        {formatDate(action.dueDate)}{isOverdue(action, today) ? " · Retard" : ""}
+                        {formatDate(action.dueDate)}{isOverdue(action, today) ? ` · ${t("Retard")}` : ""}
                       </TableCell>
-                      <TableCell><Badge variant={action.priority === "Haute" ? "destructive" : "outline"}>{action.priority}</Badge></TableCell>
-                      <TableCell>{actionBadge(action.status)}</TableCell>
+                      <TableCell><Badge variant={action.priority === "Haute" ? "destructive" : "outline"}>{t(action.priority)}</Badge></TableCell>
+                      <TableCell>{actionBadge(action.status, t)}</TableCell>
                       <TableCell><div className="flex justify-end gap-1">
-                        <Button size="icon" variant="ghost" aria-label="Voir l'action" onClick={() => setDetailActionId(action.id)}><Eye className="size-4" /></Button>
-                        <Button size="icon" variant="ghost" aria-label="Modifier l'action" onClick={() => openActionForm(action)}><Pencil className="size-4" /></Button>
-                        <Button size="icon" variant="ghost" aria-label="Supprimer l'action" onClick={() => setToDelete({ kind: "action", id: action.id })}><Trash2 className="size-4" /></Button>
+                        <Button size="icon" variant="ghost" aria-label={t("Voir l'action")} onClick={() => setDetailActionId(action.id)}><Eye className="size-4" /></Button>
+                        <Button size="icon" variant="ghost" aria-label={t("Modifier l'action")} onClick={() => openActionForm(action)}><Pencil className="size-4" /></Button>
+                        <Button size="icon" variant="ghost" aria-label={t("Supprimer l'action")} onClick={() => setToDelete({ kind: "action", id: action.id })}><Trash2 className="size-4" /></Button>
                       </div></TableCell>
                     </TableRow>
                   })}
               </TableBody>
             </Table>
-            <p className="p-4 text-xs text-muted-foreground">{filteredActions.length} action(s) affichée(s) sur {actions.length}.</p>
+            <p className="p-4 text-xs text-muted-foreground">{t("{count} action(s) affichée(s) sur {total}.", { count: filteredActions.length, total: actions.length })}</p>
           </div>
         )}
 
@@ -263,28 +265,28 @@ export function DecisionsActionsClient() {
           <div className="overflow-x-auto">
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Référence</TableHead><TableHead>Décision</TableHead><TableHead>Réunion</TableHead>
-                <TableHead>Date</TableHead><TableHead>Actions liées</TableHead><TableHead>Statut</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t("Référence")}</TableHead><TableHead>{t("Décision")}</TableHead><TableHead>{t("Réunion")}</TableHead>
+                <TableHead>{t("Date")}</TableHead><TableHead>{t("Actions liées")}</TableHead><TableHead>{t("Statut")}</TableHead>
+                <TableHead className="text-right">{t("Actions")}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {filteredDecisions.length === 0 ? <TableRow><TableCell colSpan={7} className="py-12 text-center text-muted-foreground">Aucune décision trouvée.</TableCell></TableRow>
+                {filteredDecisions.length === 0 ? <TableRow><TableCell colSpan={7} className="py-12 text-center text-muted-foreground">{t("Aucune décision trouvée.")}</TableCell></TableRow>
                   : filteredDecisions.map((decision) => <TableRow key={decision.id}>
                     <TableCell className="whitespace-nowrap font-mono text-xs">{decision.reference}</TableCell>
                     <TableCell className="min-w-56 font-medium">{decision.title}</TableCell>
                     <TableCell className="min-w-40 text-sm">{meetingLabel(decision.meetingId)}</TableCell>
                     <TableCell className="whitespace-nowrap">{formatDate(decision.date)}</TableCell>
                     <TableCell>{actions.filter((action) => action.decisionId === decision.id).length}</TableCell>
-                    <TableCell>{decisionBadge(decision.status)}</TableCell>
+                    <TableCell>{decisionBadge(decision.status, t)}</TableCell>
                     <TableCell><div className="flex justify-end gap-1">
-                      <Button size="icon" variant="ghost" aria-label="Voir la décision" onClick={() => setDetailDecisionId(decision.id)}><Eye className="size-4" /></Button>
-                      <Button size="icon" variant="ghost" aria-label="Modifier la décision" onClick={() => openDecisionForm(decision)}><Pencil className="size-4" /></Button>
-                      <Button size="icon" variant="ghost" aria-label="Supprimer la décision" onClick={() => setToDelete({ kind: "decision", id: decision.id })}><Trash2 className="size-4" /></Button>
+                      <Button size="icon" variant="ghost" aria-label={t("Voir la décision")} onClick={() => setDetailDecisionId(decision.id)}><Eye className="size-4" /></Button>
+                      <Button size="icon" variant="ghost" aria-label={t("Modifier la décision")} onClick={() => openDecisionForm(decision)}><Pencil className="size-4" /></Button>
+                      <Button size="icon" variant="ghost" aria-label={t("Supprimer la décision")} onClick={() => setToDelete({ kind: "decision", id: decision.id })}><Trash2 className="size-4" /></Button>
                     </div></TableCell>
                   </TableRow>)}
               </TableBody>
             </Table>
-            <p className="p-4 text-xs text-muted-foreground">{filteredDecisions.length} décision(s) affichée(s) sur {decisions.length}.</p>
+            <p className="p-4 text-xs text-muted-foreground">{t("{count} décision(s) affichée(s) sur {total}.", { count: filteredDecisions.length, total: decisions.length })}</p>
           </div>
         )}
       </Card>
@@ -299,28 +301,28 @@ export function DecisionsActionsClient() {
       <Dialog open={Boolean(selectedDecision)} onOpenChange={(open) => { if (!open) setDetailDecisionId(null) }}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
           <DialogHeader><DialogTitle>{selectedDecision?.reference} — {selectedDecision?.title}</DialogTitle>
-            <DialogDescription>Détails de la décision et actions de suivi associées.</DialogDescription></DialogHeader>
+            <DialogDescription>{t("Détails de la décision et actions de suivi associées.")}</DialogDescription></DialogHeader>
           {selectedDecision && <div className="space-y-4 text-sm">
-            <div className="flex flex-wrap items-center gap-2">{decisionBadge(selectedDecision.status)}
+            <div className="flex flex-wrap items-center gap-2">{decisionBadge(selectedDecision.status, t)}
               <span className="text-muted-foreground">{formatDate(selectedDecision.date)}</span></div>
-            <div><p className="font-medium">Réunion associée</p><p className="mt-1 text-muted-foreground">{meetingLabel(selectedDecision.meetingId)}</p></div>
-            <div><p className="font-medium">Description</p><p className="mt-1 whitespace-pre-wrap text-muted-foreground">{selectedDecision.description || "Aucune description."}</p></div>
+            <div><p className="font-medium">{t("Réunion associée")}</p><p className="mt-1 text-muted-foreground">{meetingLabel(selectedDecision.meetingId)}</p></div>
+            <div><p className="font-medium">{t("Description")}</p><p className="mt-1 whitespace-pre-wrap text-muted-foreground">{selectedDecision.description || t("Aucune description.")}</p></div>
             <div className="space-y-2 border-t pt-4">
-              <p className="font-medium">Actions de suivi ({actions.filter((item) => item.decisionId === selectedDecision.id).length})</p>
-              {actions.filter((item) => item.decisionId === selectedDecision.id).length === 0 && <p className="text-muted-foreground">Aucune action associée.</p>}
+              <p className="font-medium">{t("Actions de suivi")} ({actions.filter((item) => item.decisionId === selectedDecision.id).length})</p>
+              {actions.filter((item) => item.decisionId === selectedDecision.id).length === 0 && <p className="text-muted-foreground">{t("Aucune action associée.")}</p>}
               {actions.filter((item) => item.decisionId === selectedDecision.id).map((action) => (
                 <div key={action.id} className="flex items-center justify-between gap-2 rounded-lg border p-3">
                   <div className="min-w-0"><p className="font-medium">{action.title}</p>
                     <p className="text-xs text-muted-foreground">{memberLabel(action.assigneeId)} · {formatDate(action.dueDate)}</p></div>
-                  {actionBadge(action.status)}
+                  {actionBadge(action.status, t)}
                 </div>
               ))}
             </div>
           </div>}
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setDetailDecisionId(null)}>Fermer</Button>
+            <Button variant="outline" onClick={() => setDetailDecisionId(null)}>{t("Fermer")}</Button>
             {selectedDecision?.status === "Adoptée" && <Button onClick={() => openActionForm(null, "À faire", selectedDecision.id)}>
-              <Plus className="mr-2 size-4" /> Ajouter une action
+              <Plus className="mr-2 size-4" /> {t("Ajouter une action")}
             </Button>}
           </DialogFooter>
         </DialogContent>
@@ -329,36 +331,36 @@ export function DecisionsActionsClient() {
       <Dialog open={Boolean(selectedAction)} onOpenChange={(open) => { if (!open) setDetailActionId(null) }}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader><DialogTitle>{selectedAction?.title}</DialogTitle>
-            <DialogDescription>Détails de l'action et de son avancement.</DialogDescription></DialogHeader>
+            <DialogDescription>{t("Détails de l'action et de son avancement.")}</DialogDescription></DialogHeader>
           {selectedAction && <div className="space-y-4 text-sm">
-            <div className="flex flex-wrap gap-2">{actionBadge(selectedAction.status)}
-              <Badge variant={selectedAction.priority === "Haute" ? "destructive" : "outline"}>Priorité {selectedAction.priority.toLowerCase()}</Badge></div>
-            <div><p className="font-medium">Description</p><p className="mt-1 whitespace-pre-wrap text-muted-foreground">{selectedAction.description || "Aucune description."}</p></div>
+            <div className="flex flex-wrap gap-2">{actionBadge(selectedAction.status, t)}
+              <Badge variant={selectedAction.priority === "Haute" ? "destructive" : "outline"}>{t("Priorité")} {t(selectedAction.priority)}</Badge></div>
+            <div><p className="font-medium">{t("Description")}</p><p className="mt-1 whitespace-pre-wrap text-muted-foreground">{selectedAction.description || t("Aucune description.")}</p></div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div><p className="font-medium">Responsable</p><p className="mt-1 text-muted-foreground">{memberLabel(selectedAction.assigneeId)}</p></div>
-              <div><p className="font-medium">Échéance</p><p className="mt-1 text-muted-foreground">{formatDate(selectedAction.dueDate)}</p></div>
+              <div><p className="font-medium">{t("Responsable")}</p><p className="mt-1 text-muted-foreground">{memberLabel(selectedAction.assigneeId)}</p></div>
+              <div><p className="font-medium">{t("Échéance")}</p><p className="mt-1 text-muted-foreground">{formatDate(selectedAction.dueDate)}</p></div>
             </div>
-            <div><p className="font-medium">Décision rattachée</p>
-              <p className="mt-1 text-muted-foreground">{decisions.find((item) => item.id === selectedAction.decisionId)?.reference ?? "Aucune"}</p></div>
+            <div><p className="font-medium">{t("Décision rattachée")}</p>
+              <p className="mt-1 text-muted-foreground">{decisions.find((item) => item.id === selectedAction.decisionId)?.reference ?? t("Aucune")}</p></div>
           </div>}
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setDetailActionId(null)}>Fermer</Button>
-            {selectedAction && <Button onClick={() => openActionForm(selectedAction)}><Pencil className="mr-2 size-4" /> Modifier</Button>}
+            <Button variant="outline" onClick={() => setDetailActionId(null)}>{t("Fermer")}</Button>
+            {selectedAction && <Button onClick={() => openActionForm(selectedAction)}><Pencil className="mr-2 size-4" /> {t("Modifier")}</Button>}
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={Boolean(toDelete)} onOpenChange={(open) => { if (!open) setToDelete(null) }}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Confirmer la suppression ?</DialogTitle>
+          <DialogHeader><DialogTitle>{t("Confirmer la suppression ?")}</DialogTitle>
             <DialogDescription>
-              {deleteDecision ? `Supprimer la décision ${deleteDecision.reference} ?` : deleteAction ? `Supprimer l'action « ${deleteAction.title} » ?` : ""}
-              {dependentActionCount > 0 && ` Cette décision comporte ${dependentActionCount} action(s) liée(s). Dissocie ou supprime-les avant de supprimer cette décision.`}
-              {dependentActionCount === 0 && " L'opération est uniquement locale et peut être annulée en rechargeant la page."}
+              {deleteDecision ? t("Supprimer la décision {reference} ?", { reference: deleteDecision.reference }) : deleteAction ? t("Supprimer l'action « {title} » ?", { title: deleteAction.title }) : ""}
+              {dependentActionCount > 0 && ` ${t("Cette décision comporte {count} action(s) liée(s). Dissocie ou supprime-les avant de supprimer cette décision.", { count: dependentActionCount })}`}
+              {dependentActionCount === 0 && ` ${t("L'opération est uniquement locale et peut être annulée en rechargeant la page.")}`}
             </DialogDescription></DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setToDelete(null)}>Annuler</Button>
-            <Button variant="destructive" disabled={dependentActionCount > 0} onClick={confirmDelete}>Supprimer</Button>
+            <Button variant="outline" onClick={() => setToDelete(null)}>{t("Annuler")}</Button>
+            <Button variant="destructive" disabled={dependentActionCount > 0} onClick={confirmDelete}>{t("Supprimer")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

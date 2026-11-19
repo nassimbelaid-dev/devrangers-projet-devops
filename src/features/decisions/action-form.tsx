@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ACTION_PRIORITIES, ACTION_STATUSES } from "./types"
+import { useUiText } from "@/features/ui-text"
 import type { ActionPriority, ActionRecord, ActionStatus, DecisionRecord } from "./types"
 
 interface ActionFormProps {
@@ -37,6 +38,7 @@ function blankAction(defaultStatus: ActionStatus, defaultDecisionId: string): Ac
 }
 
 export function ActionForm({ open, initial, decisions, defaultStatus, defaultDecisionId, onOpenChange, onSave }: ActionFormProps) {
+  const t = useUiText()
   const { members } = useDemoData()
   const [form, setForm] = useState<ActionRecord>(() => initial ? { ...initial } : blankAction(defaultStatus, defaultDecisionId))
   const [error, setError] = useState("")
@@ -49,7 +51,7 @@ export function ActionForm({ open, initial, decisions, defaultStatus, defaultDec
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!form.title.trim() || !form.assigneeId || !form.dueDate) {
-      setError("Le titre, le responsable et l'échéance sont obligatoires.")
+      setError(t("Le titre, le responsable et l'échéance sont obligatoires."))
       return
     }
     onSave({ ...form, title: form.title.trim(), description: form.description.trim() })
@@ -60,28 +62,28 @@ export function ActionForm({ open, initial, decisions, defaultStatus, defaultDec
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85dvh] overflow-y-auto w-[calc(100vw-2rem)] sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{initial ? "Modifier l'action" : "Nouvelle action"}</DialogTitle>
+          <DialogTitle>{t(initial ? "Modifier l'action" : "Nouvelle action")}</DialogTitle>
           <DialogDescription>
-            Attribuez une responsabilité, une échéance et un statut. Les changements sont locaux à cette page.
+            {t("Attribuez une responsabilité, une échéance et un statut. Les changements sont locaux à cette page.")}
           </DialogDescription>
         </DialogHeader>
         <form className="space-y-4" onSubmit={submit}>
           <div className="space-y-2">
-            <Label htmlFor="action-title">Intitulé de l'action *</Label>
+            <Label htmlFor="action-title">{t("Intitulé de l'action *")}</Label>
             <Input id="action-title" value={form.title} onChange={(event) => change("title", event.target.value)}
-              placeholder="Ex. Préparer la synthèse du rapport" maxLength={160} />
+              placeholder={t("Ex. Préparer la synthèse du rapport")} maxLength={160} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="action-description">Description</Label>
+            <Label htmlFor="action-description">{t("Description")}</Label>
             <Textarea id="action-description" rows={3} value={form.description}
               onChange={(event) => change("description", event.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="action-decision">Décision associée (facultatif)</Label>
+            <Label htmlFor="action-decision">{t("Décision associée (facultatif)")}</Label>
             <Select value={form.decisionId || "none"} onValueChange={(value) => change("decisionId", value === "none" ? "" : value)}>
-              <SelectTrigger id="action-decision"><SelectValue placeholder="Sans décision associée" /></SelectTrigger>
+              <SelectTrigger id="action-decision"><SelectValue placeholder={t("Sans décision associée")} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Sans décision associée</SelectItem>
+                <SelectItem value="none">{t("Sans décision associée")}</SelectItem>
                 {decisions.filter((decision) => decision.status === "Adoptée" || decision.id === form.decisionId)
                   .map((decision) => (
                     <SelectItem key={decision.id} value={decision.id}>
@@ -93,44 +95,44 @@ export function ActionForm({ open, initial, decisions, defaultStatus, defaultDec
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="action-assignee">Responsable *</Label>
+              <Label htmlFor="action-assignee">{t("Responsable *")}</Label>
               <Select value={form.assigneeId} onValueChange={(value) => change("assigneeId", value)}>
-                <SelectTrigger id="action-assignee"><SelectValue placeholder="Sélectionner un membre" /></SelectTrigger>
+                <SelectTrigger id="action-assignee"><SelectValue placeholder={t("Sélectionner un membre")} /></SelectTrigger>
                 <SelectContent>
                   {members.map((member) => <SelectItem key={member.id} value={member.id}>{member.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="action-date">Échéance *</Label>
+              <Label htmlFor="action-date">{t("Échéance *")}</Label>
               <Input id="action-date" type="date" value={form.dueDate}
                 onChange={(event) => change("dueDate", event.target.value)} />
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="action-priority">Priorité</Label>
+              <Label htmlFor="action-priority">{t("Priorité")}</Label>
               <Select value={form.priority} onValueChange={(value) => change("priority", value as ActionPriority)}>
                 <SelectTrigger id="action-priority"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {ACTION_PRIORITIES.map((priority) => <SelectItem key={priority} value={priority}>{priority}</SelectItem>)}
+                  {ACTION_PRIORITIES.map((priority) => <SelectItem key={priority} value={priority}>{t(priority)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="action-status">État d'avancement</Label>
+              <Label htmlFor="action-status">{t("État d'avancement")}</Label>
               <Select value={form.status} onValueChange={(value) => change("status", value as ActionStatus)}>
                 <SelectTrigger id="action-status"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {ACTION_STATUSES.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
+                  {ACTION_STATUSES.map((status) => <SelectItem key={status} value={status}>{t(status)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
           </div>
           {error && <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
-            <Button type="submit">{initial ? "Enregistrer" : "Créer l'action"}</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("Annuler")}</Button>
+            <Button type="submit">{t(initial ? "Enregistrer" : "Créer l'action")}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

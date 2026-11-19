@@ -101,7 +101,7 @@ export function ratingToPercentage(
 
 export function formatCurrency(
   value: number,
-  locales: LocaleType = "en",
+  locales: LocaleType = "fr",
   currency: string = "USD"
 ) {
   return new Intl.NumberFormat(locales, {
@@ -111,7 +111,7 @@ export function formatCurrency(
   }).format(value)
 }
 
-export function formatPercent(value: number, locales: LocaleType = "en") {
+export function formatPercent(value: number, locales: LocaleType = "fr") {
   return new Intl.NumberFormat(locales, {
     style: "percent",
     maximumFractionDigits: 0,
@@ -195,7 +195,7 @@ export function formatDistance(value: string | number | Date) {
 
 export function formatNumberToCompact(
   value: number,
-  locales: LocaleType = "en"
+  locales: LocaleType = "fr"
 ) {
   return new Intl.NumberFormat(locales, {
     notation: "compact",
@@ -319,7 +319,7 @@ export function formatOverviewCardValue(
     case "currency":
       return formatCurrency(value)
     default:
-      return value.toLocaleString("en", {
+      return value.toLocaleString("fr", {
         maximumFractionDigits: 0,
       })
   }
