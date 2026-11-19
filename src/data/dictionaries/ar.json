@@ -187,5 +187,14 @@
     "search": "أبحث...",
     "noResults": "لم يتم العثور على نتائج.",
     "typeCommand": "اكتب أمرًا أو ابحث..."
+  },
+  "auth": {
+    "signIn": "تسجيل الدخول",
+    "email": "عنوان البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "submit": "دخول",
+    "invalidCredentials": "عنوان البريد الإلكتروني أو كلمة المرور غير صحيحة.",
+    "demoDescription": "تسجيل دخول تجريبي ثابت للجنة العلمية.",
+    "credentialsHint": "حساب تجريبي: admin@comite.test · Comite2026"
   }
 }

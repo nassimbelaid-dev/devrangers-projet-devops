@@ -10,6 +10,15 @@ L'interface est disponible en français, anglais et arabe :
 
 Le sélecteur de langue conserve la page courante et la préférence dans le cookie `settings`. Les textes du shell sont chargés depuis `src/data/dictionaries/`; les modules métier conservent leurs données fictives cohérentes avec le comité scientifique.
 
+## Authentification de démonstration
+
+L'authentification actuelle est entièrement statique et locale au navigateur. Elle ne contacte aucun backend et ne remplace pas une authentification de production.
+
+- Adresse : `admin@comite.test`
+- Mot de passe : `Comite2026`
+
+La déconnexion est disponible dans le menu utilisateur. La session de démonstration est conservée pendant sept jours dans le navigateur.
+
 ## Getting Started
 
 First, run the development server:

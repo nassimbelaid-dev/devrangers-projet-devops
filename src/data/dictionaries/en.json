@@ -187,5 +187,14 @@
     "search": "Search...",
     "noResults": "No results found.",
     "typeCommand": "Type a command or search..."
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "email": "Email address",
+    "password": "Password",
+    "submit": "Sign in",
+    "invalidCredentials": "Incorrect email address or password.",
+    "demoDescription": "Static demo sign-in for the scientific committee.",
+    "credentialsHint": "Demo account: admin@comite.test · Comite2026"
   }
 }

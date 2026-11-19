@@ -186,5 +186,14 @@
     "search": "Rechercher...",
     "noResults": "Aucun résultat.",
     "typeCommand": "Saisissez une commande ou recherchez..."
+  },
+  "auth": {
+    "signIn": "Connexion",
+    "email": "Adresse e-mail",
+    "password": "Mot de passe",
+    "submit": "Se connecter",
+    "invalidCredentials": "Adresse e-mail ou mot de passe incorrect.",
+    "demoDescription": "Connexion statique de démonstration du comité scientifique.",
+    "credentialsHint": "Compte de démonstration : admin@comite.test · Comite2026"
   }
 }
