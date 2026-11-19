@@ -12,6 +12,7 @@ export const navigationsData: NavigationType[] = [
       { title: "Décisions et actions", href: "/actions", iconName: "Grid2x2" },
       { title: "Documents", href: "/documents", iconName: "FolderOpen" },
       { title: "Centre de notifications", href: "/notifications", iconName: "Bell" },
+      { title: "Utilisateurs", href: "/users", iconName: "UserCog" },
     ],
   },
   {

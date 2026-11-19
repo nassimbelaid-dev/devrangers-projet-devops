@@ -17,6 +17,7 @@ import { CreateBallotDialog } from "./create-ballot-dialog"
 import { ResultsPanel } from "./results-panel"
 import type { BallotSession, VoteChoice } from "./types"
 import { calculateBallot, removeStaleVotes, seatRepresentations } from "./utils"
+import { hasPermission, useStaticAuth } from "@/lib/static-auth"
 
 const readableDate = (date: string) => date
   ? new Date(`${date}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
@@ -24,6 +25,9 @@ const readableDate = (date: string) => date
 
 export function VotesClient() {
   const t = useUiText()
+  const { user } = useStaticAuth()
+  const canVote = hasPermission(user, "votes", "vote") && Boolean(user?.memberId)
+  const canManageBallot = hasPermission(user, "votes", "approve")
   const { meetings, members, decisions } = useDemoData()
   const decisionById = (id: string): DecisionRecord | undefined => decisions.find((item) => item.id === id)
   const meetingById = (id: string) => meetings.find((item) => item.id === id)
@@ -61,6 +65,7 @@ export function VotesClient() {
   }
 
   function changePresence(memberId: string, isPresent: boolean) {
+    if (!user || (user.role !== "president" && user.memberId !== memberId)) return
     updateSelected((ballot) => {
       if (ballot.state === "Clôturé") return ballot
       const newPresence = isPresent
@@ -72,6 +77,7 @@ export function VotesClient() {
   }
 
   function changeVote(seatId: string, memberId: string, choice: VoteChoice | null) {
+    if (!canVote || user?.memberId !== memberId) return
     updateSelected((ballot) => {
       if (ballot.state === "Clôturé") return ballot
       const seats = seatRepresentations(members, committeeSeats, meetingDateFor(ballot.decisionId), ballot.presentMemberIds)
@@ -84,6 +90,7 @@ export function VotesClient() {
   }
 
   function createBallot(decisionId: string) {
+    if (!canManageBallot) return
     if (!availableDecisions.some((item) => item.id === decisionId)) return
     const id = `vote-${Date.now()}`
     const newBallot: BallotSession = {
@@ -108,9 +115,9 @@ export function VotesClient() {
           </p>
           
         </div>
-        <Button onClick={() => setCreateOpen(true)} className="shrink-0">
+        {canManageBallot && <Button onClick={() => setCreateOpen(true)} className="shrink-0">
           <Plus className="mr-2 size-4" /> {t("Nouveau scrutin")}
-        </Button>
+        </Button>}
       </header>
 
       {/* Chiffres utiles, présentés sans succession de cartes. */}
@@ -181,18 +188,18 @@ export function VotesClient() {
               <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground"><CalendarDays className="size-4" />{meeting?.title ?? t("Réunion inconnue")} · {readableDate(meeting?.date ?? "")}</p>
             </div>
             <div className="flex flex-wrap gap-2 lg:justify-end">
-              {selected.state === "Ouvert" ? (
+              {canManageBallot && selected.state === "Ouvert" ? (
                 <>
                   <Button variant="outline" onClick={() => updateSelected((ballot) => ({ ...ballot, votes: {} }))}>
                     <RotateCcw className="mr-2 size-4" /> {t("Effacer les votes")}
                   </Button>
                   <Button onClick={() => setCloseOpen(true)}><LockKeyhole className="mr-2 size-4" /> {t("Clôturer")}</Button>
                 </>
-              ) : (
+              ) : canManageBallot ? (
                 <Button variant="outline" onClick={() => updateSelected((ballot) => ({ ...ballot, state: "Ouvert" }))}>
                   <LockOpen className="mr-2 size-4" /> {t("Rouvrir le scrutin")}
                 </Button>
-              )}
+              ) : null}
             </div>
           </div>
 
@@ -213,7 +220,7 @@ export function VotesClient() {
               </div>
               <div className="space-y-2 lg:text-right">
                 <label htmlFor="quorum-percentage" className="block text-xs font-medium text-muted-foreground">{t("Seuil requis")}</label>
-                <Select value={String(selected.quorumPercent)} disabled={selected.state === "Clôturé"} onValueChange={(value) => updateSelected((ballot) => ({ ...ballot, quorumPercent: Number(value) }))}>
+                <Select value={String(selected.quorumPercent)} disabled={!canManageBallot || selected.state === "Clôturé"} onValueChange={(value) => { if (canManageBallot) updateSelected((ballot) => ({ ...ballot, quorumPercent: Number(value) })) }}>
                   <SelectTrigger id="quorum-percentage" className="w-40"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="50">50 {t("% des sièges")}</SelectItem>
@@ -243,7 +250,7 @@ export function VotesClient() {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="vote" className="mt-0">
-              <BallotPanel ballot={selected} summary={summary} members={members} onTogglePresence={changePresence} onVote={changeVote} />
+              <BallotPanel ballot={selected} summary={summary} members={members} onTogglePresence={changePresence} onVote={changeVote} votingMemberId={canVote ? user?.memberId : undefined} canManagePresence={user?.role === "president"} />
             </TabsContent>
             <TabsContent value="resultats" className="mt-0">
               <ResultsPanel ballot={selected} summary={summary} members={members} />
@@ -254,8 +261,8 @@ export function VotesClient() {
         <div className="rounded-xl border border-dashed px-8 py-16 text-center text-sm text-muted-foreground">{t("Créez un scrutin pour commencer.")}</div>
       )}
 
-      <CreateBallotDialog open={createOpen} onOpenChange={setCreateOpen} availableDecisions={availableDecisions} onCreate={createBallot} />
-      <Dialog open={closeOpen} onOpenChange={setCloseOpen}>
+      {canManageBallot && <CreateBallotDialog open={createOpen} onOpenChange={setCreateOpen} availableDecisions={availableDecisions} onCreate={createBallot} />}
+      {canManageBallot && <Dialog open={closeOpen} onOpenChange={setCloseOpen}>
         <DialogContent className="gap-6 p-7 sm:max-w-lg sm:p-8">
           <DialogHeader className="space-y-3">
             <DialogTitle>{t("Clôturer le scrutin ?")}</DialogTitle>
@@ -270,7 +277,7 @@ export function VotesClient() {
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+      </Dialog>}
     </div>
   )
 }

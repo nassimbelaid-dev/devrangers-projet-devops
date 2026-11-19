@@ -18,9 +18,11 @@ interface Props {
   members: CommitteeMemberRecord[]
   onTogglePresence: (memberId: string, present: boolean) => void
   onVote: (seatId: string, memberId: string, choice: VoteChoice | null) => void
+  votingMemberId?: string
+  canManagePresence: boolean
 }
 
-export function BallotPanel({ ballot, summary, members, onTogglePresence, onVote }: Props) {
+export function BallotPanel({ ballot, summary, members, onTogglePresence, onVote, votingMemberId, canManagePresence }: Props) {
   const t = useUiText()
   const locked = ballot.state === "Clôturé"
   const membersById = new Map(members.map((member) => [member.id, member]))
@@ -52,7 +54,7 @@ export function BallotPanel({ ballot, summary, members, onTogglePresence, onVote
                   <p className="text-base font-semibold">{representative?.name ?? t("Aucun représentant présent")}</p>
                   <p className="text-xs text-muted-foreground">
                     {representative
-                      ? t("{kind} habilité à voter", { kind: t(seat.representativeKind) })
+                      ? t("{kind} habilité à voter", { kind: t(seat.representativeKind ?? "") })
                       : t("Activez la présence d'un titulaire ou suppléant pour voter")}
                   </p>
                 </div>
@@ -63,7 +65,7 @@ export function BallotPanel({ ballot, summary, members, onTogglePresence, onVote
                       <button
                         key={value}
                         type="button"
-                        disabled={locked || !seat.representativeId}
+                        disabled={locked || !seat.representativeId || seat.representativeId !== votingMemberId}
                         aria-pressed={selected === value}
                         onClick={() => {
                           if (!seat.representativeId) return
@@ -87,8 +89,8 @@ export function BallotPanel({ ballot, summary, members, onTogglePresence, onVote
                   {t("Gérer les présences")}
                 </summary>
                 <div className="mt-5 grid gap-6 pb-2 sm:grid-cols-2">
-                  <PresenceField label={t("Titulaire")} member={titular} present={Boolean(titular && present.has(titular.id))} disabled={locked} onTogglePresence={onTogglePresence} />
-                  <PresenceField label={t("Suppléant")} member={substitute} present={Boolean(substitute && present.has(substitute.id))} disabled={locked} onTogglePresence={onTogglePresence} />
+                  <PresenceField label={t("Titulaire")} member={titular} present={Boolean(titular && present.has(titular.id))} disabled={locked || (!canManagePresence && titular?.id !== votingMemberId)} onTogglePresence={onTogglePresence} />
+                  <PresenceField label={t("Suppléant")} member={substitute} present={Boolean(substitute && present.has(substitute.id))} disabled={locked || (!canManagePresence && substitute?.id !== votingMemberId)} onTogglePresence={onTogglePresence} />
                 </div>
                 <p className="mt-4 text-xs leading-5 text-muted-foreground">{t("Si les deux sont présents, le titulaire garde la priorité. Changer de représentant efface le vote précédent du siège.")}</p>
               </details>

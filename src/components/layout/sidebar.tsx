@@ -12,6 +12,7 @@ import type {
 } from "@/types"
 
 import { navigationsData } from "@/data/navigations"
+import { hasPermission, moduleForPath, useStaticAuth } from "@/lib/static-auth"
 
 import { i18n } from "@/configs/i18n"
 import { ensureLocalizedPathname } from "@/lib/i18n"
@@ -50,6 +51,7 @@ export function Sidebar({ dictionary }: { dictionary: DictionaryType }) {
   const params = useParams()
   const { openMobile, setOpenMobile, isMobile } = useSidebar()
   const { settings } = useSettings()
+  const { user } = useStaticAuth()
 
   const locale = params.lang as LocaleType
   const direction = i18n.localeDirection[locale]
@@ -140,6 +142,8 @@ export function Sidebar({ dictionary }: { dictionary: DictionaryType }) {
       <ScrollArea>
         <SidebarContent className="gap-0">
           {navigationsData.map((nav) => {
+            const allowedItems = nav.items.filter((item) => !("href" in item && typeof item.href === "string" && !hasPermission(user, moduleForPath(item.href))))
+            if (!allowedItems.length) return null
             const title = getDictionaryValue(
               titleCaseToCamelCase(nav.title),
               dictionary.navigation
@@ -150,7 +154,7 @@ export function Sidebar({ dictionary }: { dictionary: DictionaryType }) {
                 <SidebarGroupLabel>{title}</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
-                    {nav.items.map((item) => (
+                    {allowedItems.map((item) => (
                       <SidebarMenuItem key={item.title}>
                         {renderMenuItem(item)}
                       </SidebarMenuItem>

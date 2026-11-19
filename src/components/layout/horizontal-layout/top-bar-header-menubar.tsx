@@ -12,6 +12,7 @@ import type {
 } from "@/types"
 
 import { navigationsData } from "@/data/navigations"
+import { hasPermission, moduleForPath, useStaticAuth } from "@/lib/static-auth"
 
 import { ensureLocalizedPathname } from "@/lib/i18n"
 import {
@@ -41,6 +42,7 @@ export function TopBarHeaderMenubar({
 }) {
   const pathname = usePathname()
   const params = useParams()
+  const { user } = useStaticAuth()
 
   const locale = params.lang as LocaleType
 
@@ -104,6 +106,8 @@ export function TopBarHeaderMenubar({
   return (
     <Menubar className="border-0">
       {navigationsData.map((nav) => {
+        const allowedItems = nav.items.filter((item) => !("href" in item && typeof item.href === "string" && !hasPermission(user, moduleForPath(item.href))))
+        if (!allowedItems.length) return null
         const title = getDictionaryValue(
           titleCaseToCamelCase(nav.title),
           dictionary.navigation
@@ -112,7 +116,7 @@ export function TopBarHeaderMenubar({
           <MenubarMenu key={nav.title}>
             <MenubarTrigger>{title}</MenubarTrigger>
             <MenubarContent className="space-y-1">
-              {nav.items.map((item) => (
+              {allowedItems.map((item) => (
                 <Fragment key={item.title}>{renderMenuItem(item)}</Fragment>
               ))}
             </MenubarContent>

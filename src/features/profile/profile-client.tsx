@@ -18,8 +18,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useUiText } from "@/features/ui-text"
+import { getRoleLabel, useStaticAuth } from "@/lib/static-auth"
 
-const STORAGE_KEY = "devrangers:profil:v1"
+const STORAGE_KEY = "devrangers:profil:v2"
 
 type Profile = {
   firstName: string
@@ -63,23 +64,29 @@ function parseProfile(value: string | null): Profile | null {
 
 export function ProfileClient() {
   const t = useUiText()
-  const [profile, setProfile] = useState<Profile>(emptyProfile)
-  const [savedProfile, setSavedProfile] = useState<Profile>(emptyProfile)
+  const { user } = useStaticAuth()
+  const accountProfile: Profile = { ...emptyProfile, firstName: user?.firstName ?? "", lastName: user?.lastName ?? "", email: user?.email ?? "" }
+  const storageKey = `${STORAGE_KEY}:${user?.id ?? "guest"}`
+  const [profile, setProfile] = useState<Profile>(accountProfile)
+  const [savedProfile, setSavedProfile] = useState<Profile>(accountProfile)
   const [feedback, setFeedback] = useState("")
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     try {
-      const local = parseProfile(window.localStorage.getItem(STORAGE_KEY))
+      const local = parseProfile(window.localStorage.getItem(storageKey))
       if (local) {
         setProfile(local)
         setSavedProfile(local)
+      } else {
+        setProfile(accountProfile)
+        setSavedProfile(accountProfile)
       }
     } catch {
       setFeedback(t("Le stockage local n’est pas disponible dans ce navigateur."))
     }
     setLoaded(true)
-  }, [])
+  }, [storageKey, user?.firstName, user?.lastName, user?.email])
 
   const displayName = useMemo(() => {
     const full = `${profile.firstName.trim()} ${profile.lastName.trim()}`.trim()
@@ -108,7 +115,7 @@ export function ProfileClient() {
       return
     }
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned))
+      window.localStorage.setItem(storageKey, JSON.stringify(cleaned))
       setProfile(cleaned)
       setSavedProfile(cleaned)
       setFeedback(t("Vos informations ont été enregistrées."))
@@ -119,9 +126,9 @@ export function ProfileClient() {
 
   function reset() {
     try {
-      window.localStorage.removeItem(STORAGE_KEY)
-      setProfile(emptyProfile)
-      setSavedProfile(emptyProfile)
+      window.localStorage.removeItem(storageKey)
+      setProfile(accountProfile)
+      setSavedProfile(accountProfile)
       setFeedback(t("Le profil a été réinitialisé."))
     } catch {
       setFeedback(t("Impossible de réinitialiser le profil dans ce navigateur."))
@@ -151,7 +158,7 @@ export function ProfileClient() {
             <div className="space-y-1">
               <h2 className="break-words text-lg font-semibold">{displayName}</h2>
               <p className="break-words text-sm text-muted-foreground">
-                {profile.position.trim() || t("Membre du comité scientifique")}
+                {getRoleLabel(user?.role ?? "member")}
               </p>
             </div>
             <div className="space-y-4 border-t border-border/60 pt-5 text-sm">
