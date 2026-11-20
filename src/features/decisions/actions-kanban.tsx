@@ -20,6 +20,7 @@ interface ActionsKanbanProps {
   onMove: (id: string, status: ActionStatus, beforeId: string | null) => void
   onAdd: (status: ActionStatus) => void
   onDetails: (id: string) => void
+  canAdd?: boolean
 }
 
 const borderColors: Record<ActionStatus, string> = {
@@ -29,7 +30,7 @@ const borderColors: Record<ActionStatus, string> = {
 }
 
 
-export function ActionsKanban({ actions, decisions, onMove, onAdd, onDetails }: ActionsKanbanProps) {
+export function ActionsKanban({ actions, decisions, onMove, onAdd, onDetails, canAdd = true }: ActionsKanbanProps) {
   const t = useUiText()
   const { members } = useDemoData()
   const memberName = (id: string) => members.find((member) => member.id === id)?.name ?? t("Non attribué")
@@ -65,9 +66,9 @@ export function ActionsKanban({ actions, decisions, onMove, onAdd, onDetails }: 
                   <h3 className="font-semibold">{t(column.status)}</h3>
                   <Badge variant="secondary">{column.tasks.length}</Badge>
                 </div>
-                <Button size="icon" variant="ghost" aria-label={t("Ajouter dans {status}", { status: t(column.status) })} onClick={() => onAdd(column.status)}>
+                {canAdd && <Button size="icon" variant="ghost" aria-label={t("Ajouter dans {status}", { status: t(column.status) })} onClick={() => onAdd(column.status)}>
                   <Plus className="size-4" />
-                </Button>
+                </Button>}
               </div>
               <Droppable droppableId={column.status} type="action">
                 {(dropProvided, snapshot) => (

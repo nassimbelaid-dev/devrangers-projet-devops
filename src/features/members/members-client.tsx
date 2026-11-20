@@ -27,6 +27,7 @@ import { SeatsPanel } from "./seats-panel"
 import { MEMBER_ROLES } from "./types"
 import type { CommitteeMemberRecord, MandateStatus, MemberRole } from "./types"
 import { formatDate, mandateStatus, todayIso, validateMemberSeat } from "./utils"
+import { hasPermission, useStaticAuth } from "@/lib/static-auth"
 
 type RoleFilter = "Tous les rôles" | MemberRole
 type StatusFilter = "Tous les mandats" | MandateStatus
@@ -34,6 +35,8 @@ type PageView = "members" | "seats"
 
 export function MembersClient() {
   const t = useUiText()
+  const { user } = useStaticAuth()
+  const canManageMembers = hasPermission(user, "members", "manageMembers")
   function StatusBadge({ status }: { status: MandateStatus }) {
     if (status === "En cours") return <Badge>{t(status)}</Badge>
     if (status === "À venir") return <Badge variant="outline">{t(status)}</Badge>
@@ -70,6 +73,7 @@ export function MembersClient() {
   }).length
 
   function openCreate() {
+    if (!canManageMembers) return
     setDetailId(null)
     setEditingMember(null)
     setFormVersion((value) => value + 1)
@@ -77,6 +81,7 @@ export function MembersClient() {
   }
 
   function openEdit(member: CommitteeMemberRecord) {
+    if (!canManageMembers) return
     setDetailId(null)
     setEditingMember(member)
     setFormVersion((value) => value + 1)
@@ -84,6 +89,7 @@ export function MembersClient() {
   }
 
   function saveMember(member: CommitteeMemberRecord): string | null {
+    if (!canManageMembers) return t("Accès non autorisé")
     const conflict = validateMemberSeat(member, members)
     if (conflict) return conflict
     const duplicatedEmail = members.some((other) =>
@@ -98,6 +104,7 @@ export function MembersClient() {
   }
 
   function confirmDelete() {
+    if (!canManageMembers) return
     if (!deleteId) return
     setMembers((current) => current.filter((member) => member.id !== deleteId))
     setDeleteId(null)
@@ -113,9 +120,9 @@ export function MembersClient() {
             {t("Gérez l'annuaire, les fonctions, les périodes de mandat et les suppléants du comité scientifique.")}
           </p>
         </div>
-        <Button onClick={openCreate}>
+        {canManageMembers && <Button onClick={openCreate}>
           <Plus className="mr-2 size-4" /> {t("Ajouter un membre")}
-        </Button>
+        </Button>}
       </div>
 
       
@@ -202,10 +209,12 @@ export function MembersClient() {
                         <div className="flex justify-end gap-1">
                           <Button size="icon" variant="ghost" aria-label={t("Voir {name}", { name: member.name })}
                             title={t("Voir la fiche")} onClick={() => setDetailId(member.id)}><Eye className="size-4" /></Button>
-                          <Button size="icon" variant="ghost" aria-label={t("Modifier {name}", { name: member.name })}
-                            title={t("Modifier")} onClick={() => openEdit(member)}><Pencil className="size-4" /></Button>
-                          <Button size="icon" variant="ghost" aria-label={t("Supprimer {name}", { name: member.name })}
-                            title={t("Supprimer")} onClick={() => setDeleteId(member.id)}><Trash2 className="size-4" /></Button>
+                          {canManageMembers && <>
+                            <Button size="icon" variant="ghost" aria-label={t("Modifier {name}", { name: member.name })}
+                              title={t("Modifier")} onClick={() => openEdit(member)}><Pencil className="size-4" /></Button>
+                            <Button size="icon" variant="ghost" aria-label={t("Supprimer {name}", { name: member.name })}
+                              title={t("Supprimer")} onClick={() => setDeleteId(member.id)}><Trash2 className="size-4" /></Button>
+                          </>}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -217,14 +226,14 @@ export function MembersClient() {
         </Card>
       ) : <SeatsPanel members={members} />}
 
-      {formOpen && (
+      {canManageMembers && formOpen && (
         <MemberForm key={formVersion} open={formOpen} initialMember={editingMember}
           onOpenChange={setFormOpen} onSave={saveMember} />
       )}
       {selected && <MemberDetails member={selected} members={members}
-        onClose={() => setDetailId(null)} onEdit={openEdit} />}
+        onClose={() => setDetailId(null)} onEdit={openEdit} canEdit={canManageMembers} />}
 
-      <Dialog open={Boolean(toDelete)} onOpenChange={(open) => { if (!open) setDeleteId(null) }}>
+      {canManageMembers && <Dialog open={Boolean(toDelete)} onOpenChange={(open) => { if (!open) setDeleteId(null) }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("Supprimer ce membre ?")}</DialogTitle>
@@ -237,7 +246,7 @@ export function MembersClient() {
             <Button variant="destructive" onClick={confirmDelete}>{t("Supprimer")}</Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+      </Dialog>}
     </div>
   )
 }

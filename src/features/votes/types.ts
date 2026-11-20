@@ -13,6 +13,8 @@ export interface BallotSession {
   decisionId: string
   state: BallotState
   quorumPercent: number
+  /** Pourcentage minimal des suffrages exprimés, hors abstentions. */
+  majorityPercent?: number
   /** IDs de tous les membres physiquement présents : un suppléant peut être présent sans voter. */
   presentMemberIds: string[]
   /** Clé = identifiant de siège. Empêche un second vote pour le même siège. */

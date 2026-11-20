@@ -71,12 +71,12 @@ export function calculateBallot(
     ? Math.round((representedSeatCount / activeSeatCount) * 100)
     : 0
 
-  // Règle simplifiée de démonstration : majorité simple des suffrages exprimés.
-  // L'abstention compte pour la présence au quorum, pas pour la majorité.
+  const majorityPercent = ballot.majorityPercent ?? 50
+  // Les abstentions comptent pour le quorum, pas pour la majorité.
   let outcome: BallotOutcome = "À voter"
   if (ballot.state === "Clôturé") {
     if (!quorumReached) outcome = "Quorum non atteint"
-    else outcome = expressedCount > 0 && pour > contre ? "Adoptée" : "Rejetée"
+    else outcome = expressedCount > 0 && pour * 100 / expressedCount > majorityPercent ? "Adoptée" : "Rejetée"
   }
   return {
     seats: activeSeats, activeSeatCount, representedSeatCount, quorumMinSeats,

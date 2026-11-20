@@ -1,18 +1,21 @@
 import { committeeMembers, initialMeetings } from "@/features/meetings/mock-data"
 import { initialDecisions } from "@/features/decisions/mock-data"
 import type { MeetingMinutes } from "./types"
+import type { Meeting } from "@/features/meetings/types"
+import type { CommitteeMemberRecord } from "@/features/members/types"
+import type { DecisionRecord } from "@/features/decisions/types"
 
 export function formatDate(date: string) {
   if (!date) return "—"
   return new Date(`${date}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
 }
 
-export function meetingLabel(id: string) {
-  return initialMeetings.find((meeting) => meeting.id === id)?.title ?? "Sans réunion"
+export function meetingLabel(id: string, meetings: Meeting[] = initialMeetings) {
+  return meetings.find((meeting) => meeting.id === id)?.title ?? "Sans réunion"
 }
 
-export function memberName(id: string) {
-  return committeeMembers.find((member) => member.id === id)?.name ?? "Membre inconnu"
+export function memberName(id: string, members = committeeMembers) {
+  return members.find((member) => member.id === id)?.name ?? "Membre inconnu"
 }
 
 export const today = () => new Date().toISOString().slice(0, 10)
@@ -24,14 +27,14 @@ export function escapeHTML(value: string): string {
   return value.replace(/[&<>"']/g, (char) => entities[char] ?? char)
 }
 
-export function buildPrintableMinutes(pv: MeetingMinutes) {
-  const meeting = initialMeetings.find((item) => item.id === pv.meetingId)
+export function buildPrintableMinutes(pv: MeetingMinutes, meetings: Meeting[] = initialMeetings, decisionsSource: DecisionRecord[] = initialDecisions, members = committeeMembers) {
+  const meeting = meetings.find((item) => item.id === pv.meetingId)
   if (!meeting) return ""
   const all = (value: string) => escapeHTML(value)
-  const agenda = meeting.agenda.map((item) => `<li>${all(item.title)} — ${all(item.status)}</li>`).join("")
-  const decisions = initialDecisions.filter((decision) => decision.meetingId === pv.meetingId)
+  const agenda = meeting.agenda.filter((item) => item.status === "Validé").map((item) => `<li>${all(item.title)}</li>`).join("")
+  const decisions = decisionsSource.filter((decision) => decision.meetingId === pv.meetingId)
     .map((decision) => `<li><strong>${all(decision.reference)} :</strong> ${all(decision.title)} — ${all(decision.status)}</li>`).join("")
-  const attendees = pv.presentMemberIds.map((id) => all(memberName(id))).join(", ") || "Aucun"
+  const attendees = pv.presentMemberIds.map((id) => all(memberName(id, members))).join(", ") || "Aucun"
   return `<!doctype html><html lang="fr"><head><meta charset="utf-8"/><title>${all(pv.reference)} — Procès-verbal</title>
   <style>body{font-family:Arial,sans-serif;color:#20242d;max-width:800px;margin:50px auto;line-height:1.65;padding:0 32px}h1{font-size:25px;margin-bottom:4px}h2{font-size:16px;margin-top:36px;border-bottom:1px solid #ddd;padding-bottom:8px}small{color:#666}li{margin:8px 0}.meta{margin:28px 0;padding:16px 0;border-top:1px solid #ddd;border-bottom:1px solid #ddd}.signatures{display:flex;justify-content:space-between;margin-top:70px}pre{font:inherit;white-space:pre-wrap}@media print{body{margin:20px auto;padding:0} @page{size:A4;margin:20mm}}</style></head><body>
   <small>Département d'informatique · Comité scientifique · Document de démonstration</small>
@@ -43,12 +46,14 @@ export function buildPrintableMinutes(pv: MeetingMinutes) {
   <h2>Décisions associées</h2>${decisions ? `<ul>${decisions}</ul>` : "<p>Aucune décision enregistrée dans les données fictives.</p>"}
   <h2>Actions à suivre</h2><pre>${all(pv.nextSteps || "Non renseigné")}</pre>
   <div class="signatures"><div>Secrétaire<br/><strong>${all(pv.secretary || "—")}</strong></div><div>Président<br/><strong>${all(pv.president || "—")}</strong></div></div>
-  <p style="margin-top:75px;font-size:11px;color:#777">Prototype non officiel — aperçu généré localement, sans signature ni valeur administrative.</p>
+  ${pv.signedBy ? `<p class="signature">Signature simulée du président : <strong>${all(pv.signedBy)}</strong> · ${all(pv.signedAt ?? "")}</p>` : ""}
+  ${pv.archivedAt ? `<p class="signature">Archivé le ${all(pv.archivedAt)}</p>` : ""}
+  <p style="margin-top:75px;font-size:11px;color:#777">Prototype non officiel — signature simulée, sans valeur administrative.</p>
   </body></html>`
 }
 
-export function printMinutes(pv: MeetingMinutes): boolean {
-  const html = buildPrintableMinutes(pv)
+export function printMinutes(pv: MeetingMinutes, meetings: Meeting[] = initialMeetings, decisions: DecisionRecord[] = initialDecisions, members = committeeMembers): boolean {
+  const html = buildPrintableMinutes(pv, meetings, decisions, members)
   if (!html) return false
   const popup = window.open("", "_blank", "width=950,height=1100")
   if (!popup) return false

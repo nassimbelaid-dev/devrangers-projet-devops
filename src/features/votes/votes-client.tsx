@@ -94,7 +94,7 @@ export function VotesClient() {
     if (!availableDecisions.some((item) => item.id === decisionId)) return
     const id = `vote-${Date.now()}`
     const newBallot: BallotSession = {
-      id, decisionId, state: "Ouvert", quorumPercent: 60,
+      id, decisionId, state: "Ouvert", quorumPercent: 60, majorityPercent: 50,
       presentMemberIds: [], votes: {},
     }
     setBallots((current) => [newBallot, ...current])
@@ -218,8 +218,9 @@ export function VotesClient() {
                   <span className="mx-2">·</span>{t("minimum requis :")} {summary.quorumMinSeats}
                 </p>
               </div>
+              <div className="flex flex-wrap gap-4 lg:justify-end">
               <div className="space-y-2 lg:text-right">
-                <label htmlFor="quorum-percentage" className="block text-xs font-medium text-muted-foreground">{t("Seuil requis")}</label>
+                <label htmlFor="quorum-percentage" className="block text-xs font-medium text-muted-foreground">{t("Quorum requis")}</label>
                 <Select value={String(selected.quorumPercent)} disabled={!canManageBallot || selected.state === "Clôturé"} onValueChange={(value) => { if (canManageBallot) updateSelected((ballot) => ({ ...ballot, quorumPercent: Number(value) })) }}>
                   <SelectTrigger id="quorum-percentage" className="w-40"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -229,6 +230,16 @@ export function VotesClient() {
                     <SelectItem value="75">75 {t("% des sièges")}</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-2 lg:text-right">
+                <label htmlFor="majority-percentage" className="block text-xs font-medium text-muted-foreground">{t("Majorité requise")}</label>
+                <Select value={String(selected.majorityPercent ?? 50)} disabled={!canManageBallot || selected.state === "Clôturé"} onValueChange={(value) => { if (canManageBallot) updateSelected((ballot) => ({ ...ballot, majorityPercent: Number(value) })) }}>
+                  <SelectTrigger id="majority-percentage" className="w-44"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {[50, 60, 67, 75].map((percent) => <SelectItem key={percent} value={String(percent)}>{percent} {t("% des suffrages exprimés")}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
               </div>
             </div>
             <div className="mt-7 h-2 overflow-hidden rounded-full bg-muted" role="progressbar" aria-label={t("Participation au quorum")} aria-valuenow={summary.participationPercent} aria-valuemin={0} aria-valuemax={100}>

@@ -21,9 +21,10 @@ interface Props {
   reference: string
   onOpenChange: (open: boolean) => void
   onSave: (document: CommitteeDocument) => void
+  canArchive: boolean
 }
 
-export function DocumentForm({ open, initial, reference, onOpenChange, onSave }: Props) {
+export function DocumentForm({ open, initial, reference, onOpenChange, onSave, canArchive }: Props) {
   const t = useUiText()
   const { meetings } = useDemoData()
   const [title, setTitle] = useState(initial?.title ?? "")
@@ -78,7 +79,7 @@ export function DocumentForm({ open, initial, reference, onOpenChange, onSave }:
               <Label htmlFor="document-status">{t("Statut")}</Label>
               <Select value={status} onValueChange={(value) => setStatus(value as DocumentStatus)}>
                 <SelectTrigger id="document-status"><SelectValue /></SelectTrigger>
-                <SelectContent>{DOCUMENT_STATUSES.map((value) => <SelectItem value={value} key={value}>{t(value)}</SelectItem>)}</SelectContent>
+                <SelectContent>{DOCUMENT_STATUSES.filter((value) => canArchive || value !== "Archivé").map((value) => <SelectItem value={value} key={value}>{t(value)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-2">

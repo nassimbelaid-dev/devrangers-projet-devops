@@ -20,8 +20,9 @@ import { MeetingCalendar } from "./meeting-calendar"
 import { MeetingDetails } from "./meeting-details"
 import { MeetingForm } from "./meeting-form"
 import type { Meeting, MeetingStatus } from "./types"
+import { hasPermission, useStaticAuth } from "@/lib/static-auth"
 
-const statuses = ["Toutes", "Planifiée", "Terminée", "Annulée"] as const
+const statuses = ["Toutes", "Planifiée", "En cours", "Clôturée", "PV signé", "Annulée"] as const
 type StatusFilter = (typeof statuses)[number]
 
 function readableDate(date: string) {
@@ -32,12 +33,14 @@ function readableDate(date: string) {
 
 function statusBadge(status: MeetingStatus, t: (source: string) => string) {
   if (status === "Annulée") return <Badge variant="destructive">{t(status)}</Badge>
-  if (status === "Terminée") return <Badge variant="secondary">{t(status)}</Badge>
+  if (status === "Clôturée" || status === "PV signé") return <Badge variant="secondary">{t(status)}</Badge>
   return <Badge variant="outline">{t(status)}</Badge>
 }
 
 export function MeetingsClient() {
   const t = useUiText()
+  const { user } = useStaticAuth()
+  const canManageMeetings = hasPermission(user, "meetings", "create") || hasPermission(user, "meetings", "edit")
   const [meetings, setMeetings] = useDemoCollection("meetings")
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState<StatusFilter>("Toutes")
@@ -60,6 +63,7 @@ export function MeetingsClient() {
   )
 
   function openCreate() {
+    if (!canManageMeetings) return
     setSelectedId(null)
     setEditingMeeting(null)
     setFormVersion((value) => value + 1)
@@ -67,6 +71,7 @@ export function MeetingsClient() {
   }
 
   function openEdit(meeting: Meeting) {
+    if (!hasPermission(user, "meetings", "edit")) return
     setSelectedId(null)
     setEditingMeeting(meeting)
     setFormVersion((value) => value + 1)
@@ -74,6 +79,9 @@ export function MeetingsClient() {
   }
 
   function saveMeeting(meeting: Meeting) {
+    if (!hasPermission(user, "meetings", editingMeeting ? "edit" : "create")) return
+    const current = meetings.find((item) => item.id === meeting.id)
+    if (meeting.status === "PV signé" && current?.status !== "PV signé") return
     setMeetings((current) => {
       const exists = current.some((item) => item.id === meeting.id)
       return exists
@@ -83,7 +91,7 @@ export function MeetingsClient() {
   }
 
   const planned = meetings.filter((m) => m.status === "Planifiée").length
-  const finished = meetings.filter((m) => m.status === "Terminée").length
+  const finished = meetings.filter((m) => m.status === "Clôturée" || m.status === "PV signé").length
 
   return (
     <div className="space-y-6 p-4 md:p-6">
@@ -94,9 +102,9 @@ export function MeetingsClient() {
             {t("Planifiez les réunions du comité, sélectionnez les participants et préparez les ordres du jour.")}
           </p>
         </div>
-        <Button onClick={openCreate}>
+        {canManageMeetings && <Button onClick={openCreate}>
           <Plus className="mr-2 size-4" /> {t("Nouvelle réunion")}
-        </Button>
+        </Button>}
       </div>
 
       
@@ -114,7 +122,7 @@ export function MeetingsClient() {
         </CardContent></Card>
         <Card><CardContent className="flex items-center gap-4 p-5">
           <CheckCircle2 className="size-8 text-muted-foreground" />
-          <div><p className="text-sm text-muted-foreground">{t("Terminée")}</p>
+          <div><p className="text-sm text-muted-foreground">{t("Clôturées / PV signés")}</p>
             <p className="text-2xl font-bold">{finished}</p></div>
         </CardContent></Card>
       </div>
@@ -174,9 +182,9 @@ export function MeetingsClient() {
                     <Button variant="ghost" size="sm" onClick={() => setSelectedId(meeting.id)}>
                       <Eye className="mr-1 size-4" /> {t("Détails")}
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => openEdit(meeting)}>
+                    {hasPermission(user, "meetings", "edit") && <Button variant="outline" size="sm" onClick={() => openEdit(meeting)}>
                       <Pencil className="mr-1 size-4" /> {t("Modifier")}
-                    </Button>
+                    </Button>}
                   </div>
                 </TableCell>
               </TableRow>

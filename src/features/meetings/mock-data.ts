@@ -19,7 +19,7 @@ export const initialMeetings: Meeting[] = [
     endTime: "11:00",
     location: "Salle de conférences — Département d'informatique",
     description: "Examen des dossiers pédagogiques et suivi des recommandations.",
-    status: "Planifiée",
+    status: "Clôturée",
     participantIds: ["m1", "m2", "m3", "m4", "m5"],
     agenda: [
       { id: "a1", title: "Validation de l'ordre du jour", proposedById: "m2", status: "Validé" },
@@ -50,7 +50,7 @@ export const initialMeetings: Meeting[] = [
     endTime: "12:00",
     location: "Salle de réunion A",
     description: "Analyse des évaluations et des recommandations du semestre.",
-    status: "Terminée",
+    status: "PV signé",
     participantIds: ["m1", "m2", "m3", "m5"],
     agenda: [
       { id: "a6", title: "Présentation du bilan pédagogique", proposedById: "m2", status: "Validé" },

@@ -17,9 +17,10 @@ type MemberDetailsProps = {
   members: CommitteeMemberRecord[]
   onClose: () => void
   onEdit: (member: CommitteeMemberRecord) => void
+  canEdit?: boolean
 }
 
-export function MemberDetails({ member, members, onClose, onEdit }: MemberDetailsProps) {
+export function MemberDetails({ member, members, onClose, onEdit, canEdit = true }: MemberDetailsProps) {
   const t = useUiText()
   const seatName = committeeSeats.find((seat) => seat.id === member.seatId)?.label ?? "—"
   const colleague = members.find((other) =>
@@ -63,7 +64,7 @@ export function MemberDetails({ member, members, onClose, onEdit }: MemberDetail
         </Tabs>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{t("Fermer")}</Button>
-          <Button onClick={() => onEdit(member)}>{t("Modifier le membre")}</Button>
+          {canEdit && <Button onClick={() => onEdit(member)}>{t("Modifier le membre")}</Button>}
         </DialogFooter>
       </DialogContent>
     </Dialog>

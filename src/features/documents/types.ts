@@ -30,7 +30,7 @@ export interface CommitteeDocument {
   versions: DocumentVersion[]
 }
 
-export type MinutesStatus = "Brouillon" | "Validé"
+export type MinutesStatus = "Brouillon" | "À signer" | "Signé" | "Archivé"
 export interface MeetingMinutes {
   id: string
   reference: string
@@ -43,4 +43,7 @@ export interface MeetingMinutes {
   president: string
   updatedAt: string
   version: number
+  signedBy?: string
+  signedAt?: string
+  archivedAt?: string
 }

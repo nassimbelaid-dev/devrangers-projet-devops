@@ -43,8 +43,8 @@ export function ResultsPanel({ ballot, summary, members }: Props) {
               : summary.outcome === "Quorum non atteint"
                 ? t("Le nombre de sièges représentés ne permet pas de valider la décision.")
                 : summary.outcome === "Adoptée"
-                  ? t("Les voix Pour dépassent les voix Contre.")
-                  : t("Les voix Pour ne dépassent pas les voix Contre.")}
+                  ? t("Les voix Pour dépassent le seuil de majorité requis ({percent} % des suffrages exprimés).", { percent: ballot.majorityPercent ?? 50 })
+                  : t("Les voix Pour n'atteignent pas le seuil de majorité requis ({percent} % des suffrages exprimés).", { percent: ballot.majorityPercent ?? 50 })}
           </p>
         </div>
       </section>
@@ -113,7 +113,7 @@ export function ResultsPanel({ ballot, summary, members }: Props) {
       </details>
 
       <p className="text-xs leading-6 text-muted-foreground">
-        {t("Mode de calcul : quorum sur les sièges représentés et majorité simple (Pour > Contre). Les abstentions comptent pour le quorum, pas pour la majorité. Le règlement réel devra être vérifié avant tout usage officiel.")}
+        {t("Mode de calcul : quorum sur les sièges représentés et seuil de majorité configurable ({percent} % des suffrages exprimés). Les abstentions comptent pour le quorum, pas pour la majorité. Le règlement réel devra être vérifié avant tout usage officiel.", { percent: ballot.majorityPercent ?? 50 })}
       </p>
     </div>
   )

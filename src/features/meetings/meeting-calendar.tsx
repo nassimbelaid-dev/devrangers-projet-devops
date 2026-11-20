@@ -41,7 +41,8 @@ export function MeetingCalendar({ meetings, onSelectMeeting }: MeetingCalendarPr
           start: `${meeting.date}T${meeting.startTime}:00`,
           end: `${meeting.date}T${meeting.endTime}:00`,
           color: meeting.status === "Annulée" ? "#ef4444"
-            : meeting.status === "Terminée" ? "#64748b" : "#2563eb",
+            : meeting.status === "Clôturée" || meeting.status === "PV signé" ? "#64748b"
+              : meeting.status === "En cours" ? "#7c3aed" : "#2563eb",
         }))}
         eventClick={({ event }) => onSelectMeeting(event.id)}
       />

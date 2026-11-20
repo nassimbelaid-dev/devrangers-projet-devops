@@ -50,6 +50,7 @@ export function MinutesPreview({ minutes: pv }: { minutes: MeetingMinutes }) {
         <div><p className="text-xs text-muted-foreground">{t("Secrétaire")}</p><p className="font-medium">{pv.secretary || "—"}</p></div>
         <div><p className="text-xs text-muted-foreground">{t("Président")}</p><p className="font-medium">{pv.president || "—"}</p></div>
       </div>
+      {pv.signedBy && <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm dark:border-emerald-900 dark:bg-emerald-950/30"><p className="font-medium">{t("Signature simulée du président")}</p><p className="mt-1 text-muted-foreground">{pv.signedBy} · {pv.signedAt ? formatDate(pv.signedAt) : "—"}</p>{pv.archivedAt && <p className="mt-1 text-xs text-muted-foreground">{t("Archivé le {date}", { date: formatDate(pv.archivedAt) })}</p>}</div>}
       
     </article>
   )

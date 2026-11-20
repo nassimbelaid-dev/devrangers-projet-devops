@@ -2,12 +2,13 @@
 
 import { useDemoData } from "@/lib/demo-store"
 
-export const DEMO_REFERENCE_DATE = "2026-11-12"
+const now = new Date()
+export const DEMO_REFERENCE_DATE = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
 
 export function useDashboardData() {
   const { meetings, members, decisions, actions, notifications } = useDemoData()
   const dashboardMeetings = [...meetings]
-    .filter((meeting) => meeting.status === "Planifiée")
+    .filter((meeting) => meeting.status === "Planifiée" && meeting.date >= DEMO_REFERENCE_DATE)
     .sort((a, b) =>
       `${a.date}T${a.startTime}`.localeCompare(`${b.date}T${b.startTime}`)
     )

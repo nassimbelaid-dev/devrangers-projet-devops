@@ -29,7 +29,7 @@ type MeetingFormProps = {
   onSave: (meeting: Meeting) => void
 }
 
-const statuses: MeetingStatus[] = ["Planifiée", "Terminée", "Annulée"]
+const statuses: MeetingStatus[] = ["Planifiée", "En cours", "Clôturée", "PV signé", "Annulée"]
 const agendaStatuses: AgendaStatus[] = ["Proposé", "Validé", "Rejeté"]
 
 function blankMeeting(): Meeting {
@@ -199,11 +199,11 @@ export function MeetingForm({
                 </div>
                 <div className="space-y-2">
                   <Label>{t("Statut")}</Label>
-                  <Select value={form.status}
+                  <Select value={form.status} disabled={form.status === "PV signé"}
                     onValueChange={(value) => update("status", value as MeetingStatus)}>
                     <SelectTrigger><SelectValue placeholder={t("Statut")} /></SelectTrigger>
                     <SelectContent>
-                      {statuses.map((status) => (
+                      {statuses.filter((status) => status !== "PV signé" || form.status === "PV signé").map((status) => (
                         <SelectItem key={status} value={status}>{t(status)}</SelectItem>
                       ))}
                     </SelectContent>
@@ -240,6 +240,8 @@ export function MeetingForm({
             </TabsContent>
 
             <TabsContent value="agenda" className="space-y-4 pt-3">
+              <p className="rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-sm text-indigo-900 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-100">{t("L'ordre du jour se gère dans le module collaboratif afin de préserver les propositions, les validations et l'ordre décidés par le président.")}</p>
+              <fieldset disabled className="pointer-events-none space-y-4 opacity-60" aria-disabled="true">
               <p className="text-sm text-muted-foreground">
                 {t("Ajoute les points à discuter, choisis leur auteur et leur état de validation.")}
               </p>
@@ -308,6 +310,7 @@ export function MeetingForm({
                   </div>
                 ))}
               </div>
+              </fieldset>
             </TabsContent>
           </Tabs>
 

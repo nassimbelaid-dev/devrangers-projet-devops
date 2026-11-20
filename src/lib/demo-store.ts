@@ -28,10 +28,47 @@ const initial: DemoState = {
 
 let current: DemoState = initial
 let feedback = ""
+const STORAGE_KEY = "comite-scientifique:demo-data:v1"
+let initialized = false
 const listeners = new Set<() => void>()
+
+function initialize() {
+  if (initialized || typeof window === "undefined") return
+  initialized = true
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "null") as Partial<DemoState> | null
+    if (stored && typeof stored === "object") {
+      current = {
+        meetings: Array.isArray(stored.meetings) ? stored.meetings : initial.meetings,
+        members: Array.isArray(stored.members) ? stored.members : initial.members,
+        decisions: Array.isArray(stored.decisions) ? stored.decisions : initial.decisions,
+        actions: Array.isArray(stored.actions) ? stored.actions : initial.actions,
+        ballots: Array.isArray(stored.ballots) ? stored.ballots : initial.ballots,
+        documents: Array.isArray(stored.documents) ? stored.documents : initial.documents,
+        minutes: Array.isArray(stored.minutes) ? stored.minutes : initial.minutes,
+        agenda: Array.isArray(stored.agenda) ? stored.agenda : initial.agenda,
+        notifications: Array.isArray(stored.notifications) ? stored.notifications : initial.notifications,
+      }
+    }
+  } catch {
+    current = initial
+  }
+}
+
+function persist() {
+  if (typeof window === "undefined") return
+  try {
+    // Les métadonnées des fichiers sont conservées ; les objets File ne sont pas sérialisables.
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(current, (key, value) => key === "file" ? undefined : value))
+  } catch {
+    feedback = "Le stockage local est indisponible. Les modifications ne survivront pas au rechargement."
+  }
+}
 
 function subscribe(listener: () => void) {
   listeners.add(listener)
+  initialize()
+  listener()
   return () => { listeners.delete(listener) }
 }
 function notify() { listeners.forEach((listener) => listener()) }
@@ -58,6 +95,7 @@ export function useDemoCollection<K extends keyof DemoState>(key: K) {
     feedback = result.error ?? ""
     if (!Object.is(current, result.state) || result.error) {
       current = result.state
+      if (!result.error) persist()
       notify()
     }
   }, [key])
@@ -77,5 +115,6 @@ export function clearDemoFeedback() {
 export function resetDemoData() {
   current = initial
   feedback = ""
+  if (typeof window !== "undefined") window.localStorage.removeItem(STORAGE_KEY)
   notify()
 }

@@ -21,9 +21,11 @@ import { AgendaDetails } from "./agenda-details"
 import { AgendaForm } from "./agenda-form"
 import type { AgendaProposal, AgendaTab } from "./types"
 import { formatAgendaDate, makeAgendaId, memberLabel, moveValidatedPoint, sortAgenda } from "./utils"
+import { getRoleLabel, hasPermission, useStaticAuth } from "@/lib/static-auth"
 
 export function AgendaClient() {
   const t = useUiText()
+  const { user } = useStaticAuth()
   const tabs: { id: AgendaTab; title: string }[] = [
     { id: "proposals", title: t("À examiner") },
     { id: "validated", title: t("Ordre du jour validé") },
@@ -38,7 +40,6 @@ export function AgendaClient() {
   const committeeMembers = members
   const [items, setItems] = useDemoCollection("agenda")
   const [meetingId, setMeetingId] = useState("r1")
-  const [actorId, setActorId] = useState("m3")
   const [tab, setTab] = useState<AgendaTab>("proposals")
   const [search, setSearch] = useState("")
   const [formOpen, setFormOpen] = useState(false)
@@ -50,8 +51,9 @@ export function AgendaClient() {
   const [rejectError, setRejectError] = useState("")
 
   const currentMeeting = meetings.find((meeting) => meeting.id === meetingId) ?? meetings[0]
-  const currentActor = committeeMembers.find((member) => member.id === actorId) ?? committeeMembers[0]
-  const president = currentActor.role === "Président"
+  const actorId = user?.memberId ?? user?.id ?? ""
+  const president = user?.role === "president"
+  const canPropose = Boolean(user?.memberId && hasPermission(user, "agenda", "create"))
   const editableMeeting = currentMeeting.status === "Planifiée"
   const currentItems = useMemo(
     () => sortAgenda(items.filter((item) => item.meetingId === meetingId)),
@@ -83,23 +85,23 @@ export function AgendaClient() {
   }
 
   function openCreate() {
-    if (!editableMeeting) return
+    if (!editableMeeting || !canPropose) return
     setEditingId(null)
     setFormVersion((current) => current + 1)
     setFormOpen(true)
   }
 
   function openEdit(item: AgendaProposal) {
-    if (!editableMeeting || item.status !== "Proposé" || item.proposedById !== actorId) return
+    if (!editableMeeting || !hasPermission(user, "agenda", "edit") || item.status !== "Proposé" || item.proposedById !== actorId) return
     setEditingId(item.id)
     setFormVersion((current) => current + 1)
     setFormOpen(true)
   }
 
   function saveProposal(data: Pick<AgendaProposal, "title" | "description" | "attachments">) {
-    if (!editableMeeting) return
+    if (!editableMeeting || !canPropose) return
     if (editing) {
-      if (editing.status !== "Proposé" || editing.proposedById !== actorId) return
+      if (!hasPermission(user, "agenda", "edit") || editing.status !== "Proposé" || editing.proposedById !== actorId) return
       setItems((current) => current.map((item) => item.id === editing.id ? { ...item, ...data } : item))
     } else {
       setItems((current) => [...current, {
@@ -114,7 +116,7 @@ export function AgendaClient() {
   }
 
   function approve(id: string) {
-    if (!president || !editableMeeting) return
+    if (!president || !hasPermission(user, "agenda", "approve") || !editableMeeting) return
     setItems((current) => {
       const toReview = current.find((item) => item.id === id && item.meetingId === meetingId)
       if (!toReview || toReview.status !== "Proposé") return current
@@ -129,7 +131,7 @@ export function AgendaClient() {
   }
 
   function reject() {
-    if (!president || !editableMeeting || !rejectedItem || rejectedItem.status !== "Proposé") return
+    if (!president || !hasPermission(user, "agenda", "approve") || !editableMeeting || !rejectedItem || rejectedItem.status !== "Proposé") return
     if (!rejectNote.trim()) {
       setRejectError(t("Indiquez un motif pour expliquer le rejet au membre."))
       return
@@ -144,8 +146,8 @@ export function AgendaClient() {
 
   function reopen(item: AgendaProposal) {
     if (!editableMeeting) return
-    const canReopen = (president && item.status !== "Proposé") ||
-      (item.status === "Rejeté" && item.proposedById === actorId)
+    const canReopen = (president && hasPermission(user, "agenda", "approve") && item.status !== "Proposé") ||
+      (hasPermission(user, "agenda", "edit") && item.status === "Rejeté" && item.proposedById === actorId)
     if (!canReopen) return
     setItems((current) => current.map((entry) => entry.id === item.id ? {
       ...entry, status: "Proposé", order: null, reviewedById: undefined, reviewNote: undefined,
@@ -154,7 +156,7 @@ export function AgendaClient() {
   }
 
   function move(id: string, direction: -1 | 1) {
-    if (!president || !editableMeeting) return
+    if (!president || !hasPermission(user, "agenda", "approve") || !editableMeeting) return
     setItems((current) => moveValidatedPoint(current, meetingId, id, direction))
   }
 
@@ -168,9 +170,9 @@ export function AgendaClient() {
             {t("Proposez des sujets, examinez les demandes et organisez les points retenus pour chaque réunion.")}
           </p>
         </div>
-        <Button onClick={openCreate} disabled={!editableMeeting} className="shrink-0">
+        {canPropose && <Button onClick={openCreate} disabled={!editableMeeting} className="shrink-0">
           <Plus className="mr-2 size-4" /> {t("Proposer un point")}
-        </Button>
+        </Button>}
       </header>
 
       <div className="flex flex-col gap-5 border-y py-5 lg:flex-row lg:items-end lg:justify-between lg:gap-10">
@@ -182,15 +184,7 @@ export function AgendaClient() {
               <SelectContent>{meetings.map((meeting) => <SelectItem key={meeting.id} value={meeting.id}>{meeting.title}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="agenda-actor">{t("Profil actif")}</Label>
-            <Select value={actorId} onValueChange={setActorId}>
-              <SelectTrigger id="agenda-actor" className="w-full"><SelectValue /></SelectTrigger>
-              <SelectContent>{committeeMembers.map((member) => <SelectItem key={member.id} value={member.id}>
-                {member.name} — {member.role}
-              </SelectItem>)}</SelectContent>
-            </Select>
-          </div>
+          <div className="space-y-2"><Label>{t("Compte connecté")}</Label><div className="flex h-10 items-center rounded-md border bg-muted/30 px-3 text-sm"><span className="truncate">{user ? `${user.firstName} ${user.lastName} · ${getRoleLabel(user.role)}` : t("Aucun compte connecté")}</span></div></div>
         </div>
         <div className="space-y-1 text-sm lg:max-w-64">
           <p className="font-medium">{formatAgendaDate(`${currentMeeting.date}T12:00:00Z`)} · {currentMeeting.startTime}</p>
@@ -240,9 +234,9 @@ export function AgendaClient() {
             {visibleItems.map((item) => {
               const rank = validated.findIndex((entry) => entry.id === item.id)
               const ownProposal = item.proposedById === actorId
-              const canEdit = editableMeeting && item.status === "Proposé" && ownProposal
-              const canReview = editableMeeting && president && item.status === "Proposé"
-              const canReopen = editableMeeting && (president && item.status !== "Proposé" || ownProposal && item.status === "Rejeté")
+              const canEdit = editableMeeting && hasPermission(user, "agenda", "edit") && item.status === "Proposé" && ownProposal
+              const canReview = editableMeeting && president && hasPermission(user, "agenda", "approve") && item.status === "Proposé"
+              const canReopen = editableMeeting && ((president && hasPermission(user, "agenda", "approve") && item.status !== "Proposé") || (hasPermission(user, "agenda", "edit") && ownProposal && item.status === "Rejeté"))
               return <article key={item.id} className="flex flex-col gap-5 px-5 py-6 md:flex-row md:items-start md:gap-6 md:px-7">
                 <div className="flex min-w-0 flex-1 items-start gap-4">
                   <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-sm font-semibold text-muted-foreground">
@@ -262,7 +256,7 @@ export function AgendaClient() {
                   </div>
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-1 self-end md:max-w-96 md:justify-end md:self-center">
-                  {item.status === "Validé" && president && editableMeeting && <div className="mr-1 flex items-center">
+                  {item.status === "Validé" && president && hasPermission(user, "agenda", "approve") && editableMeeting && <div className="mr-1 flex items-center">
                     <Button variant="ghost" size="icon" title={t("Monter ce point")} aria-label={t("Monter {title}", { title: item.title })}
                       disabled={rank === 0} onClick={() => move(item.id, -1)}><ArrowUp className="size-4" /></Button>
                     <Button variant="ghost" size="icon" title={t("Descendre ce point")} aria-label={t("Descendre {title}", { title: item.title })}

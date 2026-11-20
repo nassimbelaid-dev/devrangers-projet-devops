@@ -25,7 +25,7 @@ export const initialDocuments: CommitteeDocument[] = [
   },
   {
     id: "doc4", reference: "DOC-2026-004", title: "Procès-verbal — Bilan pédagogique du semestre",
-    type: "Procès-verbal", status: "Validé", visibility: "Archives", meetingId: "r3",
+    type: "Procès-verbal", status: "Archivé", visibility: "Archives", meetingId: "r3",
     description: "Exemple de procès-verbal validé et classé.", updatedAt: "2026-11-06",
     versions: [{ id: "v5", number: 1, date: "2026-11-06", author: "Lina Amrane", filename: "pv-bilan-pedagogique.pdf", note: "Version d'archivage fictive" }],
   },
@@ -33,10 +33,11 @@ export const initialDocuments: CommitteeDocument[] = [
 
 export const initialMinutes: MeetingMinutes[] = [
   {
-    id: "pv1", reference: "PV-2026-001", meetingId: "r3", status: "Validé",
+    id: "pv1", reference: "PV-2026-001", meetingId: "r3", status: "Signé",
     presentMemberIds: ["m1", "m2", "m3", "m5"],
     summary: "Le comité a examiné le bilan pédagogique du semestre et échangé sur l'harmonisation des évaluations. Les recommandations ont été présentées et discutées.",
     nextSteps: "Diffuser la synthèse aux responsables pédagogiques et préparer une grille commune d'évaluation.",
     secretary: "Lina Amrane", president: "Karim Haddad", updatedAt: "2026-11-06", version: 2,
+    signedBy: "Karim Haddad", signedAt: "2026-11-06",
   },
 ]

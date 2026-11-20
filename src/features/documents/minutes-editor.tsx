@@ -3,7 +3,7 @@
 import { useDemoData } from "@/lib/demo-store"
 
 import { useEffect, useState } from "react"
-import { CheckCircle2, Download, RotateCcw, Save } from "lucide-react"
+import { Archive, CheckCircle2, Download, PenLine, RotateCcw, Save } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -13,6 +13,7 @@ import type { MeetingMinutes } from "./types"
 import { memberName, printMinutes, today } from "./utils"
 import { MinutesPreview } from "./minutes-preview"
 import { useUiText } from "@/features/ui-text"
+import { useStaticAuth } from "@/lib/static-auth"
 
 interface Props {
   minutes: MeetingMinutes
@@ -21,11 +22,15 @@ interface Props {
 
 export function MinutesEditor({ minutes, onSave }: Props) {
   const t = useUiText()
-  const { meetings, members } = useDemoData()
+  const { user } = useStaticAuth()
+  const { meetings, members, decisions } = useDemoData()
   const [form, setForm] = useState<MeetingMinutes>(() => ({ ...minutes, presentMemberIds: [...minutes.presentMemberIds] }))
   const [feedback, setFeedback] = useState("")
   const meeting = meetings.find((item) => item.id === form.meetingId)
-  const isLocked = form.status === "Validé"
+  const isLocked = form.status === "Signé" || form.status === "Archivé"
+  const canDraft = user?.role === "secretary"
+  const canSign = user?.role === "president"
+  const canArchive = user?.role === "archivist" || user?.role === "admin"
 
   useEffect(() => { setForm({ ...minutes, presentMemberIds: [...minutes.presentMemberIds] }) }, [minutes])
 
@@ -37,23 +42,38 @@ export function MinutesEditor({ minutes, onSave }: Props) {
     update("presentMemberIds", checked ? [...form.presentMemberIds, id] : form.presentMemberIds.filter((memberId) => memberId !== id))
   }
   function save() {
+    if (!canDraft || isLocked || form.status !== "Brouillon") return
     const next = { ...form, version: minutes.version + 1, updatedAt: today() }
     onSave(next)
     setFeedback(t("Brouillon enregistré en mémoire pour cette session."))
   }
   function validate() {
+    if (!canDraft || form.status !== "Brouillon") return
     if (!form.summary.trim() || !form.presentMemberIds.length) {
-      setFeedback(t("Ajoutez au moins un membre présent et un compte rendu avant de valider."))
+      setFeedback(t("Ajoutez au moins un membre présent et un compte rendu avant de soumettre le PV."))
       return
     }
-    const next = { ...form, status: "Validé" as const, version: minutes.version + 1, updatedAt: today() }
+    const next = { ...form, status: "À signer" as const, version: minutes.version + 1, updatedAt: today() }
     onSave(next)
-    setFeedback(t("PV validé dans la simulation. Aucune signature réelle."))
+    setFeedback(t("Le PV est transmis au président pour signature."))
   }
   function reopen() {
+    if (!canDraft || form.status !== "À signer") return
     const next = { ...form, status: "Brouillon" as const, version: minutes.version + 1, updatedAt: today() }
     onSave(next)
-    setFeedback(t("PV rouvert en brouillon."))
+    setFeedback(t("Le PV est de nouveau en brouillon."))
+  }
+  function sign() {
+    if (!user || user.role !== "president" || form.status !== "À signer") return
+    const next = { ...form, status: "Signé" as const, signedBy: `${user.firstName} ${user.lastName}`, signedAt: today(), version: minutes.version + 1, updatedAt: today() }
+    onSave(next)
+    setFeedback(t("Signature simulée enregistrée. Le PV est maintenant verrouillé."))
+  }
+  function archive() {
+    if (!canArchive || form.status !== "Signé") return
+    const next = { ...form, status: "Archivé" as const, archivedAt: today(), version: minutes.version + 1, updatedAt: today() }
+    onSave(next)
+    setFeedback(t("Le PV signé a été archivé."))
   }
 
   return (
@@ -61,18 +81,18 @@ export function MinutesEditor({ minutes, onSave }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3"><span className="text-sm font-medium">{form.reference}</span><Badge variant={isLocked ? "secondary" : "outline"}>{t(form.status)}</Badge><span className="text-xs text-muted-foreground">v{form.version}</span></div>
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" onClick={() => { if (!printMinutes(form)) setFeedback(t("Impossible d'ouvrir l'impression : autorisez les fenêtres contextuelles.")) }}><Download className="mr-2 size-4" />{t("Imprimer / PDF")}</Button>
-          {isLocked ? <Button size="sm" variant="outline" onClick={reopen}><RotateCcw className="mr-2 size-4" />{t("Rouvrir")}</Button> : <>
-            <Button size="sm" variant="outline" onClick={save}><Save className="mr-2 size-4" />{t("Enregistrer")}</Button>
-            <Button size="sm" onClick={validate}><CheckCircle2 className="mr-2 size-4" />{t("Valider")}</Button>
-          </>}
+          <Button size="sm" variant="outline" onClick={() => { if (!printMinutes(form, meetings, decisions, members)) setFeedback(t("Impossible d'ouvrir l'impression : autorisez les fenêtres contextuelles.")) }}><Download className="mr-2 size-4" />{t("Imprimer / PDF")}</Button>
+          {canDraft && form.status === "Brouillon" && <><Button size="sm" variant="outline" onClick={save}><Save className="mr-2 size-4" />{t("Enregistrer")}</Button><Button size="sm" onClick={validate}><CheckCircle2 className="mr-2 size-4" />{t("Soumettre au président")}</Button></>}
+          {canDraft && form.status === "À signer" && <Button size="sm" variant="outline" onClick={reopen}><PenLine className="mr-2 size-4" />{t("Reprendre le brouillon")}</Button>}
+          {canSign && form.status === "À signer" && <Button size="sm" onClick={sign}><CheckCircle2 className="mr-2 size-4" />{t("Signer le PV")}</Button>}
+          {canArchive && form.status === "Signé" && <Button size="sm" onClick={archive}><Archive className="mr-2 size-4" />{t("Archiver le PV")}</Button>}
         </div>
       </div>
 
       <div className="grid items-start gap-10 xl:grid-cols-2">
         <section className="min-w-0 space-y-8">
           <div className="space-y-2 border-b pb-5"><h3 className="text-lg font-semibold tracking-tight">{t("Contenu du procès-verbal")}</h3><p className="text-sm leading-6 text-muted-foreground">{t("Complétez le compte rendu et vérifiez les présences avant validation.")}</p></div>
-          <fieldset disabled={isLocked} className="space-y-7 disabled:opacity-70">
+          <fieldset disabled={!canDraft || isLocked} className="space-y-7 disabled:opacity-70">
             <div className="space-y-3">
               <Label>{t("Présents à la réunion")}</Label>
               <div className="divide-y rounded-xl border px-4">
@@ -94,7 +114,7 @@ export function MinutesEditor({ minutes, onSave }: Props) {
             </div>
           </fieldset>
           {feedback && <p role="status" className="rounded-lg border px-4 py-3 text-sm text-muted-foreground">{feedback}</p>}
-          {isLocked && <p className="text-xs text-muted-foreground">{t("Les champs sont verrouillés dans la maquette après validation. « Rouvrir » permet de les modifier à nouveau.")}</p>}
+          {isLocked && <p className="text-xs text-muted-foreground">{t("Une fois signé, le PV est verrouillé. L'archiviste peut classer la version signée.")}</p>}
         </section>
         <section className="min-w-0 space-y-4"><div><h3 className="text-lg font-semibold">{t("Aperçu")}</h3><p className="mt-1 text-sm text-muted-foreground">{t("Mis à jour automatiquement pendant la saisie.")}</p></div><MinutesPreview minutes={form} /></section>
       </div>

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import type { CommitteeDocument, DocumentVersion } from "./types"
 import { formatDate, meetingLabel } from "./utils"
 import { useUiText } from "@/features/ui-text"
+import { useDemoData } from "@/lib/demo-store"
 
 interface Props {
   document: CommitteeDocument | null
@@ -18,10 +19,14 @@ interface Props {
   onEdit: () => void
   onDelete: () => void
   onAddVersion: (file: File, note: string) => void
+  canEdit: boolean
+  canDelete: boolean
+  canAddVersion: boolean
 }
 
-export function DocumentDetails({ document: item, open, onOpenChange, onEdit, onDelete, onAddVersion }: Props) {
+export function DocumentDetails({ document: item, open, onOpenChange, onEdit, onDelete, onAddVersion, canEdit, canDelete, canAddVersion }: Props) {
   const t = useUiText()
+  const { meetings } = useDemoData()
   const [showUpload, setShowUpload] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [note, setNote] = useState("")
@@ -68,7 +73,7 @@ export function DocumentDetails({ document: item, open, onOpenChange, onEdit, on
           <div className="grid gap-5 text-sm sm:grid-cols-2">
             <div className="space-y-1"><p className="text-xs text-muted-foreground">{t("Type")}</p><p>{t(item.type)}</p></div>
             <div className="space-y-1"><p className="text-xs text-muted-foreground">{t("Accès simulé")}</p><p>{t(item.visibility)}</p></div>
-            <div className="space-y-1"><p className="text-xs text-muted-foreground">{t("Réunion")}</p><p>{meetingLabel(item.meetingId)}</p></div>
+            <div className="space-y-1"><p className="text-xs text-muted-foreground">{t("Réunion")}</p><p>{meetingLabel(item.meetingId, meetings)}</p></div>
             <div className="space-y-1"><p className="text-xs text-muted-foreground">{t("Dernière modification")}</p><p>{formatDate(item.updatedAt)}</p></div>
           </div>
           {item.description && <p className="whitespace-pre-wrap text-sm leading-7 text-muted-foreground">{item.description}</p>}
@@ -76,7 +81,7 @@ export function DocumentDetails({ document: item, open, onOpenChange, onEdit, on
           <section className="space-y-5 border-t pt-7">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div><h3 className="font-semibold">{t("Historique des versions")}</h3><p className="mt-1 text-xs text-muted-foreground">{t("Les fichiers fictifs du modèle ne sont pas téléchargeables.")}</p></div>
-              <Button size="sm" variant="outline" onClick={() => setShowUpload((value) => !value)}><Plus className="mr-2 size-4" />{t("Ajouter une version")}</Button>
+              {canAddVersion && <Button size="sm" variant="outline" onClick={() => setShowUpload((value) => !value)}><Plus className="mr-2 size-4" />{t("Ajouter une version")}</Button>}
             </div>
             {showUpload && (
               <div className="space-y-3 rounded-lg border border-dashed p-5">
@@ -105,10 +110,10 @@ export function DocumentDetails({ document: item, open, onOpenChange, onEdit, on
               </div>
             ) : <p className="rounded-lg border border-dashed p-7 text-center text-sm text-muted-foreground"><FileText className="mx-auto mb-3 size-6" />{t("Aucune version de fichier. Ajoutez un document local.")}</p>}
           </section>
-          <div className="flex flex-wrap justify-between gap-3 border-t pt-5">
-            <Button variant="destructive" size="sm" onClick={onDelete}><Trash2 className="mr-2 size-4" />{t("Supprimer")}</Button>
-            <Button variant="outline" size="sm" onClick={onEdit}><Pencil className="mr-2 size-4" />{t("Modifier les informations")}</Button>
-          </div>
+          {(canDelete || canEdit) && <div className="flex flex-wrap justify-between gap-3 border-t pt-5">
+            {canDelete && <Button variant="destructive" size="sm" onClick={onDelete}><Trash2 className="mr-2 size-4" />{t("Supprimer")}</Button>}
+            {canEdit && <Button variant="outline" size="sm" onClick={onEdit}><Pencil className="mr-2 size-4" />{t("Modifier les informations")}</Button>}
+          </div>}
         </div>
       </DialogContent>
     </Dialog>

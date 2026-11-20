@@ -29,6 +29,7 @@ import { DecisionForm } from "./decision-form"
 import { ACTION_PRIORITIES, ACTION_STATUSES, DECISION_STATUSES } from "./types"
 import type { ActionPriority, ActionRecord, ActionStatus, BoardView, DecisionRecord, DecisionStatus } from "./types"
 import { dateToday, formatDate, isOverdue, moveAction, nextDecisionReference, normalizedOrder } from "./utils"
+import { hasPermission, useStaticAuth } from "@/lib/static-auth"
 
 const actionFilters = ["Toutes les priorités", ...ACTION_PRIORITIES] as const
 const decisionFilters = ["Toutes les décisions", ...DECISION_STATUSES] as const
@@ -55,6 +56,9 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: number; 
 
 export function DecisionsActionsClient() {
   const t = useUiText()
+  const { user } = useStaticAuth()
+  const canManageActions = hasPermission(user, "actions", "create") || hasPermission(user, "actions", "delete")
+  const isAssignedMember = user?.role === "member" && Boolean(user.memberId)
   const { meetings: linkedMeetings, members: linkedMembers } = useDemoData()
   const memberLabel = (id: string) => linkedMembers.find((member) => member.id === id)?.name ?? "Membre inconnu"
   const meetingLabel = (id: string) => linkedMeetings.find((meeting) => meeting.id === id)?.title ?? "Réunion inconnue"
@@ -83,14 +87,15 @@ export function DecisionsActionsClient() {
   const deleteAction = toDelete?.kind === "action" ? actions.find((item) => item.id === toDelete.id) : undefined
   const dependentActionCount = deleteDecision ? actions.filter((item) => item.decisionId === deleteDecision.id).length : 0
 
+  const roleActions = isAssignedMember ? actions.filter((action) => action.assigneeId === user?.memberId) : actions
   const filteredActions = useMemo(() => {
     const query = search.toLocaleLowerCase("fr").trim()
-    return actions.filter((action) => {
+    return roleActions.filter((action) => {
       const related = decisions.find((decision) => decision.id === action.decisionId)
       const haystack = `${action.title} ${action.description} ${memberLabel(action.assigneeId)} ${related?.reference ?? ""}`.toLocaleLowerCase("fr")
       return (!query || haystack.includes(query)) && (priorityFilter === "Toutes les priorités" || action.priority === priorityFilter)
     })
-  }, [actions, decisions, search, priorityFilter, linkedMembers])
+  }, [roleActions, decisions, search, priorityFilter, linkedMembers])
 
   const filteredDecisions = useMemo(() => {
     const query = search.toLocaleLowerCase("fr").trim()
@@ -105,6 +110,7 @@ export function DecisionsActionsClient() {
   const overdue = actions.filter((action) => isOverdue(action, today)).length
 
   function openDecisionForm(item: DecisionRecord | null = null) {
+    if (!canManageActions) return
     setDetailDecisionId(null)
     setEditingDecision(item)
     setDecisionFormVersion((n) => n + 1)
@@ -112,6 +118,7 @@ export function DecisionsActionsClient() {
   }
 
   function saveDecision(item: DecisionRecord): string | null {
+    if (!canManageActions) return t("Vous ne pouvez pas modifier les décisions.")
     if (item.status !== "Adoptée" && actions.some((action) => action.decisionId === item.id)) {
       return t("Cette décision est liée à des actions. Elle doit rester adoptée ou ces actions doivent être dissociées.")
     }
@@ -122,6 +129,7 @@ export function DecisionsActionsClient() {
   }
 
   function openActionForm(item: ActionRecord | null = null, status: ActionStatus = "À faire", decisionId = "") {
+    if (!canManageActions) return
     setDetailDecisionId(null)
     setDetailActionId(null)
     setEditingAction(item)
@@ -132,6 +140,7 @@ export function DecisionsActionsClient() {
   }
 
   function saveAction(item: ActionRecord) {
+    if (!canManageActions) return
     setActions((current) => {
       const old = current.find((action) => action.id === item.id)
       const updated = old
@@ -142,7 +151,7 @@ export function DecisionsActionsClient() {
   }
 
   function confirmDelete() {
-    if (!toDelete) return
+    if (!canManageActions || !toDelete) return
     if (toDelete.kind === "decision") {
       if (actions.some((action) => action.decisionId === toDelete.id)) return
       setDecisions((current) => current.filter((item) => item.id !== toDelete.id))
@@ -161,6 +170,11 @@ export function DecisionsActionsClient() {
     setDecisionFilter("Toutes les décisions")
   }
 
+  function updateAssignedActionStatus(id: string, status: ActionStatus) {
+    if (!isAssignedMember || !user?.memberId) return
+    setActions((current) => current.map((action) => action.id === id && action.assigneeId === user.memberId ? { ...action, status } : action))
+  }
+
   return (
     <div className="space-y-6 p-4 md:p-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
@@ -171,8 +185,8 @@ export function DecisionsActionsClient() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => openDecisionForm()}><Plus className="mr-2 size-4" /> {t("Décision")}</Button>
-          <Button onClick={() => openActionForm()}><Plus className="mr-2 size-4" /> {t("Nouvelle action")}</Button>
+          {canManageActions && <><Button variant="outline" onClick={() => openDecisionForm()}><Plus className="mr-2 size-4" /> {t("Décision")}</Button>
+          <Button onClick={() => openActionForm()}><Plus className="mr-2 size-4" /> {t("Nouvelle action")}</Button></>}
         </div>
       </div>
 
@@ -222,8 +236,11 @@ export function DecisionsActionsClient() {
         {view === "kanban" && (
           <div className="p-3">
             <ActionsKanban actions={filteredActions} decisions={decisions}
-              onMove={(id, status, beforeId) => setActions((current) => moveAction(current, id, status, beforeId))}
-              onAdd={(status) => openActionForm(null, status)} onDetails={setDetailActionId} />
+              onMove={(id, status, beforeId) => {
+                if (canManageActions) setActions((current) => moveAction(current, id, status, beforeId))
+                else if (isAssignedMember && roleActions.some((action) => action.id === id)) updateAssignedActionStatus(id, status)
+              }}
+              onAdd={(status) => openActionForm(null, status)} onDetails={setDetailActionId} canAdd={canManageActions} />
           </div>
         )}
 
@@ -247,11 +264,11 @@ export function DecisionsActionsClient() {
                         {formatDate(action.dueDate)}{isOverdue(action, today) ? ` · ${t("Retard")}` : ""}
                       </TableCell>
                       <TableCell><Badge variant={action.priority === "Haute" ? "destructive" : "outline"}>{t(action.priority)}</Badge></TableCell>
-                      <TableCell>{actionBadge(action.status, t)}</TableCell>
+                      <TableCell>{isAssignedMember ? <Select value={action.status} onValueChange={(value) => updateAssignedActionStatus(action.id, value as ActionStatus)}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent>{ACTION_STATUSES.map((status) => <SelectItem key={status} value={status}>{t(status)}</SelectItem>)}</SelectContent></Select> : actionBadge(action.status, t)}</TableCell>
                       <TableCell><div className="flex justify-end gap-1">
                         <Button size="icon" variant="ghost" aria-label={t("Voir l'action")} onClick={() => setDetailActionId(action.id)}><Eye className="size-4" /></Button>
-                        <Button size="icon" variant="ghost" aria-label={t("Modifier l'action")} onClick={() => openActionForm(action)}><Pencil className="size-4" /></Button>
-                        <Button size="icon" variant="ghost" aria-label={t("Supprimer l'action")} onClick={() => setToDelete({ kind: "action", id: action.id })}><Trash2 className="size-4" /></Button>
+                        {canManageActions && <><Button size="icon" variant="ghost" aria-label={t("Modifier l'action")} onClick={() => openActionForm(action)}><Pencil className="size-4" /></Button>
+                        <Button size="icon" variant="ghost" aria-label={t("Supprimer l'action")} onClick={() => setToDelete({ kind: "action", id: action.id })}><Trash2 className="size-4" /></Button></>}
                       </div></TableCell>
                     </TableRow>
                   })}
@@ -280,8 +297,8 @@ export function DecisionsActionsClient() {
                     <TableCell>{decisionBadge(decision.status, t)}</TableCell>
                     <TableCell><div className="flex justify-end gap-1">
                       <Button size="icon" variant="ghost" aria-label={t("Voir la décision")} onClick={() => setDetailDecisionId(decision.id)}><Eye className="size-4" /></Button>
-                      <Button size="icon" variant="ghost" aria-label={t("Modifier la décision")} onClick={() => openDecisionForm(decision)}><Pencil className="size-4" /></Button>
-                      <Button size="icon" variant="ghost" aria-label={t("Supprimer la décision")} onClick={() => setToDelete({ kind: "decision", id: decision.id })}><Trash2 className="size-4" /></Button>
+                      {canManageActions && <><Button size="icon" variant="ghost" aria-label={t("Modifier la décision")} onClick={() => openDecisionForm(decision)}><Pencil className="size-4" /></Button>
+                      <Button size="icon" variant="ghost" aria-label={t("Supprimer la décision")} onClick={() => setToDelete({ kind: "decision", id: decision.id })}><Trash2 className="size-4" /></Button></>}
                     </div></TableCell>
                   </TableRow>)}
               </TableBody>
@@ -321,7 +338,7 @@ export function DecisionsActionsClient() {
           </div>}
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setDetailDecisionId(null)}>{t("Fermer")}</Button>
-            {selectedDecision?.status === "Adoptée" && <Button onClick={() => openActionForm(null, "À faire", selectedDecision.id)}>
+            {canManageActions && selectedDecision?.status === "Adoptée" && <Button onClick={() => openActionForm(null, "À faire", selectedDecision.id)}>
               <Plus className="mr-2 size-4" /> {t("Ajouter une action")}
             </Button>}
           </DialogFooter>
@@ -342,10 +359,11 @@ export function DecisionsActionsClient() {
             </div>
             <div><p className="font-medium">{t("Décision rattachée")}</p>
               <p className="mt-1 text-muted-foreground">{decisions.find((item) => item.id === selectedAction.decisionId)?.reference ?? t("Aucune")}</p></div>
+            {isAssignedMember && <div className="space-y-2"><p className="font-medium">{t("Mettre à jour mon avancement")}</p><Select value={selectedAction.status} onValueChange={(value) => updateAssignedActionStatus(selectedAction.id, value as ActionStatus)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{ACTION_STATUSES.map((status) => <SelectItem key={status} value={status}>{t(status)}</SelectItem>)}</SelectContent></Select></div>}
           </div>}
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setDetailActionId(null)}>{t("Fermer")}</Button>
-            {selectedAction && <Button onClick={() => openActionForm(selectedAction)}><Pencil className="mr-2 size-4" /> {t("Modifier")}</Button>}
+            {canManageActions && selectedAction && <Button onClick={() => openActionForm(selectedAction)}><Pencil className="mr-2 size-4" /> {t("Modifier")}</Button>}
           </DialogFooter>
         </DialogContent>
       </Dialog>
