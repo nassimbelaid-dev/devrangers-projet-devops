@@ -83,7 +83,7 @@ export function DocumentDetails({ document: item, open, onOpenChange, onEdit, on
           <section className="space-y-5 border-t pt-7">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div><h3 className="font-semibold">{t("Historique des versions")}</h3><p className="mt-1 text-xs text-muted-foreground">{t("Les fichiers fictifs du modèle ne sont pas téléchargeables.")}</p></div>
-              {canAddVersion && <Button size="sm" variant="outline" onClick={() => setShowUpload((value) => !value)}><Plus className="mr-2 size-4" />{t("Ajouter une version")}</Button>}
+              {canAddVersion && item.status !== "Archivé" && <Button size="sm" variant="outline" onClick={() => setShowUpload((value) => !value)}><Plus className="mr-2 size-4" />{t("Ajouter une version")}</Button>}
             </div>
             {showUpload && (
               <div className="space-y-3 rounded-lg border border-dashed p-5">
@@ -112,9 +112,9 @@ export function DocumentDetails({ document: item, open, onOpenChange, onEdit, on
               </div>
             ) : <p className="rounded-lg border border-dashed p-7 text-center text-sm text-muted-foreground"><FileText className="mx-auto mb-3 size-6" />{t("Aucune version de fichier. Ajoutez un document local.")}</p>}
           </section>
-          {(canDelete || canEdit || (canArchive && item.status !== "Archivé")) && <div className="flex flex-wrap justify-between gap-3 border-t pt-5">
+          {(canDelete || canEdit || canArchive) && item.status !== "Archivé" && <div className="flex flex-wrap justify-between gap-3 border-t pt-5">
             {canDelete && <Button variant="destructive" size="sm" onClick={onDelete}><Trash2 className="mr-2 size-4" />{t("Supprimer")}</Button>}
-            {canArchive && item.status !== "Archivé" && <Button variant="outline" size="sm" onClick={onArchive}>{t("Archiver")}</Button>}
+            {canArchive && <Button variant="outline" size="sm" onClick={onArchive}>{t("Archiver")}</Button>}
             {canEdit && <Button variant="outline" size="sm" onClick={onEdit}><Pencil className="mr-2 size-4" />{t("Modifier les informations")}</Button>}
           </div>}
         </div>

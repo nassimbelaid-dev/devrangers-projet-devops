@@ -19,11 +19,12 @@ import { formatDate, makeId, meetingLabel, today } from "./utils"
 import { useUiText } from "@/features/ui-text"
 import { hasPermission, useStaticAuth } from "@/lib/static-auth"
 
-type View = "library" | "minutes"
+type View = "library" | "minutes" | "archives"
 
 export function DocumentsClient() {
   const t = useUiText()
   const { decisions } = useDemoData()
+  const [, setDecisions] = useDemoCollection("decisions")
   const { user } = useStaticAuth()
   const canEditDocuments = hasPermission(user, "documents", "create") || hasPermission(user, "documents", "edit")
   const canDeleteDocuments = hasPermission(user, "documents", "delete")
@@ -42,9 +43,12 @@ export function DocumentsClient() {
   const [search, setSearch] = useState("")
   const [filterType, setFilterType] = useState("all")
   const [filterStatus, setFilterStatus] = useState("all")
+  const [archiveMeeting, setArchiveMeeting] = useState("all")
+  const [archiveDate, setArchiveDate] = useState("")
+  const [archiveType, setArchiveType] = useState("all")
 
   useEffect(() => {
-    function updateViewFromHash() { setView(window.location.hash === "#pv" ? "minutes" : "library") }
+    function updateViewFromHash() { setView(window.location.hash === "#pv" ? "minutes" : window.location.hash === "#archives" ? "archives" : "library") }
     updateViewFromHash()
     window.addEventListener("hashchange", updateViewFromHash)
     return () => window.removeEventListener("hashchange", updateViewFromHash)
@@ -70,7 +74,7 @@ export function DocumentsClient() {
       const canSeeVisibility = doc.visibility === "Comité" || user?.role === "admin" || user?.role === "president" || user?.role === "archivist" || (doc.visibility === "Présidence" && user?.role === "secretary")
       if (!canSeeVisibility) return false
       const matchesText = !query || `${doc.title} ${doc.reference} ${doc.type} ${meetingLabel(doc.meetingId, meetings)}`.toLocaleLowerCase("fr").includes(query)
-      return matchesText && (filterType === "all" || doc.type === filterType) && (filterStatus === "all" || doc.status === filterStatus)
+      return doc.status !== "Archivé" && matchesText && (filterType === "all" || doc.type === filterType) && (filterStatus === "all" || doc.status === filterStatus)
     })
   }, [documents, search, filterStatus, filterType, meetings, user?.role])
   const visibleMinutes = useMemo(() => {
@@ -79,7 +83,7 @@ export function DocumentsClient() {
       const meeting = meetings.find((item) => item.id === pv.meetingId)
       const linkedDecisions = decisions.filter((item) => item.meetingId === pv.meetingId)
       const haystack = [pv.reference, pv.summary, pv.nextSteps, pv.secretary, pv.president, meeting?.title, ...linkedDecisions.flatMap((item) => [item.reference, item.title, item.description, item.status])].join(" ").toLocaleLowerCase("fr")
-      return canSeeMinutes(pv) && (!query || haystack.includes(query))
+      return pv.status !== "Archivé" && canSeeMinutes(pv) && (!query || haystack.includes(query))
     })
   }, [minutes, meetings, decisions, search, user?.role])
   const visibleDecisions = useMemo(() => {
@@ -87,6 +91,11 @@ export function DocumentsClient() {
     if (!query) return []
     return decisions.filter((item) => `${item.reference} ${item.title} ${item.description} ${item.status} ${meetings.find((meeting) => meeting.id === item.meetingId)?.title ?? ""}`.toLocaleLowerCase("fr").includes(query))
   }, [decisions, meetings, search])
+  const archiveItems = [
+    ...documents.filter((item) => item.status === "Archivé").map((item) => ({ id: item.id, kind: t("Document de séance"), title: item.title, meetingId: item.meetingId, date: item.archivedAt, by: item.archivedBy, type: item.type, action: () => { setSelectedDocId(item.id); setView("library") } })),
+    ...minutes.filter((item) => item.status === "Archivé").map((item) => ({ id: item.id, kind: t("Procès-verbal signé"), title: item.reference, meetingId: item.meetingId, date: item.archivedAt, by: item.archivedBy, type: "PV", action: () => { setSelectedMinutesId(item.id); setView("minutes") } })),
+    ...decisions.filter((item) => item.archivedAt).map((item) => ({ id: item.id, kind: t("Décision"), title: `${item.reference} · ${item.title}`, meetingId: item.meetingId, date: item.archivedAt, by: item.archivedBy, type: t("Décision"), action: () => undefined })),
+  ].filter((item) => (!archiveMeeting || archiveMeeting === "all" || item.meetingId === archiveMeeting) && (!archiveDate || item.date?.slice(0, 10) === archiveDate) && (archiveType === "all" || item.type === archiveType) && (!search.trim() || `${item.title} ${item.kind} ${meetingLabel(item.meetingId, meetings)}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))).sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""))
 
   function saveDocument(next: CommitteeDocument) {
     if (!canEditDocuments || (next.status === "Archivé" && !canArchiveDocuments)) return
@@ -109,8 +118,15 @@ export function DocumentsClient() {
   }
   function archiveDocument() {
     if (!canArchiveDocuments || !selectedDocument || selectedDocument.status === "Archivé") return
-    setDocuments((current) => current.map((doc) => doc.id === selectedDocument.id ? { ...doc, status: "Archivé", updatedAt: today() } : doc))
+    if (!window.confirm(t("Archiver définitivement ce document ?"))) return
+    setDocuments((current) => current.map((doc) => doc.id === selectedDocument.id ? { ...doc, status: "Archivé", archivedAt: new Date().toISOString(), archivedBy: user ? `${user.firstName} ${user.lastName}` : "", updatedAt: today() } : doc))
     setSelectedDocId(null)
+  }
+  function archiveDecision(id: string) {
+    if (!canArchiveDocuments) return
+    const decision = decisions.find((item) => item.id === id)
+    if (!decision || decision.archivedAt || !window.confirm(t("Archiver cette décision ?"))) return
+    setDecisions((current) => current.map((item) => item.id === id ? { ...item, archivedAt: new Date().toISOString(), archivedBy: user ? `${user.firstName} ${user.lastName}` : "" } : item))
   }
   function createMinutes() {
     if (!canDraftMinutes) return
@@ -142,9 +158,9 @@ export function DocumentsClient() {
     return result.error ?? null
   }
   function selectView(next: string) {
-    const target = next === "minutes" ? "minutes" : "library"
+    const target = next === "minutes" || next === "archives" ? next : "library"
     setView(target)
-    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}${target === "minutes" ? "#pv" : "#bibliotheque"}`)
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}${target === "minutes" ? "#pv" : target === "archives" ? "#archives" : "#bibliotheque"}`)
   }
 
   return (
@@ -156,9 +172,10 @@ export function DocumentsClient() {
       </header>
 
       <Tabs value={view} onValueChange={selectView} className="space-y-9">
-        <TabsList>
+        <TabsList className="flex h-auto flex-wrap">
           <TabsTrigger value="library"><FolderOpen className="mr-2 size-4" />{t("Bibliothèque")}</TabsTrigger>
           <TabsTrigger value="minutes"><ScrollText className="mr-2 size-4" />{t("Procès-verbaux")}</TabsTrigger>
+          <TabsTrigger value="archives"><Archive className="mr-2 size-4" />{t("Archives")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="library" className="space-y-10">
@@ -180,7 +197,7 @@ export function DocumentsClient() {
               </Select>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
                 <SelectTrigger aria-label={t("Filtrer par statut")} className="w-full md:w-40"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="all">{t("Tous les statuts")}</SelectItem><SelectItem value="Brouillon">{t("Brouillon")}</SelectItem><SelectItem value="Validé">{t("Validé")}</SelectItem><SelectItem value="Archivé">{t("Archivé")}</SelectItem></SelectContent>
+                <SelectContent><SelectItem value="all">{t("Tous les statuts")}</SelectItem><SelectItem value="Brouillon">{t("Brouillon")}</SelectItem><SelectItem value="Validé">{t("Validé")}</SelectItem></SelectContent>
               </Select>
             </div>
             <div className="overflow-hidden rounded-xl border bg-card">
@@ -223,9 +240,24 @@ export function DocumentsClient() {
           {search.trim() && <section className="space-y-3 border-t pt-6"><h3 className="font-semibold">{t("Décisions trouvées")} ({visibleDecisions.length})</h3>{visibleDecisions.length ? visibleDecisions.map((decision) => <article key={decision.id} className="rounded-lg border p-4"><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-medium">{decision.reference} · {decision.title}</p><Badge variant="outline">{t(decision.status)}</Badge></div><p className="mt-2 text-sm text-muted-foreground">{decision.description}</p><p className="mt-2 text-xs text-muted-foreground">{meetings.find((meeting) => meeting.id === decision.meetingId)?.title}</p></article>) : <p className="text-sm text-muted-foreground">{t("Aucune décision correspondante.")}</p>}</section>}
           {selectedMinutes ? <section className="space-y-7 border-t pt-9"><MinutesEditor key={selectedMinutes.id} minutes={selectedMinutes} onSave={saveMinutes} onWorkflow={runMinutesWorkflow} /></section> : <p className="rounded-xl border border-dashed p-12 text-center text-sm text-muted-foreground">{t("Créez ou recherchez un procès-verbal.")}</p>}
         </TabsContent>
+
+        <TabsContent value="archives" className="space-y-7">
+          <div><h2 className="text-xl font-semibold">{t("Archives")}</h2><p className="mt-2 text-sm text-muted-foreground">{t("Consultation des documents, décisions et PV archivés. Les éléments archivés sont en lecture seule.")}</p></div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Select value={archiveMeeting} onValueChange={setArchiveMeeting}><SelectTrigger aria-label={t("Filtrer par réunion")}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t("Toutes les réunions")}</SelectItem>{meetings.map((item) => <SelectItem key={item.id} value={item.id}>{item.title}</SelectItem>)}</SelectContent></Select>
+            <Input type="date" aria-label={t("Filtrer par date d’archivage")} value={archiveDate} onChange={(event) => setArchiveDate(event.target.value)} />
+            <Select value={archiveType} onValueChange={setArchiveType}><SelectTrigger aria-label={t("Filtrer par type de document")}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t("Tous les types")}</SelectItem>{DOCUMENT_TYPES.map((item) => <SelectItem key={item} value={item}>{t(item)}</SelectItem>)}<SelectItem value="PV">{t("Procès-verbal")}</SelectItem><SelectItem value={t("Décision")}>{t("Décision")}</SelectItem></SelectContent></Select>
+            <div className="relative"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input className="pl-9" placeholder={t("Rechercher dans les archives")} value={search} onChange={(event) => setSearch(event.target.value)} /></div>
+          </div>
+          <div className="space-y-3">
+            {archiveItems.map((item) => <article key={`${item.kind}-${item.id}`} className="flex flex-col justify-between gap-4 rounded-xl border bg-card p-4 sm:flex-row sm:items-center sm:px-5"><div className="min-w-0 space-y-1"><div className="flex flex-wrap items-center gap-2"><Badge variant="secondary">{item.kind}</Badge><span className="text-xs text-muted-foreground">{item.type}</span></div><p className="font-medium">{item.title}</p><p className="text-xs text-muted-foreground">{meetingLabel(item.meetingId, meetings)} · {item.date ? formatDate(item.date) : "—"} · {item.by || t("Responsable inconnu")}</p></div><Button variant="ghost" size="sm" onClick={item.action}>{t("Consulter")}</Button></article>)}
+            {!documents.some((item) => item.status === "Archivé") && !minutes.some((item) => item.status === "Archivé") && !decisions.some((item) => item.archivedAt) && <p className="rounded-xl border border-dashed p-12 text-center text-sm text-muted-foreground">{t("Aucune archive pour le moment.")}</p>}
+          </div>
+          {canArchiveDocuments && <section className="space-y-3 border-t pt-6"><h3 className="font-semibold">{t("Décisions à archiver")}</h3>{decisions.filter((item) => !item.archivedAt).map((item) => <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3"><div><p className="text-sm font-medium">{item.reference} · {item.title}</p><p className="text-xs text-muted-foreground">{meetingLabel(item.meetingId, meetings)} · {formatDate(item.date)}</p></div><Button variant="outline" size="sm" onClick={() => archiveDecision(item.id)}>{t("Archiver")}</Button></div>)}</section>}
+        </TabsContent>
       </Tabs>
 
-      {formOpen && <DocumentForm key={editing?.id ?? "new"} open={formOpen} initial={editing} reference={`DOC-2026-${String(documents.length + 1).padStart(3, "0")}`} onOpenChange={setFormOpen} onSave={saveDocument} canArchive={canArchiveDocuments} />}
+      {formOpen && <DocumentForm key={editing?.id ?? "new"} open={formOpen} initial={editing} reference={`DOC-2026-${String(documents.length + 1).padStart(3, "0")}`} onOpenChange={setFormOpen} onSave={saveDocument} />}
       <DocumentDetails document={selectedDocument} open={Boolean(selectedDocument)} onOpenChange={(value) => { if (!value) setSelectedDocId(null) }} onAddVersion={addVersion} onArchive={archiveDocument} onEdit={() => { if (!canEditDocuments) return; setEditing(selectedDocument); setSelectedDocId(null); setFormOpen(true) }} onDelete={deleteDocument} canEdit={canEditDocuments} canDelete={canDeleteDocuments} canAddVersion={canEditDocuments} canArchive={canArchiveDocuments} />
 
       <Dialog open={newMinutesOpen} onOpenChange={setNewMinutesOpen}>

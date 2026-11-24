@@ -181,7 +181,18 @@ function authorizeDemoWrite<K extends keyof DemoState>(actor: ReturnType<typeof 
     if (oldItems.some((ballot) => !newItems.some((nextBallot) => nextBallot.id === ballot.id))) return "Un scrutin ne peut pas être supprimé directement."
     return null
   }
-  if (key === "decisions") return "Les décisions évoluent par les règles métier du scrutin et ne sont pas modifiables directement."
+  if (key === "decisions") {
+    const oldItems = before as DemoState["decisions"]
+    const newItems = after as DemoState["decisions"]
+    for (const item of newItems) {
+      const old = oldItems.find((entry) => entry.id === item.id)
+      if (!old || JSON.stringify(old) === JSON.stringify(item)) continue
+      const archiveOnly = actor.role === "archivist" && !old.archivedAt && Boolean(item.archivedAt && item.archivedBy) && JSON.stringify({ ...old, archivedAt: undefined, archivedBy: undefined }) === JSON.stringify({ ...item, archivedAt: undefined, archivedBy: undefined })
+      if (!archiveOnly) return "Les décisions évoluent par le scrutin ; seul le responsable des archives peut les archiver."
+    }
+    if (oldItems.some((item) => !newItems.some((entry) => entry.id === item.id))) return "Une décision ne peut pas être supprimée du magasin de données."
+    return null
+  }
   if (key === "actions") {
     const oldItems = before as DemoState["actions"]
     const newItems = after as DemoState["actions"]
@@ -203,8 +214,8 @@ function authorizeDemoWrite<K extends keyof DemoState>(actor: ReturnType<typeof 
       const old = oldItems.find((entry) => entry.id === item.id)
       if (!old) { if (!allowed("documents", "create")) return "Votre rôle ne permet pas de déposer un document."; continue }
       if (JSON.stringify(old) === JSON.stringify(item)) continue
-      const archiveOnly = actor.role === "archivist" && item.status === "Archivé" && old.status !== "Archivé" && JSON.stringify({ ...old, status: undefined, updatedAt: undefined }) === JSON.stringify({ ...item, status: undefined, updatedAt: undefined })
-      if (!archiveOnly && (!allowed("documents", "edit") || (item.status === "Archivé" && old.status !== "Archivé"))) return "Votre rôle ne permet pas de modifier ce document."
+      const archiveOnly = actor.role === "archivist" && item.status === "Archivé" && old.status !== "Archivé" && Boolean(item.archivedAt && item.archivedBy) && JSON.stringify({ ...old, status: undefined, archivedAt: undefined, archivedBy: undefined, updatedAt: undefined }) === JSON.stringify({ ...item, status: undefined, archivedAt: undefined, archivedBy: undefined, updatedAt: undefined })
+      if (!archiveOnly && (!allowed("documents", "edit") || old.status === "Archivé")) return "Votre rôle ne permet pas de modifier ce document."
     }
     if (oldItems.some((item) => !newItems.some((nextItem) => nextItem.id === item.id))) return "Votre rôle ne permet pas de supprimer ce document."
     return null
@@ -216,8 +227,9 @@ function authorizeDemoWrite<K extends keyof DemoState>(actor: ReturnType<typeof 
       const old = oldItems.find((entry) => entry.id === item.id)
       if (!old) { if (!allowed("minutes", "create")) return "Votre rôle ne permet pas de créer un brouillon de PV."; continue }
       if (JSON.stringify(old) === JSON.stringify(item)) continue
-      const archiveOnly = actor.role === "archivist" && old.status === "Signé" && item.status === "Archivé" && JSON.stringify({ ...old, status: undefined, archivedAt: undefined, updatedAt: undefined, version: undefined }) === JSON.stringify({ ...item, status: undefined, archivedAt: undefined, updatedAt: undefined, version: undefined })
-      const draftFieldsOnly = actor.role === "secretary" && allowed("minutes", "edit") && old.status === "Brouillon" && item.status === "Brouillon" && old.id === item.id && old.reference === item.reference && old.meetingId === item.meetingId && old.signedAt === item.signedAt && old.signedBy === item.signedBy && old.archivedAt === item.archivedAt
+      const archiveOnly = actor.role === "archivist" && old.status === "Signé" && item.status === "Archivé" && Boolean(item.archivedAt && item.archivedBy) && JSON.stringify({ ...old, status: undefined, archivedAt: undefined, archivedBy: undefined, updatedAt: undefined, version: undefined }) === JSON.stringify({ ...item, status: undefined, archivedAt: undefined, archivedBy: undefined, updatedAt: undefined, version: undefined })
+      const draftFieldsOnly = actor.role === "secretary" && allowed("minutes", "edit") && old.status === "Brouillon" && item.status === "Brouillon" && old.id === item.id && old.reference === item.reference && old.meetingId === item.meetingId && old.signedAt === item.signedAt && old.signedBy === item.signedBy && old.archivedAt === item.archivedAt && old.archivedBy === item.archivedBy
+      if (old.status === "Archivé" && JSON.stringify(old) !== JSON.stringify(item)) return "Un procès-verbal archivé est immuable."
       if (!archiveOnly && !draftFieldsOnly) return "Votre rôle ne permet pas de modifier ce procès-verbal."
     }
     if (oldItems.some((item) => !newItems.some((nextItem) => nextItem.id === item.id))) return "Un procès-verbal ne peut pas être supprimé du magasin de données."

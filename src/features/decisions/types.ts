@@ -15,6 +15,8 @@ export interface DecisionRecord {
   meetingId: string
   date: string // YYYY-MM-DD
   status: DecisionStatus
+  archivedAt?: string
+  archivedBy?: string
 }
 
 export interface ActionRecord {

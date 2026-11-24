@@ -65,7 +65,7 @@ export function applyMeetingWorkflow(state: DemoState, action: WorkflowAction, m
   if (action === "submit-minutes") {
     if (actor.role !== "secretary" || meeting.status !== "Clôturée" || minutes.status !== "Brouillon") return { state, error: "Seul le secrétaire peut soumettre un brouillon après clôture de la réunion." }
     if (!minutes.summary.trim() || !minutes.presentMemberIds.length) return { state, error: "Le PV doit contenir un compte rendu et au moins une présence." }
-    const updated = { ...minutes, status: "À signer" as const, updatedAt: now, version: minutes.version + 1 }
+    const updated = { ...minutes, status: "À signer" as const, submittedAt: now, updatedAt: now, version: minutes.version + 1 }
     return { state: withNotifications({ ...state, minutes: state.minutes.map((p) => p.id === minutes.id ? updated : p) }, [userNotification("pv-signature", "Procès-verbal en attente de signature", `${meeting.title} · soumis par ${actor.firstName} ${actor.lastName} le ${new Date(now).toLocaleString()}.`, `PV ${minutes.reference}`, "/documents", "u-president", `${minutes.id}`)]) }
   }
   if (action === "return-minutes") {

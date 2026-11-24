@@ -27,6 +27,8 @@ export interface CommitteeDocument {
   meetingId: string // '' si aucun lien
   description: string
   updatedAt: string
+  archivedAt?: string
+  archivedBy?: string
   versions: DocumentVersion[]
 }
 
@@ -46,5 +48,7 @@ export interface MeetingMinutes {
   signedBy?: string
   signedAt?: string
   archivedAt?: string
+  archivedBy?: string
+  submittedAt?: string
   returnedAt?: string
 }
