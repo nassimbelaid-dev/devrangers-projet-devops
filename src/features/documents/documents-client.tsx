@@ -28,6 +28,7 @@ export function DocumentsClient() {
   const canEditDocuments = hasPermission(user, "documents", "create") || hasPermission(user, "documents", "edit")
   const canDeleteDocuments = hasPermission(user, "documents", "delete")
   const canArchiveDocuments = hasPermission(user, "documents", "archive")
+  const canArchiveMinutes = hasPermission(user, "minutes", "archive")
   const [meetings, setMeetings] = useDemoCollection("meetings")
   const [view, setView] = useState<View>("library")
   const [documents, setDocuments] = useDemoCollection("documents")
@@ -59,7 +60,8 @@ export function DocumentsClient() {
   }, [minutes])
 
   const selectedDocument = documents.find((doc) => doc.id === selectedDocId) ?? null
-  const selectedMinutes = minutes.find((pv) => pv.id === selectedMinutesId) ?? minutes[0]
+  const canSeeMinutes = (pv: MeetingMinutes) => user?.role === "secretary" || user?.role === "president" || pv.status === "Signé" || pv.status === "Archivé"
+  const selectedMinutes = minutes.find((pv) => pv.id === selectedMinutesId && canSeeMinutes(pv)) ?? minutes.find(canSeeMinutes)
   const canDraftMinutes = user?.role === "secretary"
   const eligibleMeetings = meetings.filter((meeting) => (meeting.status === "En cours" || meeting.status === "Clôturée") && !minutes.some((pv) => pv.meetingId === meeting.id))
   const visibleDocuments = useMemo(() => {
@@ -77,9 +79,9 @@ export function DocumentsClient() {
       const meeting = meetings.find((item) => item.id === pv.meetingId)
       const linkedDecisions = decisions.filter((item) => item.meetingId === pv.meetingId)
       const haystack = [pv.reference, pv.summary, pv.nextSteps, pv.secretary, pv.president, meeting?.title, ...linkedDecisions.flatMap((item) => [item.reference, item.title, item.description, item.status])].join(" ").toLocaleLowerCase("fr")
-      return !query || haystack.includes(query)
+      return canSeeMinutes(pv) && (!query || haystack.includes(query))
     })
-  }, [minutes, meetings, decisions, search])
+  }, [minutes, meetings, decisions, search, user?.role])
   const visibleDecisions = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("fr")
     if (!query) return []
@@ -105,6 +107,11 @@ export function DocumentsClient() {
     setDocuments((current) => current.filter((doc) => doc.id !== selectedDocument.id))
     setSelectedDocId(null)
   }
+  function archiveDocument() {
+    if (!canArchiveDocuments || !selectedDocument || selectedDocument.status === "Archivé") return
+    setDocuments((current) => current.map((doc) => doc.id === selectedDocument.id ? { ...doc, status: "Archivé", updatedAt: today() } : doc))
+    setSelectedDocId(null)
+  }
   function createMinutes() {
     if (!canDraftMinutes) return
     if (!newMeetingId || !eligibleMeetings.some((meeting) => meeting.id === newMeetingId)) return
@@ -123,6 +130,7 @@ export function DocumentsClient() {
     setView("minutes")
   }
   function saveMinutes(next: MeetingMinutes) {
+    if (canArchiveMinutes && next.status === "Archivé") { setMinutes((current) => current.map((item) => item.id === next.id ? next : item)); return }
     if (!canDraftMinutes || next.status !== "Brouillon" || !["En cours", "Clôturée"].includes(meetings.find((meeting) => meeting.id === next.meetingId)?.status ?? "")) return
     const meeting = meetings.find((item) => item.id === next.meetingId)
     const sharedAttendance = meeting?.attendance ? Object.entries(meeting.attendance).filter(([, present]) => present).map(([memberId]) => memberId) : next.presentMemberIds
@@ -218,7 +226,7 @@ export function DocumentsClient() {
       </Tabs>
 
       {formOpen && <DocumentForm key={editing?.id ?? "new"} open={formOpen} initial={editing} reference={`DOC-2026-${String(documents.length + 1).padStart(3, "0")}`} onOpenChange={setFormOpen} onSave={saveDocument} canArchive={canArchiveDocuments} />}
-      <DocumentDetails document={selectedDocument} open={Boolean(selectedDocument)} onOpenChange={(value) => { if (!value) setSelectedDocId(null) }} onAddVersion={addVersion} onEdit={() => { if (!canEditDocuments) return; setEditing(selectedDocument); setSelectedDocId(null); setFormOpen(true) }} onDelete={deleteDocument} canEdit={canEditDocuments} canDelete={canDeleteDocuments} canAddVersion={canEditDocuments} />
+      <DocumentDetails document={selectedDocument} open={Boolean(selectedDocument)} onOpenChange={(value) => { if (!value) setSelectedDocId(null) }} onAddVersion={addVersion} onArchive={archiveDocument} onEdit={() => { if (!canEditDocuments) return; setEditing(selectedDocument); setSelectedDocId(null); setFormOpen(true) }} onDelete={deleteDocument} canEdit={canEditDocuments} canDelete={canDeleteDocuments} canAddVersion={canEditDocuments} canArchive={canArchiveDocuments} />
 
       <Dialog open={newMinutesOpen} onOpenChange={setNewMinutesOpen}>
         <DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle>{t("Nouveau procès-verbal")}</DialogTitle><DialogDescription>{t("Sélectionnez une réunion sans procès-verbal associé.")}</DialogDescription></DialogHeader>

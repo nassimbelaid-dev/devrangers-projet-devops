@@ -8,7 +8,7 @@ export const navigationsData: NavigationType[] = [
       { title: "Réunions", href: "/meetings", iconName: "CalendarDays" },
       { title: "Membres", href: "/members", iconName: "Users" },
       { title: "Ordre du jour", href: "/agenda", iconName: "ListOrdered" },
-      { title: "Votes et résultats", href: "/votes", iconName: "CheckCircle" },
+      { title: "Votes et résultats", href: "/votes", iconName: "CircleCheck" },
       { title: "Décisions et actions", href: "/actions", iconName: "Grid2x2" },
       { title: "Documents", href: "/documents", iconName: "FolderOpen" },
       { title: "Centre de notifications", href: "/notifications", iconName: "Bell" },

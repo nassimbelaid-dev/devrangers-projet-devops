@@ -3,7 +3,7 @@
 import { useEffect, useSyncExternalStore } from "react"
 
 export type DemoRole = "admin" | "president" | "secretary" | "archivist" | "member"
-export type DemoUser = { id: string; firstName: string; lastName: string; email: string; role: DemoRole; seatId?: string; memberId?: string }
+export type DemoUser = { id: string; firstName: string; lastName: string; email: string; role: DemoRole; seatId?: string; memberId?: string; isActive?: boolean }
 
 export const demoAccounts: Array<DemoUser & { password: string; roleLabel: string }> = [
   { id: "u-admin", firstName: "Amine", lastName: "Bensaïd", email: "admin@comite.test", password: "Comite2026", role: "admin", roleLabel: "Administrateur" },
@@ -21,13 +21,17 @@ const COOKIE_KEY = "demo-auth"
 const listeners = new Set<() => void>()
 let current: DemoUser | null = null
 let initialized = false
+let storageListenerAdded = false
 
 function emit() { listeners.forEach((listener) => listener()) }
 function readStorage(): DemoUser | null {
   if (typeof window === "undefined") return null
   try {
     const id = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "null")?.id
-    return getDemoAccounts().find(({ id: accountId }) => accountId === id) ?? null
+    const account = getDemoAccounts().find(({ id: accountId }) => accountId === id)
+    if (!account || account.isActive === false) return null
+    const { password: _password, roleLabel: _roleLabel, ...user } = account
+    return user
   } catch { return null }
 }
 export type DemoAccount = DemoUser & { password: string; roleLabel: string }
@@ -36,15 +40,32 @@ export function getDemoAccounts(): DemoAccount[] {
   try {
     const stored = JSON.parse(window.localStorage.getItem(ACCOUNTS_KEY) ?? "null")
     if (Array.isArray(stored)) {
-      const valid = stored.filter((account) => account && typeof account.id === "string" && typeof account.email === "string" && typeof account.password === "string" && ["admin", "president", "secretary", "archivist", "member"].includes(account.role))
+      const valid = stored.filter((account) => account && typeof account.id === "string" && typeof account.email === "string" && typeof account.password === "string" && ["admin", "president", "secretary", "archivist", "member"].includes(account.role)).map((account) => ({ ...account, isActive: account.isActive !== false }))
       const existingIds = new Set(valid.map((account) => account.id))
-      return [...valid, ...demoAccounts.filter((account) => !existingIds.has(account.id))]
+      const migrationAccounts = demoAccounts.filter((account) => ["u-member-m4", "u-member-m6"].includes(account.id) && !existingIds.has(account.id))
+      return [...valid, ...migrationAccounts]
     }
   } catch { /* Repli sur les comptes de démonstration intégrés. */ }
   return demoAccounts
 }
-export function saveDemoAccounts(accounts: DemoAccount[]) {
-  if (typeof window !== "undefined") window.localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts))
+export function saveDemoAccounts(accounts: DemoAccount[]): boolean {
+  if (typeof window === "undefined" || getCurrentDemoUser()?.role !== "admin") return false
+  const activeAdmins = accounts.filter((account) => account.role === "admin" && account.isActive !== false)
+  if (!activeAdmins.length) return false
+  if (demoAccounts.some((builtin) => !accounts.some((account) => account.id === builtin.id))) return false
+  const emails = accounts.map((account) => account.email.trim().toLowerCase())
+  const memberIds = accounts.flatMap((account) => account.memberId ? [account.memberId] : [])
+  if (new Set(emails).size !== emails.length || new Set(memberIds).size !== memberIds.length || accounts.some((account) => !account.id || !account.email || !account.password || !["admin", "president", "secretary", "archivist", "member"].includes(account.role))) return false
+  window.localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts.map((account) => ({ ...account, isActive: account.isActive !== false }))))
+  const updated = accounts.find((account) => account.id === current?.id)
+  if (!updated || updated.isActive === false) signOutStatic()
+  else {
+    const { password: _password, roleLabel: _roleLabel, ...user } = updated
+    current = user
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(user))
+    emit()
+  }
+  return true
 }
 function setCookie(value: boolean) {
   if (typeof document !== "undefined") document.cookie = `${COOKIE_KEY}=${value ? "1" : "0"}; path=/; max-age=${value ? 604800 : 0}; SameSite=Lax`
@@ -55,12 +76,26 @@ function initialize() {
   current = readStorage()
   emit()
 }
-function subscribe(listener: () => void) { listeners.add(listener); initialize(); return () => listeners.delete(listener) }
+function subscribe(listener: () => void) {
+  listeners.add(listener)
+  initialize()
+  if (typeof window !== "undefined" && !storageListenerAdded) {
+    window.addEventListener("storage", (event) => {
+      if (event.key === STORAGE_KEY || event.key === ACCOUNTS_KEY || event.key === null) {
+        current = readStorage()
+        if (!current) setCookie(false)
+        emit()
+      }
+    })
+    storageListenerAdded = true
+  }
+  return () => listeners.delete(listener)
+}
 function snapshot() { return current }
 function serverSnapshot() { return null }
 
 export function signInStatic(email: string, password: string) {
-  const account = getDemoAccounts().find((item) => item.email === email.trim().toLowerCase() && item.password === password)
+  const account = getDemoAccounts().find((item) => item.isActive !== false && item.email === email.trim().toLowerCase() && item.password === password)
   if (!account) return false
   const { password: _password, roleLabel: _roleLabel, ...user } = account
   current = user
@@ -83,20 +118,26 @@ export function useStaticAuth() {
   return { user, isAuthenticated: Boolean(user) }
 }
 
-export type Permission = "view" | "create" | "edit" | "delete" | "approve" | "vote" | "archive" | "manageUsers" | "manageRoles" | "manageMeetings" | "manageMembers"
-const all: Permission[] = ["view", "create", "edit", "delete", "approve", "vote", "archive", "manageUsers", "manageRoles", "manageMeetings", "manageMembers"]
-const adminAccess = all.filter((permission) => permission !== "approve" && permission !== "vote")
+export type Permission = "view" | "create" | "edit" | "delete" | "approve" | "vote" | "archive" | "manageUsers" | "manageRoles" | "manageMeetings" | "manageMembers" | "managePresence"
+const view = ["view"] as Permission[]
 export const rolePermissions: Record<DemoRole, Partial<Record<string, Permission[]>>> = {
-  admin: { dashboard: adminAccess, meetings: adminAccess, members: adminAccess, agenda: adminAccess, votes: ["view"], actions: adminAccess, documents: adminAccess, notifications: ["view"], profile: ["view", "edit"], users: ["view", "create", "edit", "delete", "manageUsers", "manageRoles"] },
-  president: { dashboard: ["view"], meetings: ["view", "create", "edit", "delete", "manageMeetings"], members: ["view"], agenda: ["view", "create", "edit", "approve"], votes: ["view", "approve", "vote"], actions: ["view", "create", "edit"], documents: ["view", "approve"], notifications: ["view"], profile: ["view", "edit"] },
-  secretary: { dashboard: ["view"], meetings: ["view", "create", "edit"], members: ["view"], agenda: ["view", "create", "edit"], votes: ["view", "vote"], actions: ["view", "create", "edit"], documents: ["view", "create", "edit"], notifications: ["view"], profile: ["view", "edit"] },
-  archivist: { dashboard: ["view"], meetings: ["view"], members: ["view"], agenda: ["view"], votes: ["view"], actions: ["view"], documents: ["view", "create", "edit", "archive"], notifications: ["view"], profile: ["view", "edit"] },
-  member: { dashboard: ["view"], meetings: ["view"], members: ["view"], agenda: ["view", "create", "edit"], votes: ["view", "vote"], actions: ["view", "edit"], documents: ["view"], notifications: ["view"], profile: ["view", "edit"] },
+  admin: { dashboard: view, meetings: view, members: ["view", "create", "edit", "delete", "manageMembers"], agenda: view, votes: view, actions: view, documents: view, minutes: view, notifications: view, profile: ["view", "edit"], users: ["view", "create", "edit", "delete", "manageUsers", "manageRoles"] },
+  president: { dashboard: view, meetings: ["view", "manageMeetings", "managePresence"], members: view, agenda: ["view", "create", "edit", "approve"], votes: ["view", "approve", "vote", "managePresence"], actions: view, documents: view, minutes: ["view", "approve"], notifications: view, profile: ["view", "edit"] },
+  secretary: { dashboard: view, meetings: ["view", "create", "edit", "managePresence"], members: view, agenda: ["view", "create", "edit"], votes: ["view", "vote", "managePresence"], actions: ["view", "create", "edit"], documents: ["view", "create", "edit"], minutes: ["view", "create", "edit"], notifications: view, profile: ["view", "edit"] },
+  archivist: { dashboard: view, meetings: view, members: view, agenda: view, votes: view, actions: view, documents: ["view", "archive"], minutes: ["view", "archive"], notifications: view, profile: ["view", "edit"] },
+  member: { dashboard: view, meetings: view, members: view, agenda: ["view", "create", "edit"], votes: ["view", "vote"], actions: ["view", "edit"], documents: view, minutes: view, notifications: view, profile: ["view", "edit"] },
 }
 
 const routeModules: Array<[string, string]> = [["/dashboards", "dashboard"], ["/meetings", "meetings"], ["/members", "members"], ["/agenda", "agenda"], ["/votes", "votes"], ["/actions", "actions"], ["/documents", "documents"], ["/notifications", "notifications"], ["/profile", "profile"], ["/users", "users"]]
 export function moduleForPath(pathname: string) { return routeModules.find(([prefix]) => pathname === prefix || pathname.startsWith(`${prefix}/`))?.[1] ?? "dashboard" }
 export function hasPermission(user: DemoUser | null, module: string, permission: Permission = "view") {
-  return Boolean(user && rolePermissions[user.role][module]?.includes(permission))
+  return Boolean(user?.isActive !== false && user && rolePermissions[user.role][module]?.includes(permission))
 }
 export function getRoleLabel(role: DemoRole) { return demoAccounts.find((account) => account.role === role)?.roleLabel ?? role }
+
+export function getCurrentDemoUser(): DemoUser | null {
+  if (typeof window === "undefined") return current
+  current = readStorage()
+  initialized = true
+  return current
+}

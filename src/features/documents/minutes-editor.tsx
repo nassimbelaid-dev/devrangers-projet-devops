@@ -13,7 +13,7 @@ import type { MeetingMinutes } from "./types"
 import { memberName, printMinutes, today } from "./utils"
 import { MinutesPreview } from "./minutes-preview"
 import { useUiText } from "@/features/ui-text"
-import { useStaticAuth } from "@/lib/static-auth"
+import { hasPermission, useStaticAuth } from "@/lib/static-auth"
 
 interface Props {
   minutes: MeetingMinutes
@@ -29,9 +29,9 @@ export function MinutesEditor({ minutes, onSave, onWorkflow }: Props) {
   const [feedback, setFeedback] = useState("")
   const meeting = meetings.find((item) => item.id === form.meetingId)
   const isLocked = form.status === "Signé" || form.status === "Archivé"
-  const canDraft = user?.role === "secretary"
-  const canSign = user?.role === "president"
-  const canArchive = user?.role === "archivist" || user?.role === "admin"
+  const canDraft = hasPermission(user, "minutes", "edit")
+  const canSign = hasPermission(user, "minutes", "approve")
+  const canArchive = hasPermission(user, "minutes", "archive")
 
   useEffect(() => { setForm({ ...minutes, presentMemberIds: [...minutes.presentMemberIds] }) }, [minutes])
 

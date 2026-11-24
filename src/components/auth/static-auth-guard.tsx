@@ -8,9 +8,11 @@ import type { LocaleType } from "@/types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { useUiText } from "@/features/ui-text"
 
 export function StaticAuthGuard({ children }: { children: ReactNode }) {
   const { user, isAuthenticated } = useStaticAuth()
+  const t = useUiText()
   const router = useRouter()
   const pathname = usePathname()
   const params = useParams()
@@ -22,6 +24,6 @@ export function StaticAuthGuard({ children }: { children: ReactNode }) {
 
   if (!isAuthenticated) return null
   const route = pathname.replace(/^\/[a-z]{2}(?=\/|$)/, "")
-  if (!hasPermission(user, moduleForPath(route))) return <main className="flex min-h-[60vh] items-center justify-center p-6"><Card className="w-full max-w-md"><CardHeader><CardTitle>Accès non autorisé</CardTitle></CardHeader><CardContent className="space-y-4"><p className="text-sm text-muted-foreground">Votre rôle ne permet pas de consulter cette page.</p><Button asChild><Link href={`/${locale}/dashboards/analytics`}>Retour au tableau de bord</Link></Button></CardContent></Card></main>
+  if (!hasPermission(user, moduleForPath(route))) return <main className="flex min-h-[60vh] items-center justify-center p-6"><Card className="w-full max-w-md"><CardHeader><CardTitle>{t("Accès non autorisé")}</CardTitle></CardHeader><CardContent className="space-y-4"><p className="text-sm text-muted-foreground">{t("Votre rôle ne permet pas de consulter cette page.")}</p><Button asChild><Link href={`/${locale}/dashboards/analytics`}>{t("Retour au tableau de bord")}</Link></Button></CardContent></Card></main>
   return children
 }

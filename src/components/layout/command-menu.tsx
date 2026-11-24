@@ -13,6 +13,7 @@ import type {
 import type { DialogProps } from "@radix-ui/react-dialog"
 
 import { navigationsData } from "@/data/navigations"
+import { hasPermission, moduleForPath, useStaticAuth } from "@/lib/static-auth"
 
 import { ensureLocalizedPathname } from "@/lib/i18n"
 import {
@@ -52,6 +53,7 @@ export function CommandMenu({
   dictionary,
   ...props
 }: CommandMenuProps) {
+  const { user } = useStaticAuth()
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
   const params = useParams()
@@ -168,6 +170,8 @@ export function CommandMenu({
           <CommandEmpty>{dictionary.search.noResults}</CommandEmpty>
           <ScrollArea className="h-[300px] max-h-[300px]">
             {navigationsData.map((nav) => {
+              const allowedItems = nav.items.filter((item) => !("href" in item && typeof item.href === "string" && !hasPermission(user, moduleForPath(item.href))))
+              if (!allowedItems.length) return null
               const title = getDictionaryValue(
                 titleCaseToCamelCase(nav.title),
                 dictionary.navigation
@@ -179,7 +183,7 @@ export function CommandMenu({
                   heading={title}
                   className="[&_[cmdk-group-items]]:space-y-1"
                 >
-                  {nav.items.map((item) => (
+                  {allowedItems.map((item) => (
                     <Fragment key={item.title}>{renderMenuItem(item)}</Fragment>
                   ))}
                 </CommandGroup>

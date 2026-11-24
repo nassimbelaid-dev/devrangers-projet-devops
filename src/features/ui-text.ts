@@ -5,6 +5,13 @@ import { useParams } from "next/navigation"
 
 const translations: Record<string, Record<string, string>> = {
   en: {
+    "Président du comité": "Committee president",
+    "Responsable des archives": "Archivist",
+    "Membre du comité": "Committee member",
+    "Membre suppléante": "Alternate committee member",
+    "Accès non autorisé": "Access denied",
+    "Votre rôle ne permet pas de consulter cette page.": "Your role does not allow you to view this page.",
+    "Retour au tableau de bord": "Back to dashboard",
     "Convocations": "Meeting invitations",
     "Non envoyées": "Not sent",
     "Envoyées le {date}": "Sent on {date}",
@@ -844,6 +851,13 @@ const translations: Record<string, Record<string, string>> = {
   },
 
   ar: {
+    "Président du comité": "رئيس اللجنة",
+    "Responsable des archives": "مسؤول الأرشيف",
+    "Membre du comité": "عضو اللجنة",
+    "Membre suppléante": "عضوة بديلة",
+    "Accès non autorisé": "الوصول غير مسموح",
+    "Votre rôle ne permet pas de consulter cette page.": "لا يسمح دورك بعرض هذه الصفحة.",
+    "Retour au tableau de bord": "العودة إلى لوحة المعلومات",
     "Convocations": "الدعوات",
     "Non envoyées": "لم تُرسل",
     "Envoyées le {date}": "أُرسلت في {date}",

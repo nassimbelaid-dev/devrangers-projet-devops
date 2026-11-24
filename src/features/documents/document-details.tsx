@@ -19,12 +19,14 @@ interface Props {
   onEdit: () => void
   onDelete: () => void
   onAddVersion: (file: File, note: string) => void
+  onArchive: () => void
   canEdit: boolean
   canDelete: boolean
   canAddVersion: boolean
+  canArchive: boolean
 }
 
-export function DocumentDetails({ document: item, open, onOpenChange, onEdit, onDelete, onAddVersion, canEdit, canDelete, canAddVersion }: Props) {
+export function DocumentDetails({ document: item, open, onOpenChange, onEdit, onDelete, onAddVersion, onArchive, canEdit, canDelete, canAddVersion, canArchive }: Props) {
   const t = useUiText()
   const { meetings } = useDemoData()
   const [showUpload, setShowUpload] = useState(false)
@@ -110,8 +112,9 @@ export function DocumentDetails({ document: item, open, onOpenChange, onEdit, on
               </div>
             ) : <p className="rounded-lg border border-dashed p-7 text-center text-sm text-muted-foreground"><FileText className="mx-auto mb-3 size-6" />{t("Aucune version de fichier. Ajoutez un document local.")}</p>}
           </section>
-          {(canDelete || canEdit) && <div className="flex flex-wrap justify-between gap-3 border-t pt-5">
+          {(canDelete || canEdit || (canArchive && item.status !== "Archivé")) && <div className="flex flex-wrap justify-between gap-3 border-t pt-5">
             {canDelete && <Button variant="destructive" size="sm" onClick={onDelete}><Trash2 className="mr-2 size-4" />{t("Supprimer")}</Button>}
+            {canArchive && item.status !== "Archivé" && <Button variant="outline" size="sm" onClick={onArchive}>{t("Archiver")}</Button>}
             {canEdit && <Button variant="outline" size="sm" onClick={onEdit}><Pencil className="mr-2 size-4" />{t("Modifier les informations")}</Button>}
           </div>}
         </div>

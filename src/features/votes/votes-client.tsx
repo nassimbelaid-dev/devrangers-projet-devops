@@ -65,7 +65,7 @@ export function VotesClient() {
   }
 
   function changePresence(memberId: string, isPresent: boolean) {
-    if (!user || (user.role !== "president" && user.memberId !== memberId)) return
+    if (!hasPermission(user, "votes", "managePresence")) return
     updateSelected((ballot) => {
       if (ballot.state === "Clôturé") return ballot
       const newPresence = isPresent
@@ -261,7 +261,7 @@ export function VotesClient() {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="vote" className="mt-0">
-              <BallotPanel ballot={selected} summary={summary} members={members} onTogglePresence={changePresence} onVote={changeVote} votingMemberId={canVote ? user?.memberId : undefined} canManagePresence={user?.role === "president"} />
+              <BallotPanel ballot={selected} summary={summary} members={members} onTogglePresence={changePresence} onVote={changeVote} votingMemberId={canVote ? user?.memberId : undefined} canManagePresence={hasPermission(user, "votes", "managePresence")} />
             </TabsContent>
             <TabsContent value="resultats" className="mt-0">
               <ResultsPanel ballot={selected} summary={summary} members={members} />

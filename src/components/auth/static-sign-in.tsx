@@ -1,21 +1,25 @@
 "use client"
 
-import { FormEvent, useState } from "react"
+import { FormEvent, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Landmark, LogIn, ShieldCheck, UsersRound } from "lucide-react"
 import type { DictionaryType } from "@/lib/get-dictionary"
-import { demoAccounts, signInStatic } from "@/lib/static-auth"
+import { demoAccounts, getDemoAccounts, signInStatic, type DemoAccount } from "@/lib/static-auth"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useUiText } from "@/features/ui-text"
 
 export function StaticSignIn({ dictionary, locale }: { dictionary: DictionaryType; locale: string }) {
+  const t = useUiText()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const [accounts, setAccounts] = useState<DemoAccount[]>(demoAccounts)
   const [email, setEmail] = useState(demoAccounts[0].email)
   const [password, setPassword] = useState(demoAccounts[0].password)
   const [error, setError] = useState("")
+  useEffect(() => { const active = getDemoAccounts().filter((account) => account.isActive !== false); setAccounts(active); if (active.length && !active.some((account) => account.email === email)) { setEmail(active[0].email); setPassword(active[0].password) } }, [])
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -50,8 +54,8 @@ export function StaticSignIn({ dictionary, locale }: { dictionary: DictionaryTyp
           <form onSubmit={submit} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="demo-account">Compte de démonstration</Label>
-              <select id="demo-account" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" value={email} onChange={(event) => { const account = demoAccounts.find((item) => item.email === event.target.value); setEmail(event.target.value); if (account) setPassword(account.password) }}>
-                {demoAccounts.map((account) => <option key={account.id} value={account.email}>{account.roleLabel} — {account.firstName} {account.lastName}</option>)}
+              <select id="demo-account" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" value={email} onChange={(event) => { const account = accounts.find((item) => item.email === event.target.value); setEmail(event.target.value); if (account) setPassword(account.password) }}>
+                {accounts.map((account) => <option key={account.id} value={account.email}>{t(account.roleLabel)} — {account.firstName} {account.lastName}{account.memberId ? ` · ${account.memberId}` : ""}</option>)}
               </select>
             </div>
             <div className="space-y-2">
@@ -64,7 +68,7 @@ export function StaticSignIn({ dictionary, locale }: { dictionary: DictionaryTyp
             </div>
             {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full"><LogIn className="mr-2 size-4" />{dictionary.auth.submit}</Button>
-            <div className="rounded-xl border bg-muted/40 p-3 text-xs leading-5 text-muted-foreground"><div className="mb-1 flex items-center gap-2 font-medium text-foreground"><UsersRound className="size-3.5" /> Comptes fictifs</div>Mot de passe commun : <code className="rounded bg-background px-1.5 py-0.5 font-semibold text-foreground">Comite2026</code><br />Un compte est disponible pour chacun des cinq rôles.</div>
+            <div className="rounded-xl border bg-muted/40 p-3 text-xs leading-5 text-muted-foreground"><div className="mb-1 flex items-center gap-2 font-medium text-foreground"><UsersRound className="size-3.5" /> Comptes fictifs actifs</div>Mot de passe commun : <code className="rounded bg-background px-1.5 py-0.5 font-semibold text-foreground">Comite2026</code><br />Les membres titulaires et suppléants se connectent avec leur propre compte de démonstration.</div>
           </form>
         </CardContent>
       </Card>

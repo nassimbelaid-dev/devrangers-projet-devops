@@ -100,10 +100,11 @@ export function DecisionsActionsClient() {
   const filteredDecisions = useMemo(() => {
     const query = search.toLocaleLowerCase("fr").trim()
     return decisions.filter((decision) => {
+      if (user?.role === "member" && decision.status !== "Adoptée") return false
       const haystack = `${decision.reference} ${decision.title} ${decision.description} ${meetingLabel(decision.meetingId)}`.toLocaleLowerCase("fr")
       return (!query || haystack.includes(query)) && (decisionFilter === "Toutes les décisions" || decision.status === decisionFilter)
     }).sort((a, b) => b.date.localeCompare(a.date))
-  }, [decisions, search, decisionFilter, linkedMeetings])
+  }, [decisions, search, decisionFilter, linkedMeetings, user?.role])
 
   const ongoing = actions.filter((action) => action.status === "En cours").length
   const completed = actions.filter((action) => action.status === "Terminée").length
@@ -185,8 +186,7 @@ export function DecisionsActionsClient() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {canManageActions && <><Button variant="outline" onClick={() => openDecisionForm()}><Plus className="mr-2 size-4" /> {t("Décision")}</Button>
-          <Button onClick={() => openActionForm()}><Plus className="mr-2 size-4" /> {t("Nouvelle action")}</Button></>}
+          {canManageActions && <Button onClick={() => openActionForm()}><Plus className="mr-2 size-4" /> {t("Nouvelle action")}</Button>}
         </div>
       </div>
 
@@ -297,8 +297,6 @@ export function DecisionsActionsClient() {
                     <TableCell>{decisionBadge(decision.status, t)}</TableCell>
                     <TableCell><div className="flex justify-end gap-1">
                       <Button size="icon" variant="ghost" aria-label={t("Voir la décision")} onClick={() => setDetailDecisionId(decision.id)}><Eye className="size-4" /></Button>
-                      {canManageActions && <><Button size="icon" variant="ghost" aria-label={t("Modifier la décision")} onClick={() => openDecisionForm(decision)}><Pencil className="size-4" /></Button>
-                      <Button size="icon" variant="ghost" aria-label={t("Supprimer la décision")} onClick={() => setToDelete({ kind: "decision", id: decision.id })}><Trash2 className="size-4" /></Button></>}
                     </div></TableCell>
                   </TableRow>)}
               </TableBody>

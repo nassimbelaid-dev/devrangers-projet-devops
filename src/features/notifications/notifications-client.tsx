@@ -13,7 +13,6 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
 
-import { initialNotifications } from "./mock-data"
 import type {
   CommitteeNotification, NotificationKind, NotificationKindFilter, NotificationTab,
 } from "./types"
@@ -98,7 +97,7 @@ export function NotificationsClient() {
   }
 
   function reset() {
-    setItems(initialNotifications)
+    setItems((current) => current.filter((item) => item.recipientId !== user?.id))
     setQuery("")
     setKindFilter("tous")
     setTab("toutes")

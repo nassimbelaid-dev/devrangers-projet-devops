@@ -89,8 +89,8 @@ export function BallotPanel({ ballot, summary, members, onTogglePresence, onVote
                   {t("Gérer les présences")}
                 </summary>
                 <div className="mt-5 grid gap-6 pb-2 sm:grid-cols-2">
-                  <PresenceField label={t("Titulaire")} member={titular} present={Boolean(titular && present.has(titular.id))} disabled={locked || (!canManagePresence && titular?.id !== votingMemberId)} onTogglePresence={onTogglePresence} />
-                  <PresenceField label={t("Suppléant")} member={substitute} present={Boolean(substitute && present.has(substitute.id))} disabled={locked || (!canManagePresence && substitute?.id !== votingMemberId)} onTogglePresence={onTogglePresence} />
+                  <PresenceField label={t("Titulaire")} member={titular} present={Boolean(titular && present.has(titular.id))} disabled={locked || !canManagePresence} onTogglePresence={onTogglePresence} />
+                  <PresenceField label={t("Suppléant")} member={substitute} present={Boolean(substitute && present.has(substitute.id))} disabled={locked || !canManagePresence} onTogglePresence={onTogglePresence} />
                 </div>
                 <p className="mt-4 text-xs leading-5 text-muted-foreground">{t("Si les deux sont présents, le titulaire garde la priorité. Changer de représentant efface le vote précédent du siège.")}</p>
               </details>

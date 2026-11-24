@@ -10,6 +10,9 @@ import { initialBallots } from "@/features/votes/mock-data"
 import { initialDocuments, initialMinutes } from "@/features/documents/mock-data"
 import { initialAgendaProposals } from "@/features/agenda/mock-data"
 import { initialNotifications } from "@/features/notifications/mock-data"
+import { getCurrentDemoUser, hasPermission } from "@/lib/static-auth"
+import { committeeSeats } from "@/features/members/mock-data"
+import { seatRepresentations } from "@/features/votes/utils"
 import { applyDemoChange, applyMeetingWorkflow, sendMeetingInvitations, type WorkflowAction } from "./demo-business"
 import type { DemoState } from "./demo-business"
 
@@ -91,6 +94,13 @@ export function useDemoCollection<K extends keyof DemoState>(key: K) {
     const updated = typeof next === "function"
       ? (next as (previous: DemoState[K]) => DemoState[K])(previous)
       : next
+    const actor = getCurrentDemoUser()
+    const denial = authorizeDemoWrite(actor, key, previous, updated)
+    if (denial) {
+      feedback = denial
+      notify()
+      return
+    }
     const result = applyDemoChange(current, key, updated)
     feedback = result.error ?? ""
     if (!Object.is(current, result.state) || result.error) {
@@ -100,6 +110,132 @@ export function useDemoCollection<K extends keyof DemoState>(key: K) {
     }
   }, [key])
   return [value, setValue] as const
+}
+
+function authorizeDemoWrite<K extends keyof DemoState>(actor: ReturnType<typeof getCurrentDemoUser>, key: K, before: DemoState[K], after: DemoState[K]): string | null {
+  if (!actor) return "Connectez-vous pour modifier les données de démonstration."
+  const allowed = (module: string, permission: Parameters<typeof hasPermission>[2]) => hasPermission(actor, module, permission)
+  if (Object.is(before, after)) return null
+
+  if (key === "members") return allowed("members", "manageMembers") ? null : "Votre rôle ne permet pas de gérer l'annuaire des membres."
+  if (key === "meetings") {
+    const oldItems = before as DemoState["meetings"]
+    const newItems = after as DemoState["meetings"]
+    for (const item of newItems) {
+      const old = oldItems.find((entry) => entry.id === item.id)
+      if (!old) { if (!allowed("meetings", "create") || item.status !== "Planifiée") return "Votre rôle ne permet pas de planifier cette réunion."; continue }
+      const beforeAttendance = JSON.stringify(old.attendance ?? {})
+      const afterAttendance = JSON.stringify(item.attendance ?? {})
+      const withoutAttendance = (value: typeof item) => JSON.stringify({ ...value, attendance: undefined })
+      if (beforeAttendance !== afterAttendance && withoutAttendance(old) === withoutAttendance(item)) {
+        if (!allowed("meetings", "managePresence") || old.status !== "En cours") return "Seuls le président et le secrétaire peuvent gérer les présences d'une réunion en cours."
+        continue
+      }
+      if (JSON.stringify(old) !== JSON.stringify(item) && (!allowed("meetings", "edit") || old.status !== "Planifiée")) return "Votre rôle ne permet pas de modifier les informations de cette réunion."
+    }
+    if (oldItems.some((item) => !newItems.some((nextItem) => nextItem.id === item.id))) return "La suppression d'une réunion doit respecter les règles de conservation."
+    return null
+  }
+  if (key === "agenda") {
+    const oldItems = before as DemoState["agenda"]
+    const newItems = after as DemoState["agenda"]
+    for (const item of newItems) {
+      const old = oldItems.find((entry) => entry.id === item.id)
+      if (!old) {
+        if (!allowed("agenda", "create") || item.proposedById !== actor.memberId) return "Seuls les membres autorisés peuvent proposer un point en leur nom."
+      } else if (JSON.stringify(old) !== JSON.stringify(item)) {
+        const reviewOnly = actor.role === "president" && allowed("agenda", "approve") && JSON.stringify({ ...old, status: item.status, reviewNote: item.reviewNote, reviewedById: item.reviewedById, order: item.order }) === JSON.stringify(item)
+        if (reviewOnly) continue
+        if (!allowed("agenda", "edit") || old.proposedById !== actor.memberId || !["Proposé", "Rejeté"].includes(old.status)) return "Vous ne pouvez modifier que vos propres propositions non examinées."
+      }
+    }
+    if (oldItems.some((item) => !newItems.some((nextItem) => nextItem.id === item.id)) && !allowed("agenda", "approve")) return "Votre rôle ne permet pas de retirer ce point de l'ordre du jour."
+    return null
+  }
+  if (key === "ballots") {
+    const oldItems = before as DemoState["ballots"]
+    const newItems = after as DemoState["ballots"]
+    for (const ballot of newItems) {
+      const old = oldItems.find((entry) => entry.id === ballot.id)
+      if (!old) { if (!allowed("votes", "approve")) return "Seul le président peut organiser un scrutin."; continue }
+      if (JSON.stringify(old) === JSON.stringify(ballot)) continue
+      const decision = current.decisions.find((entry) => entry.id === ballot.decisionId)
+      const meeting = current.meetings.find((entry) => entry.id === decision?.meetingId)
+      if (ballot.state === "Clôturé" || old.state !== ballot.state || old.quorumPercent !== ballot.quorumPercent || old.majorityPercent !== ballot.majorityPercent) {
+        if (!allowed("votes", "approve")) return "Seul le président peut gérer les paramètres ou l'état du scrutin."
+      }
+      if (JSON.stringify(old.presentMemberIds) !== JSON.stringify(ballot.presentMemberIds)) {
+        if (!allowed("votes", "managePresence") || meeting?.status !== "En cours" || old.state === "Clôturé") return "Votre rôle ne permet pas de modifier les présences de ce scrutin."
+      }
+      if (JSON.stringify(old.votes) !== JSON.stringify(ballot.votes) && JSON.stringify(old.presentMemberIds) === JSON.stringify(ballot.presentMemberIds)) {
+        if (!allowed("votes", "vote") || !actor.memberId || meeting?.status !== "En cours" || ballot.state === "Clôturé") return "Votre rôle ne permet pas de voter dans ce scrutin."
+        const eligible = seatRepresentations(current.members, committeeSeats, meeting.date, old.presentMemberIds)
+        const changedSeats = new Set([...Object.keys(old.votes), ...Object.keys(ballot.votes)].filter((seatId) => JSON.stringify(old.votes[seatId]) !== JSON.stringify(ballot.votes[seatId])))
+        if ([...changedSeats].some((seatId) => {
+          const oldVote = old.votes[seatId]
+          const nextVote = ballot.votes[seatId]
+          return (oldVote && oldVote.memberId !== actor.memberId) || (nextVote && nextVote.memberId !== actor.memberId) || !eligible.some((seat) => seat.seatId === seatId && seat.representativeId === actor.memberId)
+        })) return "Vous ne pouvez voter que pour un siège que vous représentez actuellement."
+      }
+    }
+    if (oldItems.some((ballot) => !newItems.some((nextBallot) => nextBallot.id === ballot.id))) return "Un scrutin ne peut pas être supprimé directement."
+    return null
+  }
+  if (key === "decisions") return "Les décisions évoluent par les règles métier du scrutin et ne sont pas modifiables directement."
+  if (key === "actions") {
+    const oldItems = before as DemoState["actions"]
+    const newItems = after as DemoState["actions"]
+    for (const item of newItems) {
+      const old = oldItems.find((entry) => entry.id === item.id)
+      if (!old) { if (!allowed("actions", "create")) return "Votre rôle ne permet pas de créer une action."; continue }
+      if (JSON.stringify(old) === JSON.stringify(item)) continue
+      if (actor.role === "secretary" && allowed("actions", "edit")) continue
+      const ownStatusOnly = actor.role === "member" && item.assigneeId === actor.memberId && old.assigneeId === actor.memberId && old.status !== item.status && JSON.stringify({ ...old, status: undefined }) === JSON.stringify({ ...item, status: undefined })
+      if (!ownStatusOnly) return "Vous ne pouvez modifier que l'état des actions qui vous sont attribuées."
+    }
+    if (oldItems.some((item) => !newItems.some((entry) => entry.id === item.id)) && actor.role !== "secretary") return "Votre rôle ne permet pas de supprimer cette action."
+    return null
+  }
+  if (key === "documents") {
+    const oldItems = before as DemoState["documents"]
+    const newItems = after as DemoState["documents"]
+    for (const item of newItems) {
+      const old = oldItems.find((entry) => entry.id === item.id)
+      if (!old) { if (!allowed("documents", "create")) return "Votre rôle ne permet pas de déposer un document."; continue }
+      if (JSON.stringify(old) === JSON.stringify(item)) continue
+      const archiveOnly = actor.role === "archivist" && item.status === "Archivé" && old.status !== "Archivé" && JSON.stringify({ ...old, status: undefined, updatedAt: undefined }) === JSON.stringify({ ...item, status: undefined, updatedAt: undefined })
+      if (!archiveOnly && (!allowed("documents", "edit") || (item.status === "Archivé" && old.status !== "Archivé"))) return "Votre rôle ne permet pas de modifier ce document."
+    }
+    if (oldItems.some((item) => !newItems.some((nextItem) => nextItem.id === item.id))) return "Votre rôle ne permet pas de supprimer ce document."
+    return null
+  }
+  if (key === "minutes") {
+    const oldItems = before as DemoState["minutes"]
+    const newItems = after as DemoState["minutes"]
+    for (const item of newItems) {
+      const old = oldItems.find((entry) => entry.id === item.id)
+      if (!old) { if (!allowed("minutes", "create")) return "Votre rôle ne permet pas de créer un brouillon de PV."; continue }
+      if (JSON.stringify(old) === JSON.stringify(item)) continue
+      const archiveOnly = actor.role === "archivist" && old.status === "Signé" && item.status === "Archivé" && JSON.stringify({ ...old, status: undefined, archivedAt: undefined, updatedAt: undefined, version: undefined }) === JSON.stringify({ ...item, status: undefined, archivedAt: undefined, updatedAt: undefined, version: undefined })
+      const draftFieldsOnly = actor.role === "secretary" && allowed("minutes", "edit") && old.status === "Brouillon" && item.status === "Brouillon" && old.id === item.id && old.reference === item.reference && old.meetingId === item.meetingId && old.signedAt === item.signedAt && old.signedBy === item.signedBy && old.archivedAt === item.archivedAt
+      if (!archiveOnly && !draftFieldsOnly) return "Votre rôle ne permet pas de modifier ce procès-verbal."
+    }
+    if (oldItems.some((item) => !newItems.some((nextItem) => nextItem.id === item.id))) return "Un procès-verbal ne peut pas être supprimé du magasin de données."
+    return null
+  }
+  if (key === "notifications") {
+    const oldItems = before as DemoState["notifications"]
+    const newItems = after as DemoState["notifications"]
+    for (const item of newItems) {
+      const old = oldItems.find((entry) => entry.id === item.id)
+      if (!old) { if (item.recipientId !== actor.id) return "Une notification ne peut être créée que pour son destinataire."; continue }
+      const ownStatusOnly = old.recipientId === actor.id && JSON.stringify({ ...old, read: undefined, archived: undefined }) === JSON.stringify({ ...item, read: undefined, archived: undefined })
+      if (JSON.stringify(old) !== JSON.stringify(item) && !ownStatusOnly) return "Vous ne pouvez modifier que vos propres notifications."
+    }
+    if (oldItems.some((item) => !newItems.some((nextItem) => nextItem.id === item.id) && item.recipientId !== actor.id)) return "Vous ne pouvez pas supprimer la notification d'un autre compte."
+    return null
+  }
+  return null
 }
 
 export function useDemoFeedback() {
@@ -113,14 +249,18 @@ export function clearDemoFeedback() {
 }
 
 export function resetDemoData() {
+  if (getCurrentDemoUser()?.role !== "admin") return false
   current = initial
   feedback = ""
   if (typeof window !== "undefined") window.localStorage.removeItem(STORAGE_KEY)
   notify()
+  return true
 }
 
 export function runMeetingWorkflow(action: WorkflowAction, meetingId: string, actor: { id: string; firstName: string; lastName: string; role: string }, minutesId?: string) {
   initialize()
+  const authenticated = getCurrentDemoUser()
+  if (!authenticated || authenticated.id !== actor.id || authenticated.role !== actor.role) return { error: "Le compte connecté n'est pas autorisé à exécuter cette action." }
   const result = applyMeetingWorkflow(current, action, meetingId, actor, minutesId)
   feedback = result.error ?? ""
   if (!result.error && result.state !== current) {
@@ -133,6 +273,8 @@ export function runMeetingWorkflow(action: WorkflowAction, meetingId: string, ac
 
 export function sendMeetingInvitationsFromStore(meetingId: string, actor: { role: string }) {
   initialize()
+  const authenticated = getCurrentDemoUser()
+  if (!authenticated || authenticated.role !== actor.role) return { error: "Le compte connecté n'est pas autorisé à envoyer les convocations." }
   const result = sendMeetingInvitations(current, meetingId, actor)
   feedback = result.error ?? ""
   if (!result.error) { current = result.state; persist(); notify() }
@@ -142,11 +284,14 @@ export function sendMeetingInvitationsFromStore(meetingId: string, actor: { role
 
 export function createMeetingMinutes(meetingId: string, actor: { firstName: string; lastName: string; role: string }) {
   initialize()
+  const authenticated = getCurrentDemoUser()
+  if (!authenticated || authenticated.role !== actor.role || authenticated.firstName !== actor.firstName || authenticated.lastName !== actor.lastName) return { error: "Le compte connecté n'est pas autorisé à créer ce procès-verbal." }
   const meeting = current.meetings.find((item) => item.id === meetingId)
   if (actor.role !== "secretary" || (meeting?.status !== "En cours" && meeting?.status !== "Clôturée")) return { error: "Seul le secrétaire peut créer le PV pendant ou après une réunion démarrée." }
   if (current.minutes.some((item) => item.meetingId === meetingId)) return { error: "Un PV existe déjà pour cette réunion." }
   const id = `pv-${Date.now()}`
-  const next = { id, reference: `PV-2026-${String(current.minutes.length + 1).padStart(3, "0")}`, meetingId, status: "Brouillon" as const, presentMemberIds: [], summary: "", nextSteps: "", secretary: `${actor.firstName} ${actor.lastName}`, president: "Karim Haddad", version: 1, updatedAt: new Date().toISOString().slice(0, 10) }
+  const presentMemberIds = Object.entries(meeting.attendance ?? {}).filter(([, present]) => present).map(([memberId]) => memberId)
+  const next = { id, reference: `PV-2026-${String(current.minutes.length + 1).padStart(3, "0")}`, meetingId, status: "Brouillon" as const, presentMemberIds, summary: "", nextSteps: "", secretary: `${actor.firstName} ${actor.lastName}`, president: "Karim Haddad", version: 1, updatedAt: new Date().toISOString().slice(0, 10) }
   const result = applyDemoChange(current, "minutes", [next, ...current.minutes])
   if (result.error) return { error: result.error }
   current = result.state
