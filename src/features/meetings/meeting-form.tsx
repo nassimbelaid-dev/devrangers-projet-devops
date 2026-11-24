@@ -20,7 +20,7 @@ import { Textarea } from "@/components/ui/textarea"
 
 import { useDemoData } from "@/lib/demo-store"
 import { useUiText } from "@/features/ui-text"
-import type { AgendaItem, AgendaStatus, Meeting, MeetingStatus } from "./types"
+import type { AgendaItem, AgendaStatus, Meeting } from "./types"
 
 type MeetingFormProps = {
   open: boolean
@@ -29,7 +29,6 @@ type MeetingFormProps = {
   onSave: (meeting: Meeting) => void
 }
 
-const statuses: MeetingStatus[] = ["Planifiée", "En cours", "Clôturée", "PV signé", "Annulée"]
 const agendaStatuses: AgendaStatus[] = ["Proposé", "Validé", "Rejeté"]
 
 function blankMeeting(): Meeting {
@@ -198,16 +197,7 @@ export function MeetingForm({
                     placeholder={t("Ex. Salle B12")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t("Statut")}</Label>
-                  <Select value={form.status} disabled={form.status === "PV signé"}
-                    onValueChange={(value) => update("status", value as MeetingStatus)}>
-                    <SelectTrigger><SelectValue placeholder={t("Statut")} /></SelectTrigger>
-                    <SelectContent>
-                      {statuses.filter((status) => status !== "PV signé" || form.status === "PV signé").map((status) => (
-                        <SelectItem key={status} value={status}>{t(status)}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {initialMeeting && <p className="text-sm text-muted-foreground">{t("Statut géré par le workflow de la réunion.")}</p>}
                 </div>
               </div>
               <div className="space-y-2">

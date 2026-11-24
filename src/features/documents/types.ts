@@ -46,4 +46,5 @@ export interface MeetingMinutes {
   signedBy?: string
   signedAt?: string
   archivedAt?: string
+  returnedAt?: string
 }

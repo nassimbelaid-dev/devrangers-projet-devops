@@ -26,6 +26,44 @@ export interface DemoState {
 
 export type CollectionKey = keyof DemoState
 export type TransitionResult = { state: DemoState; error?: string }
+
+export type WorkflowAction = "start" | "close" | "submit-minutes" | "return-minutes" | "sign-minutes"
+export function applyMeetingWorkflow(state: DemoState, action: WorkflowAction, meetingId: string, actor: { id: string; firstName: string; lastName: string; role: string }, minutesId?: string): TransitionResult {
+  const meeting = state.meetings.find((item) => item.id === meetingId)
+  if (!meeting) return { state, error: "Réunion introuvable." }
+  const minutes = minutesId ? state.minutes.find((item) => item.id === minutesId) : undefined
+  const now = new Date().toISOString()
+  if (action === "start") {
+    if (actor.role !== "president") return { state, error: "Seul le président peut démarrer la réunion." }
+    if (meeting.status !== "Planifiée") return { state, error: "Seule une réunion planifiée peut démarrer." }
+    if (!meeting.title.trim() || !meeting.date || !meeting.startTime || !meeting.endTime || !meeting.location.trim() || !meeting.participantIds.length) return { state, error: "Renseignez le titre, la date, les horaires, la salle et au moins un participant avant le démarrage." }
+    if (!meeting.agenda.some((item) => item.status === "Validé")) return { state, error: "Ajoutez au moins un point d'ordre du jour validé avant le démarrage." }
+    return { state: { ...state, meetings: state.meetings.map((item) => item.id === meetingId ? { ...item, status: "En cours", startedAt: now } : item) } }
+  }
+  if (action === "close") {
+    if (actor.role !== "president") return { state, error: "Seul le président peut clôturer la réunion." }
+    if (meeting.status !== "En cours") return { state, error: "Seule une réunion en cours peut être clôturée." }
+    const decisionIds = state.decisions.filter((d) => d.meetingId === meetingId).map((d) => d.id)
+    if (state.ballots.some((b) => decisionIds.includes(b.decisionId) && b.state !== "Clôturé")) return { state, error: "Clôturez tous les scrutins associés avant de clôturer la réunion." }
+    return { state: { ...state, meetings: state.meetings.map((item) => item.id === meetingId ? { ...item, status: "Clôturée", closedAt: now } : item) } }
+  }
+  if (!minutes || minutes.meetingId !== meetingId) return { state, error: "Procès-verbal introuvable pour cette réunion." }
+  if (action === "submit-minutes") {
+    if (actor.role !== "secretary" || meeting.status !== "Clôturée" || minutes.status !== "Brouillon") return { state, error: "Seul le secrétaire peut soumettre un brouillon après clôture de la réunion." }
+    if (!minutes.summary.trim() || !minutes.presentMemberIds.length) return { state, error: "Le PV doit contenir un compte rendu et au moins une présence." }
+    return { state: { ...state, minutes: state.minutes.map((p) => p.id === minutes.id ? { ...p, status: "À signer", updatedAt: now, version: p.version + 1 } : p) } }
+  }
+  if (action === "return-minutes") {
+    if (actor.role !== "president" || meeting.status !== "Clôturée" || minutes.status !== "À signer") return { state, error: "Seul le président peut retourner un PV en attente de signature." }
+    return { state: { ...state, minutes: state.minutes.map((p) => p.id === minutes.id ? { ...p, status: "Brouillon", returnedAt: now, updatedAt: now, version: p.version + 1 } : p) } }
+  }
+  if (action === "sign-minutes") {
+    if (actor.role !== "president" || meeting.status !== "Clôturée" || minutes.status !== "À signer" || minutes.signedAt) return { state, error: "Seul le président peut signer une seule fois le PV d'une réunion clôturée." }
+    const signed = { ...minutes, status: "Signé" as const, signedBy: `${actor.firstName} ${actor.lastName}`, signedAt: now, updatedAt: now, version: minutes.version + 1 }
+    return { state: { ...state, minutes: state.minutes.map((p) => p.id === minutes.id ? signed : p), meetings: state.meetings.map((item) => item.id === meetingId ? { ...item, status: "PV signé" } : item) } }
+  }
+  return { state, error: "Action de workflow inconnue." }
+}
 let notificationSequence = 0
 
 function notification(kind: NotificationKind, title: string, detail: string, context: string, target: NotificationTarget): CommitteeNotification {
@@ -150,6 +188,11 @@ export function applyDemoChange<K extends CollectionKey>(state: DemoState, key: 
     }
     for (const meeting of next.meetings) {
       const old = state.meetings.find((m) => m.id === meeting.id)
+      if (!old && meeting.status !== "Planifiée") return { state, error: "Une nouvelle réunion doit commencer au statut Planifiée." }
+      if (old && old.status !== "Planifiée" && JSON.stringify({ ...old, agenda: [] }) !== JSON.stringify({ ...meeting, agenda: [] })) {
+        return { state, error: "Les informations historiques d'une réunion démarrée sont verrouillées." }
+      }
+      if (old && old.status !== meeting.status) return { state, error: "Le statut d'une réunion ne peut être modifié que par une action du workflow." }
       if (!old || !sameAgenda(old.agenda, meeting.agenda)) {
         next.agenda = mergeMeetingAgenda({ ...state, agenda: next.agenda }, meeting, old)
       }
@@ -165,6 +208,11 @@ export function applyDemoChange<K extends CollectionKey>(state: DemoState, key: 
   }
 
   if (key === "agenda") {
+    for (const proposal of next.agenda) {
+      const meeting = next.meetings.find((item) => item.id === proposal.meetingId)
+      const old = state.agenda.find((item) => item.id === proposal.id)
+      if (meeting && meeting.status !== "Planifiée" && (!old || JSON.stringify(old) !== JSON.stringify(proposal))) return { state, error: "L'ordre du jour est verrouillé dès le démarrage de la réunion." }
+    }
     if (next.agenda.some((p) => !state.meetings.some((m) => m.id === p.meetingId))) {
       return { state, error: "Un point d'ordre du jour doit être associé à une réunion existante." }
     }
@@ -180,9 +228,11 @@ export function applyDemoChange<K extends CollectionKey>(state: DemoState, key: 
     }
     for (const decision of next.decisions) {
       const old = state.decisions.find((d) => d.id === decision.id)
+      const meetingForDecision = next.meetings.find((m) => m.id === decision.meetingId)
       if (!next.meetings.some((m) => m.id === decision.meetingId)) {
         return { state, error: "Cette décision doit être associée à une réunion existante." }
       }
+      if (meetingForDecision && meetingForDecision.status !== "En cours" && (!old || JSON.stringify(old) !== JSON.stringify(decision))) return { state, error: "Les décisions d'une séance ne peuvent être modifiées que pendant une réunion en cours." }
       if (old && old.status === "Adoptée" && decision.status !== "Adoptée" && next.actions.some((a) => a.decisionId === decision.id)) {
         return { state, error: "Une décision avec des actions associées ne peut pas perdre son statut Adoptée." }
       }
@@ -235,6 +285,11 @@ export function applyDemoChange<K extends CollectionKey>(state: DemoState, key: 
       if (!next.decisions.some((d) => d.id === ballot.decisionId)) {
         return { state, error: "Le scrutin doit être associé à une décision existante." }
       }
+      const decisionForBallot = next.decisions.find((d) => d.id === ballot.decisionId)
+      const meetingForBallot = next.meetings.find((m) => m.id === decisionForBallot?.meetingId)
+      if (meetingForBallot && meetingForBallot.status !== "En cours" && (!old || JSON.stringify(old) !== JSON.stringify(ballot))) {
+        return { state, error: "Les scrutins ne peuvent être modifiés que pendant une réunion en cours." }
+      }
       if (!old || old.state === ballot.state) continue
       const index = decisions.findIndex((d) => d.id === ballot.decisionId)
       if (index < 0) continue
@@ -265,6 +320,14 @@ export function applyDemoChange<K extends CollectionKey>(state: DemoState, key: 
   if (key === "minutes") {
     if (next.minutes.some((m) => !next.meetings.some((meeting) => meeting.id === m.meetingId))) {
       return { state, error: "Le procès-verbal doit être associé à une réunion existante." }
+    }
+    for (const item of next.minutes) {
+      const old = state.minutes.find((p) => p.id === item.id)
+      const meeting = next.meetings.find((m) => m.id === item.meetingId)
+      if (old && old.status !== item.status) return { state, error: "Le statut du PV doit évoluer par une action métier dédiée." }
+      if (old && old.status !== "Brouillon" && JSON.stringify(old) !== JSON.stringify(item)) return { state, error: "Un PV soumis ou signé ne peut pas être modifié sans retour pour correction." }
+      if (!old && meeting?.status !== "En cours" && meeting?.status !== "Clôturée") return { state, error: "Un PV peut être créé pendant ou après la réunion." }
+      if (old && meeting?.status !== "En cours" && meeting?.status !== "Clôturée" && meeting?.status !== "PV signé") return { state, error: "Le PV ne peut être modifié que pendant ou après la réunion." }
     }
   }
 

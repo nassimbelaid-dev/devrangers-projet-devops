@@ -25,4 +25,6 @@ export interface Meeting {
   status: MeetingStatus
   participantIds: string[]
   agenda: AgendaItem[]
+  startedAt?: string
+  closedAt?: string
 }

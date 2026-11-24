@@ -18,9 +18,10 @@ import { useStaticAuth } from "@/lib/static-auth"
 interface Props {
   minutes: MeetingMinutes
   onSave: (next: MeetingMinutes) => void
+  onWorkflow: (action: "submit-minutes" | "return-minutes" | "sign-minutes", minutes: MeetingMinutes) => string | null
 }
 
-export function MinutesEditor({ minutes, onSave }: Props) {
+export function MinutesEditor({ minutes, onSave, onWorkflow }: Props) {
   const t = useUiText()
   const { user } = useStaticAuth()
   const { meetings, members, decisions } = useDemoData()
@@ -53,21 +54,18 @@ export function MinutesEditor({ minutes, onSave }: Props) {
       setFeedback(t("Ajoutez au moins un membre présent et un compte rendu avant de soumettre le PV."))
       return
     }
-    const next = { ...form, status: "À signer" as const, version: minutes.version + 1, updatedAt: today() }
-    onSave(next)
-    setFeedback(t("Le PV est transmis au président pour signature."))
-  }
-  function reopen() {
-    if (!canDraft || form.status !== "À signer") return
-    const next = { ...form, status: "Brouillon" as const, version: minutes.version + 1, updatedAt: today() }
-    onSave(next)
-    setFeedback(t("Le PV est de nouveau en brouillon."))
+    const error = onWorkflow("submit-minutes", form)
+    setFeedback(error ? t(error) : t("Le PV est transmis au président pour signature."))
   }
   function sign() {
-    if (!user || user.role !== "president" || form.status !== "À signer") return
-    const next = { ...form, status: "Signé" as const, signedBy: `${user.firstName} ${user.lastName}`, signedAt: today(), version: minutes.version + 1, updatedAt: today() }
-    onSave(next)
-    setFeedback(t("Signature simulée enregistrée. Le PV est maintenant verrouillé."))
+    if (!user || user.role !== "president" || form.status !== "À signer" || !window.confirm(t("Confirmer la signature simulée du PV ?"))) return
+    const error = onWorkflow("sign-minutes", form)
+    setFeedback(error ? t(error) : t("Signature simulée enregistrée. Le PV est maintenant verrouillé."))
+  }
+  function returnForCorrection() {
+    if (!user || user.role !== "president" || form.status !== "À signer" || !window.confirm(t("Retourner ce PV au secrétaire pour correction ?"))) return
+    const error = onWorkflow("return-minutes", form)
+    setFeedback(error ? t(error) : t("Le PV a été retourné au secrétaire pour correction."))
   }
   function archive() {
     if (!canArchive || form.status !== "Signé") return
@@ -83,8 +81,7 @@ export function MinutesEditor({ minutes, onSave }: Props) {
         <div className="flex flex-wrap gap-2">
           <Button size="sm" variant="outline" onClick={() => { if (!printMinutes(form, meetings, decisions, members)) setFeedback(t("Impossible d'ouvrir l'impression : autorisez les fenêtres contextuelles.")) }}><Download className="mr-2 size-4" />{t("Imprimer / PDF")}</Button>
           {canDraft && form.status === "Brouillon" && <><Button size="sm" variant="outline" onClick={save}><Save className="mr-2 size-4" />{t("Enregistrer")}</Button><Button size="sm" onClick={validate}><CheckCircle2 className="mr-2 size-4" />{t("Soumettre au président")}</Button></>}
-          {canDraft && form.status === "À signer" && <Button size="sm" variant="outline" onClick={reopen}><PenLine className="mr-2 size-4" />{t("Reprendre le brouillon")}</Button>}
-          {canSign && form.status === "À signer" && <Button size="sm" onClick={sign}><CheckCircle2 className="mr-2 size-4" />{t("Signer le PV")}</Button>}
+          {canSign && form.status === "À signer" && <><Button size="sm" variant="outline" onClick={returnForCorrection}><RotateCcw className="mr-2 size-4" />{t("Demander une correction")}</Button><Button size="sm" onClick={sign}><CheckCircle2 className="mr-2 size-4" />{t("Signer le PV")}</Button></>}
           {canArchive && form.status === "Signé" && <Button size="sm" onClick={archive}><Archive className="mr-2 size-4" />{t("Archiver le PV")}</Button>}
         </div>
       </div>

@@ -10,7 +10,7 @@ import { initialBallots } from "@/features/votes/mock-data"
 import { initialDocuments, initialMinutes } from "@/features/documents/mock-data"
 import { initialAgendaProposals } from "@/features/agenda/mock-data"
 import { initialNotifications } from "@/features/notifications/mock-data"
-import { applyDemoChange } from "./demo-business"
+import { applyDemoChange, applyMeetingWorkflow, type WorkflowAction } from "./demo-business"
 import type { DemoState } from "./demo-business"
 
 // État commun à l'application pendant la navigation ; aucune persistance serveur.
@@ -117,4 +117,31 @@ export function resetDemoData() {
   feedback = ""
   if (typeof window !== "undefined") window.localStorage.removeItem(STORAGE_KEY)
   notify()
+}
+
+export function runMeetingWorkflow(action: WorkflowAction, meetingId: string, actor: { id: string; firstName: string; lastName: string; role: string }, minutesId?: string) {
+  initialize()
+  const result = applyMeetingWorkflow(current, action, meetingId, actor, minutesId)
+  feedback = result.error ?? ""
+  if (!result.error && result.state !== current) {
+    current = result.state
+    persist()
+    notify()
+  } else if (result.error) notify()
+  return result
+}
+
+export function createMeetingMinutes(meetingId: string, actor: { firstName: string; lastName: string; role: string }) {
+  initialize()
+  const meeting = current.meetings.find((item) => item.id === meetingId)
+  if (actor.role !== "secretary" || (meeting?.status !== "En cours" && meeting?.status !== "Clôturée")) return { error: "Seul le secrétaire peut créer le PV pendant ou après une réunion démarrée." }
+  if (current.minutes.some((item) => item.meetingId === meetingId)) return { error: "Un PV existe déjà pour cette réunion." }
+  const id = `pv-${Date.now()}`
+  const next = { id, reference: `PV-2026-${String(current.minutes.length + 1).padStart(3, "0")}`, meetingId, status: "Brouillon" as const, presentMemberIds: [], summary: "", nextSteps: "", secretary: `${actor.firstName} ${actor.lastName}`, president: "Karim Haddad", version: 1, updatedAt: new Date().toISOString().slice(0, 10) }
+  const result = applyDemoChange(current, "minutes", [next, ...current.minutes])
+  if (result.error) return { error: result.error }
+  current = result.state
+  persist()
+  notify()
+  return { id }
 }

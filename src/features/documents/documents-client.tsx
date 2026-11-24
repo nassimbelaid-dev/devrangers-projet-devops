@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { useDemoCollection, useDemoData } from "@/lib/demo-store"
+import { runMeetingWorkflow, useDemoCollection, useDemoData } from "@/lib/demo-store"
 import { Archive, FileText, FolderOpen, Plus, Search, ScrollText } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -49,10 +49,19 @@ export function DocumentsClient() {
     return () => window.removeEventListener("hashchange", updateViewFromHash)
   }, [])
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const requested = params.get("minutes")
+    if (requested && minutes.some((item) => item.id === requested)) {
+      setSelectedMinutesId(requested)
+      setView("minutes")
+    }
+  }, [minutes])
+
   const selectedDocument = documents.find((doc) => doc.id === selectedDocId) ?? null
   const selectedMinutes = minutes.find((pv) => pv.id === selectedMinutesId) ?? minutes[0]
   const canDraftMinutes = user?.role === "secretary"
-  const eligibleMeetings = meetings.filter((meeting) => meeting.status === "Clôturée" && !minutes.some((pv) => pv.meetingId === meeting.id))
+  const eligibleMeetings = meetings.filter((meeting) => (meeting.status === "En cours" || meeting.status === "Clôturée") && !minutes.some((pv) => pv.meetingId === meeting.id))
   const visibleDocuments = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("fr")
     return documents.filter((doc) => {
@@ -114,10 +123,13 @@ export function DocumentsClient() {
     setView("minutes")
   }
   function saveMinutes(next: MeetingMinutes) {
+    if (!canDraftMinutes || next.status !== "Brouillon" || !["En cours", "Clôturée"].includes(meetings.find((meeting) => meeting.id === next.meetingId)?.status ?? "")) return
     setMinutes((current) => current.map((item) => item.id === next.id ? next : item))
-    if (next.status === "Signé" || next.status === "Archivé") {
-      setMeetings((current) => current.map((meeting) => meeting.id === next.meetingId ? { ...meeting, status: "PV signé" } : meeting))
-    }
+  }
+  function runMinutesWorkflow(action: "submit-minutes" | "return-minutes" | "sign-minutes", pv: MeetingMinutes) {
+    if (!user) return t("Utilisateur non connecté.")
+    const result = runMeetingWorkflow(action, pv.meetingId, user, pv.id)
+    return result.error ?? null
   }
   function selectView(next: string) {
     const target = next === "minutes" ? "minutes" : "library"
@@ -199,7 +211,7 @@ export function DocumentsClient() {
             </button>)}
           </div>
           {search.trim() && <section className="space-y-3 border-t pt-6"><h3 className="font-semibold">{t("Décisions trouvées")} ({visibleDecisions.length})</h3>{visibleDecisions.length ? visibleDecisions.map((decision) => <article key={decision.id} className="rounded-lg border p-4"><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-medium">{decision.reference} · {decision.title}</p><Badge variant="outline">{t(decision.status)}</Badge></div><p className="mt-2 text-sm text-muted-foreground">{decision.description}</p><p className="mt-2 text-xs text-muted-foreground">{meetings.find((meeting) => meeting.id === decision.meetingId)?.title}</p></article>) : <p className="text-sm text-muted-foreground">{t("Aucune décision correspondante.")}</p>}</section>}
-          {selectedMinutes ? <section className="space-y-7 border-t pt-9"><MinutesEditor key={selectedMinutes.id} minutes={selectedMinutes} onSave={saveMinutes} /></section> : <p className="rounded-xl border border-dashed p-12 text-center text-sm text-muted-foreground">{t("Créez ou recherchez un procès-verbal.")}</p>}
+          {selectedMinutes ? <section className="space-y-7 border-t pt-9"><MinutesEditor key={selectedMinutes.id} minutes={selectedMinutes} onSave={saveMinutes} onWorkflow={runMinutesWorkflow} /></section> : <p className="rounded-xl border border-dashed p-12 text-center text-sm text-muted-foreground">{t("Créez ou recherchez un procès-verbal.")}</p>}
         </TabsContent>
       </Tabs>
 

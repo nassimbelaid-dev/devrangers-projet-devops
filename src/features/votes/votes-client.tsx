@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import { useDemoCollection, useDemoData } from "@/lib/demo-store"
 import { useUiText } from "@/features/ui-text"
-import { CalendarDays, LockKeyhole, LockOpen, Plus, RotateCcw, Search } from "lucide-react"
+import { CalendarDays, LockKeyhole, LockOpen, Plus, RotateCcw, Search, Vote } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -109,7 +109,7 @@ export function VotesClient() {
       {/* Header : une seule action principale, aucune carte décorative. */}
       <header className="flex flex-col justify-between gap-6 sm:flex-row sm:items-start">
         <div className="max-w-2xl space-y-3">
-          <h1 className="text-3xl font-semibold tracking-tight">{t("Votes et résultats")}</h1>
+          <h1 className="flex items-center gap-3 text-3xl font-semibold tracking-tight"><Vote aria-hidden="true" className="size-7 text-primary" />{t("Votes et résultats")}</h1>
           <p className="text-sm leading-7 text-muted-foreground sm:text-base">
             {t("Organisez les scrutins et consultez leurs résultats.")}
           </p>
