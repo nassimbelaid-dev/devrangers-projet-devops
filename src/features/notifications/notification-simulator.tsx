@@ -43,7 +43,7 @@ export function NotificationSimulator({ open, kind, onKindChange, onClose, onCre
             </SelectContent>
           </Select>
           <p className="text-xs leading-6 text-muted-foreground">
-            {t("Cet exemple sera marqué « non lu » et disparaîtra à la prochaine actualisation de la page.")}
+            {t("L’exemple reste enregistré dans la boîte de réception du compte connecté.")}
           </p>
         </div>
         <DialogFooter>

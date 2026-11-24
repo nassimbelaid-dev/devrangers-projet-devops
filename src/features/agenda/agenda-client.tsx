@@ -1,6 +1,7 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { useDemoCollection, useDemoData } from "@/lib/demo-store"
 import { useUiText } from "@/features/ui-text"
 import { ArrowDown, ArrowUp, Check, Eye, FileText, ListOrdered, Pencil, Plus, RotateCcw, Search, X } from "lucide-react"
@@ -24,6 +25,7 @@ import { formatAgendaDate, makeAgendaId, memberLabel, moveValidatedPoint, sortAg
 import { getRoleLabel, hasPermission, useStaticAuth } from "@/lib/static-auth"
 
 export function AgendaClient() {
+  const searchParams = useSearchParams()
   const t = useUiText()
   const { user } = useStaticAuth()
   const tabs: { id: AgendaTab; title: string }[] = [
@@ -75,6 +77,15 @@ export function AgendaClient() {
   const editing = items.find((item) => item.id === editingId) ?? null
   const details = items.find((item) => item.id === detailsId) ?? null
   const rejectedItem = items.find((item) => item.id === rejectId) ?? null
+
+  useEffect(() => {
+    const proposalId = searchParams.get("proposal")
+    const proposal = proposalId ? items.find((item) => item.id === proposalId) : null
+    if (!proposal) return
+    setMeetingId(proposal.meetingId)
+    setTab("all")
+    setDetailsId(proposal.id)
+  }, [searchParams, items])
 
   function changeMeeting(value: string) {
     setMeetingId(value)

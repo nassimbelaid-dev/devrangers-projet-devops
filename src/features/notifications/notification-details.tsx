@@ -9,17 +9,18 @@ import {
 import { NotificationIcon } from "./notification-icon"
 import { useUiText } from "../ui-text"
 import type { CommitteeNotification } from "./types"
-import { formatNotificationDate, kindLabels } from "./utils"
+import { formatNotificationDate, kindLabels, notificationMessage, notificationTitle } from "./utils"
 
 type Props = {
   notification: CommitteeNotification | null
   locale: string
+  href: string | null
   onClose: () => void
   onToggleRead: (id: string, read: boolean) => void
   onToggleArchive: (id: string) => void
 }
 
-export function NotificationDetails({ notification, locale, onClose, onToggleRead, onToggleArchive }: Props) {
+export function NotificationDetails({ notification, locale, href, onClose, onToggleRead, onToggleArchive }: Props) {
   const t = useUiText()
   return (
     <Dialog open={Boolean(notification)} onOpenChange={(open) => { if (!open) onClose() }}>
@@ -32,16 +33,16 @@ export function NotificationDetails({ notification, locale, onClose, onToggleRea
                 <span className="text-xs font-medium text-muted-foreground">{t(kindLabels[notification.kind])}</span>
                 {notification.priority === "importante" && <Badge variant="secondary">{t("À surveiller")}</Badge>}
               </div>
-              <DialogTitle className="text-xl leading-7">{t(notification.title)}</DialogTitle>
+              <DialogTitle className="text-xl leading-7">{notificationTitle(notification, t)}</DialogTitle>
               <DialogDescription>
-                {formatNotificationDate(notification.createdAt)} · {t("Notification fictive")}
+                {formatNotificationDate(notification.createdAt, locale)} · {t("Notification interne")}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-6 py-4">
-              <p className="text-sm leading-7">{t(notification.detail)}</p>
+              <p className="text-sm leading-7">{notificationMessage(notification, t)}</p>
               <div className="space-y-1 border-t pt-5">
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("Élément associé")}</p>
-                <p className="text-sm">{t(notification.context)}</p>
+                <p className="text-sm">{notification.context}</p>
               </div>
             </div>
             <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between">
@@ -52,11 +53,7 @@ export function NotificationDetails({ notification, locale, onClose, onToggleRea
                 <Button variant="outline" onClick={() => onToggleArchive(notification.id)}>
                   {t(notification.archived ? "Restaurer" : "Archiver")}
                 </Button>
-                <Button asChild>
-                  <Link href={`/${locale}${notification.target}`} onClick={onClose}>
-                    {t("Voir le module lié")}
-                  </Link>
-                </Button>
+                {href ? <Button asChild><Link href={href} onClick={onClose}>{t("Voir l’élément associé")}</Link></Button> : <span className="self-center text-xs text-muted-foreground">{t("Cet élément n’est plus disponible ou votre compte n’y a plus accès.")}</span>}
               </div>
             </DialogFooter>
           </>

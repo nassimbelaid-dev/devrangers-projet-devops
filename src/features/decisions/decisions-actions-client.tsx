@@ -1,6 +1,7 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { useDemoCollection, useDemoData } from "@/lib/demo-store"
 import { useUiText } from "@/features/ui-text"
 import {
@@ -55,6 +56,7 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: number; 
 
 
 export function DecisionsActionsClient() {
+  const searchParams = useSearchParams()
   const t = useUiText()
   const { user } = useStaticAuth()
   const canManageActions = hasPermission(user, "actions", "create") || hasPermission(user, "actions", "delete")
@@ -86,6 +88,13 @@ export function DecisionsActionsClient() {
   const deleteDecision = toDelete?.kind === "decision" ? decisions.find((item) => item.id === toDelete.id) : undefined
   const deleteAction = toDelete?.kind === "action" ? actions.find((item) => item.id === toDelete.id) : undefined
   const dependentActionCount = deleteDecision ? actions.filter((item) => item.decisionId === deleteDecision.id).length : 0
+
+  useEffect(() => {
+    const actionId = searchParams.get("action")
+    const decisionId = searchParams.get("decision")
+    if (actionId && actions.some((item) => item.id === actionId)) setDetailActionId(actionId)
+    else if (decisionId && decisions.some((item) => item.id === decisionId) && (!isAssignedMember || actions.some((item) => item.decisionId === decisionId && item.assigneeId === user?.memberId))) setDetailDecisionId(decisionId)
+  }, [searchParams, actions, decisions, isAssignedMember, user?.memberId])
 
   const roleActions = isAssignedMember ? actions.filter((action) => action.assigneeId === user?.memberId) : actions
   const filteredActions = useMemo(() => {

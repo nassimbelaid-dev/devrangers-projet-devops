@@ -1,6 +1,7 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { useDemoCollection, useDemoData } from "@/lib/demo-store"
 import { useUiText } from "@/features/ui-text"
 import { CalendarDays, LockKeyhole, LockOpen, Plus, RotateCcw, Search, Vote } from "lucide-react"
@@ -24,6 +25,7 @@ const readableDate = (date: string) => date
   : "Date non définie"
 
 export function VotesClient() {
+  const searchParams = useSearchParams()
   const t = useUiText()
   const { user } = useStaticAuth()
   const canVote = hasPermission(user, "votes", "vote") && Boolean(user?.memberId)
@@ -58,6 +60,11 @@ export function VotesClient() {
 
   const adoptedCount = ballots.filter((ballot) => calculateBallot(ballot, members, committeeSeats, meetingDateFor(ballot.decisionId)).outcome === "Adoptée").length
   const openCount = ballots.filter((ballot) => ballot.state === "Ouvert").length
+
+  useEffect(() => {
+    const ballotId = searchParams.get("ballot")
+    if (ballotId && ballots.some((item) => item.id === ballotId)) { setSelectedId(ballotId); setTab("vote") }
+  }, [searchParams, ballots])
 
   function updateSelected(updater: (ballot: BallotSession) => BallotSession) {
     if (!selected) return

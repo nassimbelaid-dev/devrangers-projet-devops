@@ -5,6 +5,7 @@ import { getDictionary } from "@/lib/get-dictionary"
 
 import { Layout } from "@/components/layout"
 import { StaticAuthGuard } from "@/components/auth/static-auth-guard"
+import { NotificationReminderScheduler } from "@/features/notifications/notification-reminder-scheduler"
 
 export default async function DashboardLayout(props: {
   children: ReactNode
@@ -16,5 +17,5 @@ export default async function DashboardLayout(props: {
 
   const dictionary = await getDictionary(params.lang)
 
-  return <StaticAuthGuard><Layout dictionary={dictionary}>{children}</Layout></StaticAuthGuard>
+  return <StaticAuthGuard><NotificationReminderScheduler /><Layout dictionary={dictionary}>{children}</Layout></StaticAuthGuard>
 }

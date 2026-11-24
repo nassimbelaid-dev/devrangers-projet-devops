@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { useDemoCollection } from "@/lib/demo-store"
+import { useDemoCollection, useDemoData } from "@/lib/demo-store"
 import { usePathname } from "next/navigation"
 import {
   Archive, ArchiveRestore, Bell, CheckCheck, Inbox, Plus, RotateCcw, Search,
@@ -22,10 +22,10 @@ import { NotificationSimulator } from "./notification-simulator"
 import { useUiText } from "../ui-text"
 import { useStaticAuth } from "@/lib/static-auth"
 import {
-  createDemoNotification, filterNotifications, formatNotificationDate, kindLabels, unreadTotal,
+  categoryLabels, createDemoNotification, filterNotifications, formatNotificationDate, notificationMessage, notificationTitle, notificationHref, unreadTotal,
 } from "./utils"
 
-const kinds: NotificationKind[] = ["convocation", "rappel-reunion", "echeance-action", "avis-decision"]
+const kinds: NotificationKindFilter[] = ["meetings", "agenda", "decisions", "actions", "minutes"]
 const tabs: { value: NotificationTab; label: string }[] = [
   { value: "toutes", label: "Toutes" },
   { value: "non-lues", label: "Non lues" },
@@ -45,6 +45,7 @@ export function NotificationsClient() {
   const t = useUiText()
   const [items, setItems] = useDemoCollection("notifications")
   const { user } = useStaticAuth()
+  const state = useDemoData()
   const [tab, setTab] = useState<NotificationTab>("toutes")
   const [kindFilter, setKindFilter] = useState<NotificationKindFilter>("tous")
   const [query, setQuery] = useState("")
@@ -66,7 +67,7 @@ export function NotificationsClient() {
   const selected = ownedItems.find((item) => item.id === selectedId) ?? null
 
   function setRead(id: string, read: boolean) {
-    setItems((current) => current.map((item) => item.id === id ? { ...item, read } : item))
+    setItems((current) => current.map((item) => item.id === id && item.recipientId === user?.id ? { ...item, read } : item))
   }
 
   function openDetails(id: string) {
@@ -75,19 +76,20 @@ export function NotificationsClient() {
   }
 
   function toggleArchive(id: string) {
-    setItems((current) => current.map((item) => item.id === id ? {
+    setItems((current) => current.map((item) => item.id === id && item.recipientId === user?.id ? {
       ...item, archived: !item.archived,
     } : item))
     setSelectedId(null)
   }
 
   function markAllRead() {
-    setItems((current) => current.map((item) => item.archived ? item : { ...item, read: true }))
+    setItems((current) => current.map((item) => item.recipientId === user?.id && !item.archived ? { ...item, read: true } : item))
   }
 
   function simulate() {
     setSimulationOrdinal((current) => current + 1)
-    const fresh = { ...createDemoNotification(simulationKind, simulationOrdinal + 1), recipientId: user?.id }
+    if (!user) return
+    const fresh = createDemoNotification(simulationKind, simulationOrdinal + 1, user.id)
     setItems((current) => [fresh, ...current])
     setQuery("")
     setKindFilter("tous")
@@ -97,13 +99,11 @@ export function NotificationsClient() {
   }
 
   function reset() {
-    setItems((current) => current.filter((item) => item.recipientId !== user?.id))
     setQuery("")
     setKindFilter("tous")
     setTab("toutes")
     setSelectedId(null)
     setSimulateOpen(false)
-    setSimulationOrdinal(0)
   }
 
   return (
@@ -139,8 +139,8 @@ export function NotificationsClient() {
             <Button variant="outline" size="sm" onClick={markAllRead} disabled={!unread}>
               <CheckCheck className="mr-2 size-4" aria-hidden="true" /> {t("Tout marquer lu")}
             </Button>
-            <Button variant="ghost" size="sm" onClick={reset} title={t("Réinitialiser les notifications")}>
-              <RotateCcw className="mr-2 size-4" aria-hidden="true" /> {t("Réinitialiser")}
+            <Button variant="ghost" size="sm" onClick={reset} title={t("Réinitialiser les filtres")}>
+              <RotateCcw className="mr-2 size-4" aria-hidden="true" /> {t("Réinitialiser les filtres")}
             </Button>
           </div>
         </div>
@@ -184,7 +184,7 @@ export function NotificationsClient() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="tous">{t("Tous les types")}</SelectItem>
-                {kinds.map((kind) => <SelectItem value={kind} key={kind}>{t(kindLabels[kind])}</SelectItem>)}
+                {kinds.map((kind) => <SelectItem value={kind} key={kind}>{kind === "tous" ? t("Tous les types") : t(categoryLabels[kind])}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -212,7 +212,7 @@ export function NotificationsClient() {
                   <NotificationIcon kind={item.kind} />
                   <div className="min-w-0 flex-1 space-y-2">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <span className="text-xs font-medium text-muted-foreground">{t(kindLabels[item.kind])}</span>
+                      <span className="text-xs font-medium text-muted-foreground">{t(categoryLabels[item.category])}</span>
                       {item.priority === "importante" && (
                             <span className="text-xs font-medium text-foreground/80">{t("À surveiller")}</span>
                       )}
@@ -225,10 +225,10 @@ export function NotificationsClient() {
                       onClick={() => openDetails(item.id)}
                       className={`block w-full text-left text-sm tracking-tight hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:text-base ${!item.read ? "font-semibold" : "font-medium"}`}
                     >
-                      {t(item.title)}
+                      {notificationTitle(item, t)}
                     </button>
-                    <p className="text-sm leading-6 text-muted-foreground">{t(item.preview)}</p>
-                    <p className="text-xs text-muted-foreground">{formatNotificationDate(item.createdAt)} · {t(item.context)}</p>
+                    <p className="text-sm leading-6 text-muted-foreground">{notificationMessage(item, t)}</p>
+                    <p className="text-xs text-muted-foreground">{formatNotificationDate(item.createdAt, locale)} · {item.context}</p>
                   </div>
                   <Button
                     type="button"
@@ -254,13 +254,14 @@ export function NotificationsClient() {
       <div className="flex items-start gap-3 border-t pt-6 text-sm text-muted-foreground">
         <Bell className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
         <p className="leading-6">
-          {t("Les exemples sont indépendants des autres modules. Les changements de réunions, d'actions et de décisions ne déclenchent pas automatiquement de notifications dans cette maquette.")}
+          {t("Les rappels sont vérifiés pendant que l’application est ouverte. Les événements métier sont enregistrés dans le magasin local de démonstration.")}
         </p>
       </div>
 
       <NotificationDetails
         notification={selected}
         locale={locale}
+        href={selected ? notificationHref(selected, locale, user, state) : null}
         onClose={() => setSelectedId(null)}
         onToggleRead={setRead}
         onToggleArchive={toggleArchive}

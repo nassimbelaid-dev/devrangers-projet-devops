@@ -10,10 +10,12 @@ import { initialBallots } from "@/features/votes/mock-data"
 import { initialDocuments, initialMinutes } from "@/features/documents/mock-data"
 import { initialAgendaProposals } from "@/features/agenda/mock-data"
 import { initialNotifications } from "@/features/notifications/mock-data"
-import { getCurrentDemoUser, hasPermission } from "@/lib/static-auth"
+import { categoryForKind } from "@/features/notifications/utils"
+import type { CommitteeNotification } from "@/features/notifications/types"
+import { getCurrentDemoUser, getDemoAccounts, hasPermission } from "@/lib/static-auth"
 import { committeeSeats } from "@/features/members/mock-data"
 import { seatRepresentations } from "@/features/votes/utils"
-import { applyDemoChange, applyMeetingWorkflow, sendMeetingInvitations, type WorkflowAction } from "./demo-business"
+import { applyDemoChange, applyMeetingWorkflow, createReminderNotifications, sendMeetingInvitations, type WorkflowAction } from "./demo-business"
 import type { DemoState } from "./demo-business"
 
 // État commun à l'application pendant la navigation ; aucune persistance serveur.
@@ -35,6 +37,54 @@ const STORAGE_KEY = "comite-scientifique:demo-data:v1"
 let initialized = false
 const listeners = new Set<() => void>()
 
+function migrateStoredNotifications(records: unknown): CommitteeNotification[] {
+  if (!Array.isArray(records)) return initial.notifications
+  const accounts = getDemoAccounts().filter((account) => account.isActive !== false)
+  return records.flatMap((raw) => {
+    if (!raw || typeof raw !== "object" || typeof raw.id !== "string" || typeof raw.kind !== "string") return []
+    const item = raw as Partial<CommitteeNotification> & { context?: string; target?: string }
+    const kind = item.kind
+    if (!kind) return []
+    const category = item.category ?? categoryForKind(kind)
+    if (typeof item.recipientId === "string") return [{ ...item, category } as CommitteeNotification]
+    const refs = item.context?.match(/\b(r\d+|ac\d+|d\d+)\b/g) ?? []
+    let recipients: typeof accounts = []
+    let entityType: CommitteeNotification["entityType"]
+    let entityId: string | undefined
+    if (kind.startsWith("pv-")) {
+      const role = kind === "pv-signature" ? "president" : kind === "pv-archives" ? "archivist" : "secretary"
+      const minutes = current.minutes.find((record) => item.context?.includes(record.reference))
+      entityType = "minutes"
+      entityId = minutes?.id
+      recipients = accounts.filter((account) => account.role === role)
+    }
+    else if (kind === "echeance-action" || kind.startsWith("action-")) {
+      entityId = refs.find((ref) => ref.startsWith("ac"))
+      const action = current.actions.find((record) => record.id === entityId)
+      if (action) { entityType = "action"; recipients = accounts.filter((account) => account.memberId === action.assigneeId) }
+    } else if (kind === "avis-decision") {
+      entityId = refs.find((ref) => ref.startsWith("d"))
+      const decision = current.decisions.find((record) => record.id === entityId)
+      const meeting = current.meetings.find((record) => record.id === decision?.meetingId)
+      if (decision && meeting) { entityType = "decision"; recipients = accounts.filter((account) => meeting.participantIds.includes(account.memberId ?? "")) }
+    } else {
+      entityId = refs.find((ref) => ref.startsWith("r"))
+      const meeting = current.meetings.find((record) => record.id === entityId)
+      if (meeting) { entityType = "meeting"; recipients = accounts.filter((account) => meeting.participantIds.includes(account.memberId ?? "")) }
+    }
+    if (!recipients.length) return []
+    return recipients.map((recipient) => ({
+      ...item,
+      id: `${item.id}:${recipient.id}`,
+      recipientId: recipient.id,
+      category,
+      entityType: entityType ?? (kind.startsWith("pv-") ? "minutes" : undefined),
+      entityId,
+      dedupeKey: item.dedupeKey ?? `legacy:${item.id}:${recipient.id}`,
+    } as CommitteeNotification))
+  })
+}
+
 function initialize() {
   if (initialized || typeof window === "undefined") return
   initialized = true
@@ -50,8 +100,10 @@ function initialize() {
         documents: Array.isArray(stored.documents) ? stored.documents : initial.documents,
         minutes: Array.isArray(stored.minutes) ? stored.minutes : initial.minutes,
         agenda: Array.isArray(stored.agenda) ? stored.agenda : initial.agenda,
-        notifications: Array.isArray(stored.notifications) ? stored.notifications : initial.notifications,
+        // Les anciennes notifications anonymes sont reciblées depuis leur référence métier; les autres sont rejetées pour éviter les fuites entre comptes.
+        notifications: initial.notifications,
       }
+      current = { ...current, notifications: migrateStoredNotifications(stored.notifications) }
     }
   } catch {
     current = initial
@@ -101,7 +153,8 @@ export function useDemoCollection<K extends keyof DemoState>(key: K) {
       notify()
       return
     }
-    const result = applyDemoChange(current, key, updated)
+    const recipients = getDemoAccounts().filter((account) => account.isActive !== false)
+    const result = applyDemoChange(current, key, updated, recipients)
     feedback = result.error ?? ""
     if (!Object.is(current, result.state) || result.error) {
       current = result.state
@@ -273,7 +326,8 @@ export function runMeetingWorkflow(action: WorkflowAction, meetingId: string, ac
   initialize()
   const authenticated = getCurrentDemoUser()
   if (!authenticated || authenticated.id !== actor.id || authenticated.role !== actor.role) return { error: "Le compte connecté n'est pas autorisé à exécuter cette action." }
-  const result = applyMeetingWorkflow(current, action, meetingId, actor, minutesId)
+  const recipients = getDemoAccounts().filter((account) => account.isActive !== false)
+  const result = applyMeetingWorkflow(current, action, meetingId, actor, minutesId, recipients)
   feedback = result.error ?? ""
   if (!result.error && result.state !== current) {
     current = result.state
@@ -287,11 +341,22 @@ export function sendMeetingInvitationsFromStore(meetingId: string, actor: { role
   initialize()
   const authenticated = getCurrentDemoUser()
   if (!authenticated || authenticated.role !== actor.role) return { error: "Le compte connecté n'est pas autorisé à envoyer les convocations." }
-  const result = sendMeetingInvitations(current, meetingId, actor)
+  const accounts = getDemoAccounts().filter((account) => account.isActive !== false)
+  const result = sendMeetingInvitations(current, meetingId, authenticated, accounts)
   feedback = result.error ?? ""
   if (!result.error) { current = result.state; persist(); notify() }
   else notify()
   return result
+}
+
+/** Vérifie et persiste les rappels pour les comptes actifs. Appelé au montage et périodiquement. */
+export function checkDemoNotificationReminders(actorId: string) {
+  initialize()
+  const authenticated = getCurrentDemoUser()
+  if (!authenticated || authenticated.id !== actorId || authenticated.isActive === false) return
+  const recipients = getDemoAccounts().filter((account) => account.isActive !== false)
+  const next = createReminderNotifications(current, recipients)
+  if (next !== current) { current = next; persist(); notify() }
 }
 
 export function createMeetingMinutes(meetingId: string, actor: { firstName: string; lastName: string; role: string }) {
