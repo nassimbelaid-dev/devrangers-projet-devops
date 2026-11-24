@@ -99,10 +99,13 @@ export function VotesClient() {
   function createBallot(decisionId: string) {
     if (!canManageBallot) return
     if (!availableDecisions.some((item) => item.id === decisionId)) return
+    const relatedDecision = decisionById(decisionId)
+    const relatedMeeting = relatedDecision ? meetingById(relatedDecision.meetingId) : undefined
+    const recordedPresence = relatedMeeting?.participantIds.filter((memberId) => relatedMeeting.attendance?.[memberId] === true) ?? []
     const id = `vote-${Date.now()}`
     const newBallot: BallotSession = {
       id, decisionId, state: "Ouvert", quorumPercent: 60, majorityPercent: 50,
-      presentMemberIds: [], votes: {},
+      presentMemberIds: recordedPresence, votes: {},
     }
     setBallots((current) => [newBallot, ...current])
     setSelectedId(id)

@@ -48,7 +48,7 @@ export function getDemoAccounts(): DemoAccount[] {
   } catch { /* Repli sur les comptes de démonstration intégrés. */ }
   return demoAccounts
 }
-export function saveDemoAccounts(accounts: DemoAccount[]): boolean {
+export function saveDemoAccounts(accounts: DemoAccount[], members?: Array<{ id: string; seatId: string }>): boolean {
   if (typeof window === "undefined" || getCurrentDemoUser()?.role !== "admin") return false
   const activeAdmins = accounts.filter((account) => account.role === "admin" && account.isActive !== false)
   if (!activeAdmins.length) return false
@@ -56,11 +56,33 @@ export function saveDemoAccounts(accounts: DemoAccount[]): boolean {
   const emails = accounts.map((account) => account.email.trim().toLowerCase())
   const memberIds = accounts.flatMap((account) => account.memberId ? [account.memberId] : [])
   if (new Set(emails).size !== emails.length || new Set(memberIds).size !== memberIds.length || accounts.some((account) => !account.id || !account.email || !account.password || !["admin", "president", "secretary", "archivist", "member"].includes(account.role))) return false
+  if (members && accounts.some((account) => account.role !== "admin" && (!account.memberId || !members.some((member) => member.id === account.memberId && member.seatId === account.seatId)))) return false
   window.localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts.map((account) => ({ ...account, isActive: account.isActive !== false }))))
   const updated = accounts.find((account) => account.id === current?.id)
   if (!updated || updated.isActive === false) signOutStatic()
   else {
     const { password: _password, roleLabel: _roleLabel, ...user } = updated
+    current = user
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(user))
+    emit()
+  }
+  return true
+}
+
+/** Keep the copied seat label in the account record aligned with its canonical member record. */
+export function syncDemoAccountSeats(members: Array<{ id: string; seatId: string }>): boolean {
+  if (typeof window === "undefined" || getCurrentDemoUser()?.role !== "admin") return false
+  const accounts = getDemoAccounts()
+  if (accounts.some((account) => account.memberId && !members.some((member) => member.id === account.memberId))) return false
+  const updated = accounts.map((account) => {
+    const member = members.find((item) => item.id === account.memberId)
+    return member && account.seatId !== member.seatId ? { ...account, seatId: member.seatId } : account
+  })
+  if (updated.every((account, index) => account.seatId === accounts[index].seatId)) return true
+  window.localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(updated))
+  const active = updated.find((account) => account.id === current?.id)
+  if (active && active.isActive !== false) {
+    const { password: _password, roleLabel: _roleLabel, ...user } = active
     current = user
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(user))
     emit()

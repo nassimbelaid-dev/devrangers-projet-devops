@@ -19,6 +19,8 @@ export interface BallotSession {
   presentMemberIds: string[]
   /** Clé = identifiant de siège. Empêche un second vote pour le même siège. */
   votes: Record<string, SeatVote>
+  /** Résultat figé à la clôture pour préserver l'historique si les mandats changent ensuite. */
+  closedResult?: BallotSummary
 }
 
 export type BallotOutcome = "À voter" | "Quorum non atteint" | "Adoptée" | "Rejetée"

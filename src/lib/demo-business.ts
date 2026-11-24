@@ -4,6 +4,7 @@
  */
 import type { Meeting, AgendaItem } from "@/features/meetings/types"
 import type { CommitteeMemberRecord } from "@/features/members/types"
+import { validateMemberSeat } from "@/features/members/utils"
 import type { DecisionRecord, ActionRecord } from "@/features/decisions/types"
 import type { BallotSession } from "@/features/votes/types"
 import type { CommitteeDocument, MeetingMinutes } from "@/features/documents/types"
@@ -15,6 +16,17 @@ import type { DemoUser } from "@/lib/static-auth"
 
 export const NOTIFICATION_REMINDER_WINDOWS = { meetingBeforeStartMs: 24 * 60 * 60 * 1000, actionBeforeDueMs: 48 * 60 * 60 * 1000, checkEveryMs: 60 * 1000 } as const
 export type NotificationRecipient = Pick<DemoUser, "id" | "role" | "memberId" | "isActive">
+
+function isIsoDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const parsed = new Date(`${value}T00:00:00.000Z`)
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value
+}
+
+function isClockTime(value: string): boolean {
+  const match = /^(\d{2}):(\d{2})$/.exec(value)
+  return Boolean(match && Number(match[1]) < 24 && Number(match[2]) < 60)
+}
 
 /** Rappels simulés côté navigateur : aucune exécution n'est garantie application fermée. */
 export function createReminderNotifications(state: DemoState, recipients: NotificationRecipient[], now = new Date()): DemoState {
@@ -62,7 +74,8 @@ export function sendMeetingInvitations(state: DemoState, meetingId: string, acto
   if (actor.role !== "secretary") return { state, error: "Seul le secrétaire peut envoyer les convocations." }
   if (!meeting || meeting.status !== "Planifiée") return { state, error: "Les convocations sont disponibles pour une réunion planifiée." }
   const now = new Date().toISOString()
-  const notices = meeting.participantIds.flatMap((memberId) => recipients.filter((recipient) => recipient.isActive !== false && recipient.memberId === memberId).map((recipient) => notification("convocation", `Convocation : ${meeting.title}`, `Réunion prévue le ${meeting.date} à ${meeting.startTime}, ${meeting.endTime}, à ${meeting.location}.`, `Convocation ${meeting.id}`, "/meetings", recipient.id, { category: "meetings", entityType: "meeting", entityId: meeting.id, senderId: actor.id, dedupeKey: `invitation:${meeting.id}:${now}:${recipient.id}` })))
+  const sendId = `${now}:${notificationSequence + 1}`
+  const notices = meeting.participantIds.flatMap((memberId) => recipients.filter((recipient) => recipient.isActive !== false && recipient.memberId === memberId).map((recipient) => notification("convocation", `Convocation : ${meeting.title}`, `Réunion prévue le ${meeting.date} à ${meeting.startTime}, ${meeting.endTime}, à ${meeting.location}.`, `Convocation ${meeting.id}`, "/meetings", recipient.id, { category: "meetings", entityType: "meeting", entityId: meeting.id, senderId: actor.id, dedupeKey: `invitation:${meeting.id}:${sendId}:${recipient.id}` })))
   if (!notices.length) return { state, error: "Aucun participant ne possède de compte destinataire associé." }
   return { state: { ...state, meetings: state.meetings.map((m) => m.id === meetingId ? { ...m, invitationsSentAt: now } : m), notifications: withNotifications(state, notices).notifications } }
 }
@@ -71,10 +84,10 @@ export function applyMeetingWorkflow(state: DemoState, action: WorkflowAction, m
   if (!meeting) return { state, error: "Réunion introuvable." }
   const minutes = minutesId ? state.minutes.find((item) => item.id === minutesId) : undefined
   const now = new Date().toISOString()
-  const roleRecipient = (role: string, fallback: string) => recipients.length ? recipients.find((item) => item.role === role && item.isActive !== false)?.id : fallback
-  const presidentId = roleRecipient("president", "u-president")
-  const secretaryId = roleRecipient("secretary", "u-secretary")
-  const archivistId = roleRecipient("archivist", "u-archive")
+  const roleRecipient = (role: string) => recipients.find((item) => item.role === role && item.isActive !== false)?.id
+  const presidentId = roleRecipient("president")
+  const secretaryId = roleRecipient("secretary")
+  const archivistId = roleRecipient("archivist")
   if (action === "start") {
     if (actor.role !== "president") return { state, error: "Seul le président peut démarrer la réunion." }
     if (meeting.status !== "Planifiée") return { state, error: "Seule une réunion planifiée peut démarrer." }
@@ -120,14 +133,16 @@ function notification(kind: NotificationKind, title: string, detail: string, con
   }
 }
 
-function userNotification(kind: NotificationKind, title: string, detail: string, context: string, target: NotificationTarget, recipientId: string | undefined, recordId?: string) {
+function userNotification(kind: NotificationKind, title: string, detail: string, context: string, target: NotificationTarget, recipientId: string | undefined, recordId?: string): CommitteeNotification | null {
+  if (!recipientId) return null
   const item = notification(kind, title, detail, context, target, recipientId)
   return { ...item, category: "minutes" as const, entityType: "minutes" as const, entityId: recordId, target }
 }
 
-function withNotifications(state: DemoState, events: CommitteeNotification[]): DemoState {
+function withNotifications(state: DemoState, events: Array<CommitteeNotification | null>): DemoState {
+  const candidates = events.filter((item): item is CommitteeNotification => Boolean(item))
   const keys = new Set(state.notifications.flatMap((item) => item.dedupeKey ? [item.dedupeKey] : []))
-  const unique = events.filter((item) => {
+  const unique = candidates.filter((item) => {
     if (!item.dedupeKey) return true
     if (keys.has(item.dedupeKey)) return false
     keys.add(item.dedupeKey)
@@ -148,6 +163,10 @@ function agendaView(proposals: AgendaProposal[], meetingId: string): AgendaItem[
 
 function sameAgenda(a: AgendaItem[], b: AgendaItem[]): boolean {
   return JSON.stringify(a) === JSON.stringify(b)
+}
+
+function agendaReviewLabel(status: AgendaProposal["status"]): string {
+  return status === "Validé" ? "validée" : "rejetée"
 }
 
 /** Le module collaboratif est la source de vérité des points, statuts et ordres. */
@@ -217,6 +236,21 @@ export function applyDemoChange<K extends CollectionKey>(state: DemoState, key: 
   const events: CommitteeNotification[] = []
 
   if (key === "members") {
+    const emails = new Set<string>()
+    const memberIds = new Set<string>()
+    for (const member of next.members) {
+      const email = member.email.trim().toLocaleLowerCase()
+      if (!member.id || memberIds.has(member.id) || !member.name.trim() || !email || emails.has(email)) return { state, error: "Chaque membre doit avoir un identifiant, un nom et une adresse e-mail uniques." }
+      memberIds.add(member.id)
+      emails.add(email)
+      if (!committeeSeats.some((seat) => seat.id === member.seatId)) return { state, error: "Le siège sélectionné n'existe pas." }
+      if (!isIsoDate(member.mandateStart) || !isIsoDate(member.mandateEnd) || member.mandateEnd < member.mandateStart) return { state, error: "Les dates du mandat sont invalides." }
+      const seatIssue = validateMemberSeat(member, next.members)
+      if (seatIssue) return { state, error: seatIssue }
+      const specialRole = ["Président", "Secrétaire", "Responsable archives"].includes(member.role)
+      if (specialRole && next.members.some((other) => other.id !== member.id && other.role === member.role && member.mandateStart <= other.mandateEnd && other.mandateStart <= member.mandateEnd)) return { state, error: "Une fonction dirigeante ne peut être attribuée à deux membres sur une même période." }
+    }
+    for (const account of recipients) if (account.memberId && !next.members.some((member) => member.id === account.memberId)) return { state, error: "Un compte utilisateur est encore associé au membre supprimé. Réattribuez ou dissociez ce compte avant la suppression." }
     for (const member of state.members) {
       if (!next.members.some((m) => m.id === member.id)) {
         const issue = deletionIssue(state, "members", member.id)
@@ -244,28 +278,43 @@ export function applyDemoChange<K extends CollectionKey>(state: DemoState, key: 
     }
     for (const meeting of next.meetings) {
       const old = state.meetings.find((m) => m.id === meeting.id)
+      if (!isIsoDate(meeting.date) || new Set(meeting.participantIds).size !== meeting.participantIds.length || meeting.participantIds.some((id) => !next.members.some((member) => member.id === id && member.mandateStart <= meeting.date && member.mandateEnd >= meeting.date))) return { state, error: "Les participants doivent être des membres uniques dont le mandat couvre la date de la réunion." }
+      if (!isClockTime(meeting.startTime) || !isClockTime(meeting.endTime) || meeting.endTime <= meeting.startTime) return { state, error: "La date et les horaires de la réunion sont invalides." }
+      if (meeting.agenda.some((item) => !next.members.some((member) => member.id === item.proposedById))) return { state, error: "Chaque point d'ordre du jour doit avoir un auteur membre existant." }
+      if (Object.keys(meeting.attendance ?? {}).some((id) => !meeting.participantIds.includes(id))) return { state, error: "La feuille de présence contient un identifiant qui ne participe pas à cette réunion." }
       if (!old && meeting.status !== "Planifiée") return { state, error: "Une nouvelle réunion doit commencer au statut Planifiée." }
+      if (!old && meeting.agenda.some((item) => item.status !== "Proposé")) return { state, error: "Les nouveaux points d'une réunion doivent attendre la validation du président." }
       if (old && old.status !== "Planifiée" && JSON.stringify({ ...old, agenda: [], attendance: undefined, invitationsSentAt: undefined }) !== JSON.stringify({ ...meeting, agenda: [], attendance: undefined, invitationsSentAt: undefined })) {
         return { state, error: "Les informations historiques d'une réunion démarrée sont verrouillées." }
       }
       if (old && old.status !== meeting.status) return { state, error: "Le statut d'une réunion ne peut être modifié que par une action du workflow." }
       if (!old || !sameAgenda(old.agenda, meeting.agenda)) {
         next.agenda = mergeMeetingAgenda({ ...state, agenda: next.agenda }, meeting, old)
+        for (const proposal of next.agenda.filter((item) => item.meetingId === meeting.id)) {
+          const previousProposal = state.agenda.find((item) => item.id === proposal.id)
+          if (!previousProposal) for (const account of recipients.filter((item) => item.role === "president" && item.isActive !== false)) events.push(notification("proposition-agenda", `Nouvelle proposition : ${proposal.title}`, `Une proposition a été ajoutée à l'ordre du jour de ${meeting.title}.`, `Proposition ${proposal.id}`, "/agenda", account.id, { category: "agenda", entityType: "agenda", entityId: proposal.id, dedupeKey: `agenda-proposal:${proposal.id}:${account.id}` }))
+          else if (previousProposal.status !== proposal.status) for (const account of recipients.filter((item) => item.isActive !== false && item.memberId === proposal.proposedById)) events.push(notification("revue-agenda", `Proposition ${proposal.status.toLowerCase()} : ${proposal.title}`, `La proposition concernant ${meeting.title} a été ${proposal.status.toLowerCase()}.`, `Proposition ${proposal.id}`, "/agenda", account.id, { category: "agenda", entityType: "agenda", entityId: proposal.id, dedupeKey: `agenda-review:${proposal.id}:${proposal.status}:${account.id}` }))
+        }
       }
       if (old && JSON.stringify(old.attendance ?? {}) !== JSON.stringify(meeting.attendance ?? {})) {
-        const present = Object.entries(meeting.attendance ?? {}).filter(([, value]) => value).map(([id]) => id)
+        const participantIds = new Set(meeting.participantIds)
+        const attendanceEntries = Object.entries(meeting.attendance ?? {})
+        if (attendanceEntries.some(([id, value]) => !participantIds.has(id) || typeof value !== "boolean")) return { state, error: "La feuille de présence ne peut contenir que les participants de cette réunion." }
+        const present = attendanceEntries.filter(([, value]) => value).map(([id]) => id)
         const decisionIds = next.decisions.filter((d) => d.meetingId === meeting.id).map((d) => d.id)
         next.ballots = next.ballots.map((ballot) => {
           if (!decisionIds.includes(ballot.decisionId) || ballot.state === "Clôturé") return ballot
           const seats = seatRepresentations(next.members, committeeSeats, meeting.date, present)
           return { ...ballot, presentMemberIds: present, votes: removeStaleVotes(ballot.votes, seats) }
         })
+        next.minutes = next.minutes.map((minutes) => minutes.meetingId === meeting.id && minutes.status === "Brouillon" ? { ...minutes, presentMemberIds: present } : minutes)
       }
       if (!old && meeting.status === "Planifiée") {
         // Une réunion créée n'est pas une convocation envoyée. L'envoi explicite est fait par le secrétaire.
-      } else if (old && old.invitationsSentAt && meeting.status === "Planifiée" && JSON.stringify({ title: old.title, date: old.date, startTime: old.startTime, endTime: old.endTime, location: old.location, participantIds: old.participantIds }) !== JSON.stringify({ title: meeting.title, date: meeting.date, startTime: meeting.startTime, endTime: meeting.endTime, location: meeting.location, participantIds: meeting.participantIds })) {
+      } else if (old && old.invitationsSentAt && meeting.status === "Planifiée" && JSON.stringify({ title: old.title, date: old.date, startTime: old.startTime, endTime: old.endTime, location: old.location, description: old.description, participantIds: old.participantIds }) !== JSON.stringify({ title: meeting.title, date: meeting.date, startTime: meeting.startTime, endTime: meeting.endTime, location: meeting.location, description: meeting.description, participantIds: meeting.participantIds })) {
         const memberIds = new Set([...old.participantIds, ...meeting.participantIds])
-        for (const memberId of memberIds) for (const account of recipients.filter((item) => item.isActive !== false && item.memberId === memberId)) events.push(notification("reunion-modifiee", `Réunion modifiée : ${meeting.title}`, `Les informations de la réunion ${meeting.title} ont été modifiées (${meeting.date}, ${meeting.startTime}, ${meeting.location}).`, `Réunion ${meeting.id}`, "/meetings", account.id, { category: "meetings", entityType: "meeting", entityId: meeting.id, dedupeKey: `meeting-change:${meeting.id}:${meeting.date}:${meeting.startTime}:${meeting.location}:${account.id}` }))
+        const changedVersion = JSON.stringify({ title: meeting.title, date: meeting.date, startTime: meeting.startTime, endTime: meeting.endTime, location: meeting.location, description: meeting.description, participantIds: meeting.participantIds })
+        for (const memberId of memberIds) for (const account of recipients.filter((item) => item.isActive !== false && item.memberId === memberId)) events.push(notification("reunion-modifiee", `Réunion modifiée : ${meeting.title}`, `Les informations de la réunion ${meeting.title} ont été modifiées (${meeting.date}, ${meeting.startTime}, ${meeting.location}).`, `Réunion ${meeting.id}`, "/meetings", account.id, { category: "meetings", entityType: "meeting", entityId: meeting.id, dedupeKey: `meeting-change:${meeting.id}:${changedVersion}:${account.id}` }))
       }
     }
     next.meetings = attachAgenda(next.meetings, next.agenda)
@@ -275,6 +324,7 @@ export function applyDemoChange<K extends CollectionKey>(state: DemoState, key: 
     for (const proposal of next.agenda) {
       const meeting = next.meetings.find((item) => item.id === proposal.meetingId)
       const old = state.agenda.find((item) => item.id === proposal.id)
+      if (!old && proposal.status !== "Proposé") return { state, error: "Une nouvelle proposition doit être soumise au statut Proposé." }
       if (meeting && meeting.status !== "Planifiée" && (!old || JSON.stringify(old) !== JSON.stringify(proposal))) return { state, error: "L'ordre du jour est verrouillé dès le démarrage de la réunion." }
       if (!old) for (const account of recipients.filter((item) => item.role === "president" && item.isActive !== false)) events.push(notification("proposition-agenda", `Nouvelle proposition : ${proposal.title}`, `Une proposition a été ajoutée à l'ordre du jour de ${meeting?.title ?? "la réunion"}.`, `Proposition ${proposal.id}`, "/agenda", account.id, { category: "agenda", entityType: "agenda", entityId: proposal.id, dedupeKey: `agenda-proposal:${proposal.id}:${account.id}` }))
       else if (old.status !== proposal.status) for (const account of recipients.filter((item) => item.isActive !== false && item.memberId === proposal.proposedById)) events.push(notification("revue-agenda", `Proposition ${proposal.status.toLowerCase()} : ${proposal.title}`, `La proposition concernant ${meeting?.title ?? "la réunion"} a été ${proposal.status.toLowerCase()}.`, `Proposition ${proposal.id}`, "/agenda", account.id, { category: "agenda", entityType: "agenda", entityId: proposal.id, dedupeKey: `agenda-review:${proposal.id}:${proposal.status}:${account.id}` }))
@@ -329,6 +379,9 @@ export function applyDemoChange<K extends CollectionKey>(state: DemoState, key: 
       if (!next.members.some((m) => m.id === action.assigneeId)) {
         return { state, error: "Le responsable sélectionné n'existe plus dans l'annuaire." }
       }
+      if (!isIsoDate(action.dueDate)) return { state, error: "La date d'échéance de l'action est invalide." }
+      const linkedDecision = action.decisionId ? next.decisions.find((decision) => decision.id === action.decisionId) : undefined
+      if (linkedDecision && action.dueDate < linkedDecision.date) return { state, error: "L'échéance d'une action ne peut précéder la décision associée." }
       if (action.status !== "Terminée") {
         const currentAssignee = recipients.find((item) => item.isActive !== false && item.memberId === action.assigneeId)
         const oldAssignee = old && recipients.find((item) => item.isActive !== false && item.memberId === old.assigneeId)
@@ -350,18 +403,36 @@ export function applyDemoChange<K extends CollectionKey>(state: DemoState, key: 
     const decisions = [...next.decisions]
     for (const ballot of next.ballots) {
       const old = state.ballots.find((b) => b.id === ballot.id)
+      if (old && JSON.stringify(old) === JSON.stringify(ballot)) continue
+      if (old && (old.decisionId !== ballot.decisionId || JSON.stringify(old.closedResult) !== JSON.stringify(ballot.closedResult))) {
+        return { state, error: "L’association et le résultat historique d’un scrutin ne sont pas modifiables." }
+      }
       if (!next.decisions.some((d) => d.id === ballot.decisionId)) {
         return { state, error: "Le scrutin doit être associé à une décision existante." }
       }
       const decisionForBallot = next.decisions.find((d) => d.id === ballot.decisionId)
+      if (!old && decisionForBallot?.status !== "En attente") {
+        return { state, error: "Un scrutin ne peut être créé que pour une décision en attente." }
+      }
       const meetingForBallot = next.meetings.find((m) => m.id === decisionForBallot?.meetingId)
-      if (meetingForBallot && meetingForBallot.status !== "En cours" && (!old || JSON.stringify(old) !== JSON.stringify(ballot))) {
+      if (!meetingForBallot) return { state, error: "Le scrutin doit être lié à une réunion existante." }
+      if (new Set(ballot.presentMemberIds).size !== ballot.presentMemberIds.length || ballot.presentMemberIds.some((id) => !meetingForBallot.participantIds.includes(id))) return { state, error: "Les présences du scrutin doivent correspondre aux participants uniques de la réunion." }
+      if (!Number.isFinite(ballot.quorumPercent) || ballot.quorumPercent < 1 || ballot.quorumPercent > 100 || !Number.isFinite(ballot.majorityPercent ?? 50) || (ballot.majorityPercent ?? 50) < 1 || (ballot.majorityPercent ?? 50) > 100) return { state, error: "Les seuils de quorum et de majorité doivent être compris entre 1 et 100 %." }
+      const activeRepresentations = seatRepresentations(next.members, committeeSeats, meetingForBallot.date, ballot.presentMemberIds)
+      const voterIds = new Set<string>()
+      for (const [seatId, vote] of Object.entries(ballot.votes)) {
+        const representation = activeRepresentations.find((seat) => seat.seatId === seatId)
+        if (vote.seatId !== seatId || !representation || representation.representativeId !== vote.memberId || voterIds.has(vote.memberId) || !["pour", "contre", "abstention"].includes(vote.choice)) return { state, error: "Chaque siège ne peut avoir qu'un vote valide de son représentant actuel." }
+        voterIds.add(vote.memberId)
+      }
+      if (meetingForBallot.status !== "En cours") {
         return { state, error: "Les scrutins ne peuvent être modifiés que pendant une réunion en cours." }
       }
       if (old && ballot.state !== "Clôturé" && old.state !== "Clôturé" && JSON.stringify(old.presentMemberIds) !== JSON.stringify(ballot.presentMemberIds) && meetingForBallot) {
         const attendance = { ...(meetingForBallot.attendance ?? {}) }
         for (const id of meetingForBallot.participantIds) attendance[id] = ballot.presentMemberIds.includes(id)
         next.meetings = next.meetings.map((m) => m.id === meetingForBallot.id ? { ...m, attendance } : m)
+        next.minutes = next.minutes.map((minutes) => minutes.meetingId === meetingForBallot.id && minutes.status === "Brouillon" ? { ...minutes, presentMemberIds: ballot.presentMemberIds.filter((id) => meetingForBallot.participantIds.includes(id)) } : minutes)
         const relatedDecisionIds = next.decisions.filter((d) => d.meetingId === meetingForBallot.id).map((d) => d.id)
         next.ballots = next.ballots.map((related) => {
           if (related.id === ballot.id || !relatedDecisionIds.includes(related.decisionId) || related.state === "Clôturé") return related
@@ -378,6 +449,7 @@ export function applyDemoChange<K extends CollectionKey>(state: DemoState, key: 
         const meetingDate = next.meetings.find((m) => m.id === decision.meetingId)?.date ?? ""
         const summary = calculateBallot(ballot, next.members, committeeSeats, meetingDate)
         newStatus = summary.outcome === "Adoptée" ? "Adoptée" : summary.outcome === "Rejetée" ? "Rejetée" : "En attente"
+        if (old?.state !== "Clôturé") next.ballots = next.ballots.map((item) => item.id === ballot.id ? { ...item, closedResult: summary } : item)
       }
       if (newStatus !== "Adoptée" && next.actions.some((a) => a.decisionId === decision.id)) {
         return { state, error: "Ce scrutin est lié à une décision ayant des actions. Dissociez-les avant de changer son résultat." }
@@ -398,12 +470,18 @@ export function applyDemoChange<K extends CollectionKey>(state: DemoState, key: 
     }
   }
   if (key === "minutes") {
+    if (new Set(next.minutes.map((item) => item.id)).size !== next.minutes.length || new Set(next.minutes.map((item) => item.meetingId)).size !== next.minutes.length) return { state, error: "Un seul procès-verbal est autorisé par réunion." }
     if (next.minutes.some((m) => !next.meetings.some((meeting) => meeting.id === m.meetingId))) {
       return { state, error: "Le procès-verbal doit être associé à une réunion existante." }
     }
     for (const item of next.minutes) {
       const old = state.minutes.find((p) => p.id === item.id)
       const meeting = next.meetings.find((m) => m.id === item.meetingId)
+      if (new Set(item.presentMemberIds).size !== item.presentMemberIds.length || item.presentMemberIds.some((memberId) => !meeting?.participantIds.includes(memberId))) return { state, error: "La liste de présence du procès-verbal doit contenir uniquement les participants de sa réunion." }
+      if (meeting?.attendance && item.status === "Brouillon") {
+        const meetingPresence = Object.entries(meeting.attendance).filter(([, present]) => present).map(([memberId]) => memberId).sort()
+        if (JSON.stringify([...item.presentMemberIds].sort()) !== JSON.stringify(meetingPresence)) return { state, error: "La présence du procès-verbal doit reprendre la feuille de présence de la réunion." }
+      }
       if (old && old.status !== item.status) return { state, error: "Le statut du PV doit évoluer par une action métier dédiée." }
       if (old && old.status !== "Brouillon" && JSON.stringify(old) !== JSON.stringify(item)) return { state, error: "Un PV soumis ou signé ne peut pas être modifié sans retour pour correction." }
       if (!old && meeting?.status !== "En cours" && meeting?.status !== "Clôturée") return { state, error: "Un PV peut être créé pendant ou après la réunion." }

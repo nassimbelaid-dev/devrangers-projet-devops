@@ -18,7 +18,7 @@ export const initialDecisions: DecisionRecord[] = [
     id: "d3", reference: "DEC-2026-003",
     title: "Révision du calendrier des soutenances",
     description: "Proposition en attente d'examen lors de la prochaine réunion du comité scientifique.",
-    meetingId: "r1", date: "2026-11-18", status: "En attente",
+    meetingId: "r2", date: "2026-11-25", status: "En attente",
   },
   {
     id: "d4", reference: "DEC-2026-004",

@@ -1,11 +1,13 @@
 "use client"
 
 import { useDemoData } from "@/lib/demo-store"
+import { useStaticAuth } from "@/lib/static-auth"
 
 const now = new Date()
 export const DEMO_REFERENCE_DATE = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
 
 export function useDashboardData() {
+  const { user } = useStaticAuth()
   const { meetings, members, decisions, actions, notifications } = useDemoData()
   const dashboardMeetings = [...meetings]
     .filter((meeting) => meeting.status === "Planifiée" && meeting.date >= DEMO_REFERENCE_DATE)
@@ -54,7 +56,7 @@ export function useDashboardData() {
   ).length
 
   const dashboardNotifications = [...notifications]
-    .filter((notification) => !notification.archived)
+    .filter((notification) => notification.recipientId === user?.id && !notification.archived)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 
   const dashboardUnreadCount = dashboardNotifications.filter(

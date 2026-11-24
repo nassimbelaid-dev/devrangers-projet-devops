@@ -12,9 +12,9 @@ import { initialAgendaProposals } from "@/features/agenda/mock-data"
 import { initialNotifications } from "@/features/notifications/mock-data"
 import { categoryForKind } from "@/features/notifications/utils"
 import type { CommitteeNotification } from "@/features/notifications/types"
-import { getCurrentDemoUser, getDemoAccounts, hasPermission } from "@/lib/static-auth"
+import { getCurrentDemoUser, getDemoAccounts, hasPermission, syncDemoAccountSeats } from "@/lib/static-auth"
 import { committeeSeats } from "@/features/members/mock-data"
-import { seatRepresentations } from "@/features/votes/utils"
+import { calculateBallot, seatRepresentations } from "@/features/votes/utils"
 import { applyDemoChange, applyMeetingWorkflow, createReminderNotifications, sendMeetingInvitations, type WorkflowAction } from "./demo-business"
 import type { DemoState } from "./demo-business"
 
@@ -24,7 +24,12 @@ const initial: DemoState = {
   members: initialMembers,
   decisions: initialDecisions,
   actions: initialActions,
-  ballots: initialBallots,
+  ballots: initialBallots.map((ballot) => {
+    if (ballot.state !== "Clôturé") return ballot
+    const decision = initialDecisions.find((item) => item.id === ballot.decisionId)
+    const meetingDate = initialMeetings.find((item) => item.id === decision?.meetingId)?.date ?? ""
+    return { ...ballot, closedResult: calculateBallot(ballot, initialMembers, committeeSeats, meetingDate) }
+  }),
   documents: initialDocuments,
   minutes: initialMinutes,
   agenda: initialAgendaProposals,
@@ -104,6 +109,12 @@ function initialize() {
         notifications: initial.notifications,
       }
       current = { ...current, notifications: migrateStoredNotifications(stored.notifications) }
+      current = { ...current, ballots: current.ballots.map((ballot) => {
+        if (ballot.state !== "Clôturé" || ballot.closedResult) return ballot
+        const decision = current.decisions.find((item) => item.id === ballot.decisionId)
+        const meetingDate = current.meetings.find((item) => item.id === decision?.meetingId)?.date ?? ""
+        return { ...ballot, closedResult: calculateBallot(ballot, current.members, committeeSeats, meetingDate) }
+      }) }
     }
   } catch {
     current = initial
@@ -153,8 +164,13 @@ export function useDemoCollection<K extends keyof DemoState>(key: K) {
       notify()
       return
     }
-    const recipients = getDemoAccounts().filter((account) => account.isActive !== false)
+    const recipients = getDemoAccounts()
     const result = applyDemoChange(current, key, updated, recipients)
+    if (!result.error && key === "members" && !syncDemoAccountSeats(updated as DemoState["members"])) {
+      feedback = "Les correspondances entre les comptes et les membres n'ont pas pu être synchronisées."
+      notify()
+      return
+    }
     feedback = result.error ?? ""
     if (!Object.is(current, result.state) || result.error) {
       current = result.state
@@ -184,6 +200,20 @@ function authorizeDemoWrite<K extends keyof DemoState>(actor: ReturnType<typeof 
         if (!allowed("meetings", "managePresence") || old.status !== "En cours") return "Seuls le président et le secrétaire peuvent gérer les présences d'une réunion en cours."
         continue
       }
+      if (JSON.stringify(old.agenda) !== JSON.stringify(item.agenda)) {
+        for (const point of item.agenda) {
+          const previousPoint = old.agenda.find((entry) => entry.id === point.id)
+          if (!previousPoint) {
+            if (point.status !== "Proposé" || !allowed("agenda", "create") || point.proposedById !== actor.memberId) return "Une proposition doit être déposée en son nom et rester en attente de validation."
+          } else if (previousPoint.status !== point.status) {
+            if (!allowed("agenda", "approve")) return "Seul le président peut valider ou rejeter un point de l'ordre du jour."
+          } else if (JSON.stringify(previousPoint) !== JSON.stringify(point)) {
+            if (!allowed("agenda", "edit") || previousPoint.proposedById !== actor.memberId || !["Proposé", "Rejeté"].includes(previousPoint.status)) return "Vous ne pouvez modifier que votre propre proposition non examinée."
+          }
+        }
+        if (old.agenda.some((point) => !item.agenda.some((nextPoint) => nextPoint.id === point.id)) && !allowed("agenda", "approve")) return "Seul le président peut retirer un point de l'ordre du jour."
+        if (JSON.stringify({ ...old, agenda: undefined }) === JSON.stringify({ ...item, agenda: undefined })) continue
+      }
       if (JSON.stringify(old) !== JSON.stringify(item) && (!allowed("meetings", "edit") || old.status !== "Planifiée")) return "Votre rôle ne permet pas de modifier les informations de cette réunion."
     }
     if (oldItems.some((item) => !newItems.some((nextItem) => nextItem.id === item.id))) return "La suppression d'une réunion doit respecter les règles de conservation."
@@ -212,6 +242,7 @@ function authorizeDemoWrite<K extends keyof DemoState>(actor: ReturnType<typeof 
       const old = oldItems.find((entry) => entry.id === ballot.id)
       if (!old) { if (!allowed("votes", "approve")) return "Seul le président peut organiser un scrutin."; continue }
       if (JSON.stringify(old) === JSON.stringify(ballot)) continue
+      if (ballot.id !== old.id || ballot.decisionId !== old.decisionId || JSON.stringify(ballot.closedResult) !== JSON.stringify(old.closedResult)) return "L'identité, la décision liée et le résultat figé d'un scrutin ne sont pas modifiables directement."
       const decision = current.decisions.find((entry) => entry.id === ballot.decisionId)
       const meeting = current.meetings.find((entry) => entry.id === decision?.meetingId)
       if (ballot.state === "Clôturé" || old.state !== ballot.state || old.quorumPercent !== ballot.quorumPercent || old.majorityPercent !== ballot.majorityPercent) {
@@ -220,7 +251,10 @@ function authorizeDemoWrite<K extends keyof DemoState>(actor: ReturnType<typeof 
       if (JSON.stringify(old.presentMemberIds) !== JSON.stringify(ballot.presentMemberIds)) {
         if (!allowed("votes", "managePresence") || meeting?.status !== "En cours" || old.state === "Clôturé") return "Votre rôle ne permet pas de modifier les présences de ce scrutin."
       }
-      if (JSON.stringify(old.votes) !== JSON.stringify(ballot.votes) && JSON.stringify(old.presentMemberIds) === JSON.stringify(ballot.presentMemberIds)) {
+      const presenceChanged = JSON.stringify(old.presentMemberIds) !== JSON.stringify(ballot.presentMemberIds)
+      const votesChanged = JSON.stringify(old.votes) !== JSON.stringify(ballot.votes)
+      if (presenceChanged && votesChanged) return "Modifiez les présences puis les votes lors d'actions distinctes."
+      if (votesChanged) {
         if (!allowed("votes", "vote") || !actor.memberId || meeting?.status !== "En cours" || ballot.state === "Clôturé") return "Votre rôle ne permet pas de voter dans ce scrutin."
         const eligible = seatRepresentations(current.members, committeeSeats, meeting.date, old.presentMemberIds)
         const changedSeats = new Set([...Object.keys(old.votes), ...Object.keys(ballot.votes)].filter((seatId) => JSON.stringify(old.votes[seatId]) !== JSON.stringify(ballot.votes[seatId])))
@@ -325,7 +359,7 @@ export function resetDemoData() {
 export function runMeetingWorkflow(action: WorkflowAction, meetingId: string, actor: { id: string; firstName: string; lastName: string; role: string }, minutesId?: string) {
   initialize()
   const authenticated = getCurrentDemoUser()
-  if (!authenticated || authenticated.id !== actor.id || authenticated.role !== actor.role) return { error: "Le compte connecté n'est pas autorisé à exécuter cette action." }
+  if (!authenticated || authenticated.id !== actor.id || authenticated.role !== actor.role || authenticated.firstName !== actor.firstName || authenticated.lastName !== actor.lastName) return { error: "Le compte connecté n'est pas autorisé à exécuter cette action." }
   const recipients = getDemoAccounts().filter((account) => account.isActive !== false)
   const result = applyMeetingWorkflow(current, action, meetingId, actor, minutesId, recipients)
   feedback = result.error ?? ""
@@ -359,15 +393,15 @@ export function checkDemoNotificationReminders(actorId: string) {
   if (next !== current) { current = next; persist(); notify() }
 }
 
-export function createMeetingMinutes(meetingId: string, actor: { firstName: string; lastName: string; role: string }) {
+export function createMeetingMinutes(meetingId: string, actor: { id: string; firstName: string; lastName: string; role: string }) {
   initialize()
   const authenticated = getCurrentDemoUser()
-  if (!authenticated || authenticated.role !== actor.role || authenticated.firstName !== actor.firstName || authenticated.lastName !== actor.lastName) return { error: "Le compte connecté n'est pas autorisé à créer ce procès-verbal." }
+  if (!authenticated || authenticated.id !== actor.id || authenticated.role !== actor.role || authenticated.firstName !== actor.firstName || authenticated.lastName !== actor.lastName) return { error: "Le compte connecté n'est pas autorisé à créer ce procès-verbal." }
   const meeting = current.meetings.find((item) => item.id === meetingId)
   if (actor.role !== "secretary" || (meeting?.status !== "En cours" && meeting?.status !== "Clôturée")) return { error: "Seul le secrétaire peut créer le PV pendant ou après une réunion démarrée." }
   if (current.minutes.some((item) => item.meetingId === meetingId)) return { error: "Un PV existe déjà pour cette réunion." }
   const id = `pv-${Date.now()}`
-  const presentMemberIds = Object.entries(meeting.attendance ?? {}).filter(([, present]) => present).map(([memberId]) => memberId)
+  const presentMemberIds = meeting.participantIds.filter((memberId) => meeting.attendance?.[memberId] === true)
   const next = { id, reference: `PV-2026-${String(current.minutes.length + 1).padStart(3, "0")}`, meetingId, status: "Brouillon" as const, presentMemberIds, summary: "", nextSteps: "", secretary: `${actor.firstName} ${actor.lastName}`, president: "Karim Haddad", version: 1, updatedAt: new Date().toISOString().slice(0, 10) }
   const result = applyDemoChange(current, "minutes", [next, ...current.minutes])
   if (result.error) return { error: result.error }

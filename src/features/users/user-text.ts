@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation"
 
 const en: Record<string, string> = {
+  "Associez ce compte à un membre du comité avec un siège valide.": "Link this account to a committee member with a valid seat.",
   Administration: "Administration",
   "Comptes et rôles": "Accounts and roles",
   "Gérez les comptes fictifs et attribuez un rôle. Les droits associés sont définis dans la configuration RBAC.":
@@ -62,6 +63,7 @@ const en: Record<string, string> = {
 }
 
 const ar: Record<string, string> = {
+  "Associez ce compte à un membre du comité avec un siège valide.": "اربط هذا الحساب بعضو في اللجنة يشغل مقعداً صالحاً.",
   Administration: "الإدارة",
   "Comptes et rôles": "الحسابات والأدوار",
   "Gérez les comptes fictifs et attribuez un rôle. Les droits associés sont définis dans la configuration RBAC.":
