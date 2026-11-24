@@ -1,4 +1,4 @@
-import { CalendarDays, Clock3, FileCheck2, ListTodo } from "lucide-react"
+import { CalendarDays, Clock3, FileCheck2, ListTodo, Archive } from "lucide-react"
 import type { NotificationKind } from "./types"
 
 export function NotificationIcon({ kind }: { kind: NotificationKind }) {
@@ -7,6 +7,10 @@ export function NotificationIcon({ kind }: { kind: NotificationKind }) {
     "rappel-reunion": Clock3,
     "echeance-action": ListTodo,
     "avis-decision": FileCheck2,
+    "pv-signature": FileCheck2,
+    "pv-correction": FileCheck2,
+    "pv-signe": FileCheck2,
+    "pv-archives": Archive,
   }[kind]
 
   return (

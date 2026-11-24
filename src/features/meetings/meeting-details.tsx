@@ -8,7 +8,7 @@ import {
   DialogHeader, DialogTitle,
 } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { createMeetingMinutes, runMeetingWorkflow, useDemoData } from "@/lib/demo-store"
+import { createMeetingMinutes, runMeetingWorkflow, sendMeetingInvitationsFromStore, useDemoCollection, useDemoData } from "@/lib/demo-store"
 import { useStaticAuth } from "@/lib/static-auth"
 import { useState } from "react"
 import { useUiText } from "@/features/ui-text"
@@ -29,6 +29,7 @@ function readableDate(date: string) {
 export function MeetingDetails({ meeting, onClose, onEdit }: MeetingDetailsProps) {
   const t = useUiText()
   const { members: committeeMembers, meetings, minutes, ballots, decisions } = useDemoData()
+  const [, setMeetings] = useDemoCollection("meetings")
   const { user } = useStaticAuth()
   const [notice, setNotice] = useState("")
   const [busy, setBusy] = useState(false)
@@ -41,6 +42,7 @@ export function MeetingDetails({ meeting, onClose, onEdit }: MeetingDetailsProps
   const stage = ["Planifiée", "En cours", "Clôturée", "PV signé"].indexOf(currentMeeting.status)
   const canStart = user?.role === "president" && stage === 0
   const canClose = user?.role === "president" && stage === 1
+  const canTakeAttendance = (user?.role === "president" || user?.role === "secretary") && stage === 1
   const runAction = (action: "start" | "close") => {
     if (!user || !window.confirm(t(action === "start" ? "Confirmer le démarrage de cette réunion ?" : "Confirmer la clôture de cette réunion ?"))) return
     setBusy(true)
@@ -52,6 +54,18 @@ export function MeetingDetails({ meeting, onClose, onEdit }: MeetingDetailsProps
   const participants = committeeMembers.filter((member) =>
     meeting.participantIds.includes(member.id)
   )
+  const attendance = currentMeeting.attendance ?? {}
+  const presentCount = participants.filter((member) => attendance[member.id] === true).length
+  const absentCount = participants.filter((member) => attendance[member.id] === false).length
+  const unsetCount = participants.length - presentCount - absentCount
+  const updateAttendance = (updates: Record<string, boolean>) => setMeetings((all) => all.map((item) => item.id === currentMeeting.id ? { ...item, attendance: { ...(item.attendance ?? {}), ...updates } } : item))
+  const sendInvitations = () => {
+    if (!user || !window.confirm(t("Confirmer l'envoi des convocations à tous les participants ?"))) return
+    setBusy(true)
+    const result = sendMeetingInvitationsFromStore(currentMeeting.id, user)
+    setNotice(result.error ? t(result.error) : t("Les convocations ont été envoyées aux participants disposant d'un compte."))
+    setBusy(false)
+  }
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose() }}>
@@ -75,6 +89,10 @@ export function MeetingDetails({ meeting, onClose, onEdit }: MeetingDetailsProps
           </ol>
         </section>
         {notice && <p role="status" className="rounded-lg border px-3 py-2 text-sm">{notice}</p>}
+        {stage === 0 && user?.role === "secretary" && <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
+          <div className="text-sm"><p className="font-medium">{t("Convocations")}</p><p className="text-muted-foreground">{currentMeeting.invitationsSentAt ? t("Envoyées le {date}", { date: new Date(currentMeeting.invitationsSentAt).toLocaleString() }) : t("Non envoyées")}</p></div>
+          <Button disabled={busy} onClick={sendInvitations}>{t(currentMeeting.invitationsSentAt ? "Renvoyer les convocations" : "Envoyer les convocations")}</Button>
+        </section>}
         {(canStart || canClose) && <div className="flex flex-wrap gap-2">
           {canStart && <Button disabled={busy} onClick={() => runAction("start")}><Play className="me-2 size-4" />{t("Démarrer la réunion")}</Button>}
           {canClose && <Button disabled={busy || openBallots.length > 0} variant="destructive" onClick={() => runAction("close")}><Square className="me-2 size-4" />{t("Clôturer la réunion")}</Button>}
@@ -108,13 +126,23 @@ export function MeetingDetails({ meeting, onClose, onEdit }: MeetingDetailsProps
             </div>
           </TabsContent>
 
-          <TabsContent value="participants" className="space-y-2 pt-3">
+          <TabsContent value="participants" className="space-y-3 pt-3">
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-lg border p-2"><strong className="block text-lg text-emerald-700">{presentCount}</strong><span className="text-xs">{t("Présents")}</span></div>
+              <div className="rounded-lg border p-2"><strong className="block text-lg text-rose-700">{absentCount}</strong><span className="text-xs">{t("Absents")}</span></div>
+              <div className="rounded-lg border p-2"><strong className="block text-lg text-muted-foreground">{unsetCount}</strong><span className="text-xs">{t("Non renseignés")}</span></div>
+            </div>
+            {canTakeAttendance && <Button size="sm" variant="outline" onClick={() => updateAttendance(Object.fromEntries(participants.map((member) => [member.id, true])))}>{t("Marquer tous présents")}</Button>}
             {participants.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t("Aucun participant sélectionné.")}</p>
             ) : participants.map((member) => (
-              <div key={member.id} className="flex items-center justify-between rounded-lg border p-3">
-                <span className="font-medium text-sm">{member.name}</span>
-                <span className="text-xs text-muted-foreground">{member.role}</span>
+              <div key={member.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3">
+                <div><span className="font-medium text-sm">{member.name}</span><span className="ms-2 text-xs text-muted-foreground">{member.role} · {t(member.kind)}</span>
+                  {member.kind === "Suppléant" && participants.some((other) => other.kind === "Titulaire" && other.seatId === member.seatId && attendance[other.id] === false) && <Badge className="mt-1 block w-fit" variant="secondary">{t("Remplace le titulaire absent")}</Badge>}
+                </div>
+                <div className="flex gap-1">
+                  {([true, false, undefined] as const).map((state) => <Button key={String(state)} size="sm" variant={attendance[member.id] === state ? "default" : "outline"} disabled={!canTakeAttendance} onClick={() => { if (state === undefined) { const copy = { ...(currentMeeting.attendance ?? {}) }; delete copy[member.id]; setMeetings((all) => all.map((item) => item.id === currentMeeting.id ? { ...item, attendance: copy } : item)) } else updateAttendance({ [member.id]: state }) }}>{t(state === true ? "Présent" : state === false ? "Absent" : "Non renseigné")}</Button>)}
+                </div>
               </div>
             ))}
           </TabsContent>

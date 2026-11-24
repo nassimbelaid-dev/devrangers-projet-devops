@@ -32,16 +32,16 @@ export function NotificationDetails({ notification, locale, onClose, onToggleRea
                 <span className="text-xs font-medium text-muted-foreground">{t(kindLabels[notification.kind])}</span>
                 {notification.priority === "importante" && <Badge variant="secondary">{t("À surveiller")}</Badge>}
               </div>
-              <DialogTitle className="text-xl leading-7">{notification.title}</DialogTitle>
+              <DialogTitle className="text-xl leading-7">{t(notification.title)}</DialogTitle>
               <DialogDescription>
                 {formatNotificationDate(notification.createdAt)} · {t("Notification fictive")}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-6 py-4">
-              <p className="text-sm leading-7">{notification.detail}</p>
+              <p className="text-sm leading-7">{t(notification.detail)}</p>
               <div className="space-y-1 border-t pt-5">
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("Élément associé")}</p>
-                <p className="text-sm">{notification.context}</p>
+                <p className="text-sm">{t(notification.context)}</p>
               </div>
             </div>
             <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between">

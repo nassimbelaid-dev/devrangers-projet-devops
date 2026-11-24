@@ -11,6 +11,8 @@ export const demoAccounts: Array<DemoUser & { password: string; roleLabel: strin
   { id: "u-secretary", firstName: "Lina", lastName: "Amrane", email: "secretaire@comite.test", password: "Comite2026", role: "secretary", roleLabel: "Secrétaire", seatId: "s2", memberId: "m2" },
   { id: "u-archive", firstName: "Amine", lastName: "Cherif", email: "archives@comite.test", password: "Comite2026", role: "archivist", roleLabel: "Responsable des archives", seatId: "s5", memberId: "m5" },
   { id: "u-member", firstName: "Nadia", lastName: "Bouzid", email: "membre@comite.test", password: "Comite2026", role: "member", roleLabel: "Membre du comité", seatId: "s3", memberId: "m3" },
+  { id: "u-member-m4", firstName: "Yanis", lastName: "Aït Ali", email: "yanis@comite.test", password: "Comite2026", role: "member", roleLabel: "Membre du comité", seatId: "s4", memberId: "m4" },
+  { id: "u-member-m6", firstName: "Sara", lastName: "Bensaïd", email: "sara@comite.test", password: "Comite2026", role: "member", roleLabel: "Membre suppléante", seatId: "s3", memberId: "m6" },
 ]
 
 const STORAGE_KEY = "comite-scientifique:static-auth:v2"
@@ -33,7 +35,11 @@ export function getDemoAccounts(): DemoAccount[] {
   if (typeof window === "undefined") return demoAccounts
   try {
     const stored = JSON.parse(window.localStorage.getItem(ACCOUNTS_KEY) ?? "null")
-    if (Array.isArray(stored)) return stored.filter((account) => account && typeof account.id === "string" && typeof account.email === "string" && typeof account.password === "string" && ["admin", "president", "secretary", "archivist", "member"].includes(account.role))
+    if (Array.isArray(stored)) {
+      const valid = stored.filter((account) => account && typeof account.id === "string" && typeof account.email === "string" && typeof account.password === "string" && ["admin", "president", "secretary", "archivist", "member"].includes(account.role))
+      const existingIds = new Set(valid.map((account) => account.id))
+      return [...valid, ...demoAccounts.filter((account) => !existingIds.has(account.id))]
+    }
   } catch { /* Repli sur les comptes de démonstration intégrés. */ }
   return demoAccounts
 }

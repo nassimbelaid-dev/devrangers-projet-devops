@@ -24,6 +24,9 @@ export interface Meeting {
   description: string
   status: MeetingStatus
   participantIds: string[]
+  /** Presence partagée par la réunion et ses scrutins, par identifiant de membre. */
+  attendance?: Record<string, boolean>
+  invitationsSentAt?: string
   agenda: AgendaItem[]
   startedAt?: string
   closedAt?: string

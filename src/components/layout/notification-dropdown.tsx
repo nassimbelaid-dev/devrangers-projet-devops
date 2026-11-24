@@ -9,23 +9,27 @@ import type { DictionaryType } from "@/lib/get-dictionary"
 import { useDemoCollection } from "@/lib/demo-store"
 import { NotificationIcon } from "@/features/notifications/notification-icon"
 import { kindLabels } from "@/features/notifications/utils"
+import { useStaticAuth } from "@/lib/static-auth"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { useUiText } from "@/features/ui-text"
 
 export function NotificationDropdown({ dictionary: _dictionary }: { dictionary: DictionaryType }) {
+  const t = useUiText()
   const [items, setItems] = useDemoCollection("notifications")
+  const { user } = useStaticAuth()
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
   const lang = pathname.split("/").filter(Boolean)[0] || "en"
 
   const recent = useMemo(() =>
-    items
+    items.filter((item) => item.recipientId === user?.id)
       .filter((item) => !item.archived)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
       .slice(0, 5),
-    [items],
+    [items, user?.id],
   )
-  const unreadCount = items.filter((item) => !item.archived && !item.read).length
+  const unreadCount = items.filter((item) => item.recipientId === user?.id && !item.archived && !item.read).length
 
   function markRead(id: string) {
     setItems((current) => current.map((item) =>
@@ -79,10 +83,10 @@ export function NotificationDropdown({ dictionary: _dictionary }: { dictionary: 
                     <span className="min-w-0 flex-1 space-y-1">
                       <span className="flex items-start justify-between gap-3">
                         <span className="line-clamp-1 text-xs font-medium text-muted-foreground">{kindLabels[item.kind]}</span>
-                        {!item.readAt && <span className="mt-1 size-2 shrink-0 rounded-full bg-indigo-500" aria-label={_dictionary.navigation.notification.unread} />}
+                        {!item.read && <span className="mt-1 size-2 shrink-0 rounded-full bg-indigo-500" aria-label={_dictionary.navigation.notification.unread} />}
                       </span>
-                      <span className="block text-sm font-medium leading-5">{item.title}</span>
-                      <span className="block line-clamp-2 text-xs leading-5 text-muted-foreground">{item.preview}</span>
+                      <span className="block text-sm font-medium leading-5">{t(item.title)}</span>
+                      <span className="block line-clamp-2 text-xs leading-5 text-muted-foreground">{t(item.preview)}</span>
                     </span>
                   </Link>
                 </li>

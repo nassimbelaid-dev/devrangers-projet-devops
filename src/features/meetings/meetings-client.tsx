@@ -1,6 +1,7 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { useDemoCollection } from "@/lib/demo-store"
 import { useUiText } from "@/features/ui-text"
 import { CalendarDays, CheckCircle2, Eye, Pencil, Plus, Search, Users } from "lucide-react"
@@ -49,6 +50,11 @@ export function MeetingsClient() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [formVersion, setFormVersion] = useState(0)
   const [view, setView] = useState<"list" | "calendar">("list")
+  const searchParams = useSearchParams()
+  useEffect(() => {
+    const requested = searchParams.get("meeting")
+    if (requested && meetings.some((meeting) => meeting.id === requested)) setSelectedId(requested)
+  }, [meetings, searchParams])
 
   const selected = meetings.find((meeting) => meeting.id === selectedId) ?? null
   const filteredMeetings = useMemo(() =>

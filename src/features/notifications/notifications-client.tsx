@@ -21,6 +21,7 @@ import { NotificationIcon } from "./notification-icon"
 import { NotificationDetails } from "./notification-details"
 import { NotificationSimulator } from "./notification-simulator"
 import { useUiText } from "../ui-text"
+import { useStaticAuth } from "@/lib/static-auth"
 import {
   createDemoNotification, filterNotifications, formatNotificationDate, kindLabels, unreadTotal,
 } from "./utils"
@@ -44,6 +45,7 @@ function Count({ title, value }: { title: string; value: number }) {
 export function NotificationsClient() {
   const t = useUiText()
   const [items, setItems] = useDemoCollection("notifications")
+  const { user } = useStaticAuth()
   const [tab, setTab] = useState<NotificationTab>("toutes")
   const [kindFilter, setKindFilter] = useState<NotificationKindFilter>("tous")
   const [query, setQuery] = useState("")
@@ -55,13 +57,14 @@ export function NotificationsClient() {
   const pathname = usePathname()
   const locale = pathname.split("/").filter(Boolean)[0] || "en"
   const visible = useMemo(
-    () => filterNotifications(items, tab, kindFilter, query),
-    [items, tab, kindFilter, query]
+    () => filterNotifications(items.filter((item) => item.recipientId === user?.id), tab, kindFilter, query),
+    [items, tab, kindFilter, query, user?.id]
   )
-  const unread = unreadTotal(items)
-  const archived = items.filter((item) => item.archived).length
-  const active = items.length - archived
-  const selected = items.find((item) => item.id === selectedId) ?? null
+  const ownedItems = items.filter((item) => item.recipientId === user?.id)
+  const unread = unreadTotal(ownedItems)
+  const archived = ownedItems.filter((item) => item.archived).length
+  const active = ownedItems.length - archived
+  const selected = ownedItems.find((item) => item.id === selectedId) ?? null
 
   function setRead(id: string, read: boolean) {
     setItems((current) => current.map((item) => item.id === id ? { ...item, read } : item))
@@ -85,7 +88,7 @@ export function NotificationsClient() {
 
   function simulate() {
     setSimulationOrdinal((current) => current + 1)
-    const fresh = createDemoNotification(simulationKind, simulationOrdinal + 1)
+    const fresh = { ...createDemoNotification(simulationKind, simulationOrdinal + 1), recipientId: user?.id }
     setItems((current) => [fresh, ...current])
     setQuery("")
     setKindFilter("tous")
@@ -223,10 +226,10 @@ export function NotificationsClient() {
                       onClick={() => openDetails(item.id)}
                       className={`block w-full text-left text-sm tracking-tight hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:text-base ${!item.read ? "font-semibold" : "font-medium"}`}
                     >
-                      {item.title}
+                      {t(item.title)}
                     </button>
-                    <p className="text-sm leading-6 text-muted-foreground">{item.preview}</p>
-                    <p className="text-xs text-muted-foreground">{formatNotificationDate(item.createdAt)} · {item.context}</p>
+                    <p className="text-sm leading-6 text-muted-foreground">{t(item.preview)}</p>
+                    <p className="text-xs text-muted-foreground">{formatNotificationDate(item.createdAt)} · {t(item.context)}</p>
                   </div>
                   <Button
                     type="button"

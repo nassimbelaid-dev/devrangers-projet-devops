@@ -113,7 +113,7 @@ export function DocumentsClient() {
     const id = `pv-${makeId()}`
     const next: MeetingMinutes = {
       id, reference: `PV-2026-${String(minutes.length + 1).padStart(3, "0")}`,
-      meetingId: newMeetingId, status: "Brouillon", presentMemberIds: [], summary: "", nextSteps: "",
+      meetingId: newMeetingId, status: "Brouillon", presentMemberIds: Object.entries(meeting.attendance ?? {}).filter(([, present]) => present).map(([memberId]) => memberId), summary: "", nextSteps: "",
       secretary: "Lina Amrane", president: "Karim Haddad", version: 1, updatedAt: today(),
     }
     setMinutes((current) => [next, ...current])
@@ -124,7 +124,9 @@ export function DocumentsClient() {
   }
   function saveMinutes(next: MeetingMinutes) {
     if (!canDraftMinutes || next.status !== "Brouillon" || !["En cours", "Clôturée"].includes(meetings.find((meeting) => meeting.id === next.meetingId)?.status ?? "")) return
-    setMinutes((current) => current.map((item) => item.id === next.id ? next : item))
+    const meeting = meetings.find((item) => item.id === next.meetingId)
+    const sharedAttendance = meeting?.attendance ? Object.entries(meeting.attendance).filter(([, present]) => present).map(([memberId]) => memberId) : next.presentMemberIds
+    setMinutes((current) => current.map((item) => item.id === next.id ? { ...next, presentMemberIds: sharedAttendance } : item))
   }
   function runMinutesWorkflow(action: "submit-minutes" | "return-minutes" | "sign-minutes", pv: MeetingMinutes) {
     if (!user) return t("Utilisateur non connecté.")

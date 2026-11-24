@@ -126,7 +126,7 @@ export const initialNotifications: CommitteeNotification[] = [
 ]
 
 /** Exemples déclenchables manuellement depuis l'interface. Aucune émission réelle. */
-export const notificationExamples: Record<NotificationKind, Omit<CommitteeNotification, "id" | "createdAt" | "read" | "archived">> = {
+export const notificationExamples: Partial<Record<NotificationKind, Omit<CommitteeNotification, "id" | "createdAt" | "read" | "archived">>> = {
   convocation: {
     kind: "convocation",
     priority: "importante",

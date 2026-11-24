@@ -4,6 +4,10 @@ export type NotificationKind =
   | "rappel-reunion"
   | "echeance-action"
   | "avis-decision"
+  | "pv-signature"
+  | "pv-correction"
+  | "pv-signe"
+  | "pv-archives"
 
 export type NotificationPriority = "normale" | "importante"
 export type NotificationTab = "toutes" | "non-lues" | "archivees"
@@ -22,4 +26,5 @@ export type CommitteeNotification = {
   createdAt: string
   read: boolean
   archived: boolean
+  recipientId?: string
 }

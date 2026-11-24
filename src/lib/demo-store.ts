@@ -10,7 +10,7 @@ import { initialBallots } from "@/features/votes/mock-data"
 import { initialDocuments, initialMinutes } from "@/features/documents/mock-data"
 import { initialAgendaProposals } from "@/features/agenda/mock-data"
 import { initialNotifications } from "@/features/notifications/mock-data"
-import { applyDemoChange, applyMeetingWorkflow, type WorkflowAction } from "./demo-business"
+import { applyDemoChange, applyMeetingWorkflow, sendMeetingInvitations, type WorkflowAction } from "./demo-business"
 import type { DemoState } from "./demo-business"
 
 // État commun à l'application pendant la navigation ; aucune persistance serveur.
@@ -128,6 +128,15 @@ export function runMeetingWorkflow(action: WorkflowAction, meetingId: string, ac
     persist()
     notify()
   } else if (result.error) notify()
+  return result
+}
+
+export function sendMeetingInvitationsFromStore(meetingId: string, actor: { role: string }) {
+  initialize()
+  const result = sendMeetingInvitations(current, meetingId, actor)
+  feedback = result.error ?? ""
+  if (!result.error) { current = result.state; persist(); notify() }
+  else notify()
   return result
 }
 

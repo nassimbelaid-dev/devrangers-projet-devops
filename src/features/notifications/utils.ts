@@ -8,6 +8,10 @@ export const kindLabels: Record<NotificationKind, string> = {
   "rappel-reunion": "Rappel de réunion",
   "echeance-action": "Échéance d'action",
   "avis-decision": "Avis de décision",
+  "pv-signature": "Procès-verbal à signer",
+  "pv-correction": "Correction du procès-verbal",
+  "pv-signe": "Procès-verbal signé",
+  "pv-archives": "Procès-verbal à archiver",
 }
 
 export function formatNotificationDate(value: string): string {
@@ -41,8 +45,10 @@ export function unreadTotal(notifications: CommitteeNotification[]): number {
 }
 
 export function createDemoNotification(kind: NotificationKind, ordinal: number): CommitteeNotification {
+  const example = notificationExamples[kind]
+  if (!example) throw new Error(`Aucun exemple de notification pour ${kind}`)
   return {
-    ...notificationExamples[kind],
+    ...example,
     id: `demo-${Date.now()}-${ordinal}`,
     createdAt: new Date().toISOString(),
     read: false,
