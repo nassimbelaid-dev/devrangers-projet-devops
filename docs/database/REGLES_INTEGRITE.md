@@ -311,7 +311,7 @@ Les tests ci-dessous sont des cas attendus, pas des résultats d'exécution. Pr�
 ## 9. Arbitrages et limites à communiquer
 
 - Les choix V1 du MCD/MLD restent à approuver : mono-comité, non-cumul des mandats, représentation sans titulaire actif, droit de création de décision au président, scrutin obligatoire pour nouvelles décisions définitives, blocage sans quorum, pas de réouverture/second tour, visibilité, archivage métier définitif, stockage privé et snapshots.
-- Le MLD V1.1 précise le retrait logique terminal des notifications, non la suppression physique. `deleted_at` doit figurer dans Prisma et les requêtes utilisateur.
-- Le dictionnaire propose des types détaillés, valeurs initiales, et contrôles positifs des versions de snapshots ; ces précisions techniques sont à confirmer à l'implémentation.
-- Le mécanisme d'authentification/session, le hachage, les codes d'audit, les formats JSONB précis, la stratégie de référence métier et les protections SQL supplémentaires sont à coordonner avec le backend. Ne pas conserver les secrets de démonstration en production.
-- Aucune migration, contrainte, transaction ni recette n'est exécutée par ce document ; vérifier la compatibilité réelle Prisma/PostgreSQL et tester les règles, y compris les courses concurrentes.
+- Le retrait logique terminal et la conservation de la clé de déduplication sont protégés par PostgreSQL. Le filtrage de `deleted_at` dans les requêtes utilisateur reste au backend.
+- Les versions d’instantanés positives sont contrôlées dans les migrations. La structure des données JSONB reste à valider dans les services.
+- Les sessions, la politique de hachage des comptes réels, les codes d’audit et l’attribution des références métier restent à coordonner. Le [seed](SEED.md) documente le hachage des seuls comptes de démonstration.
+- La sixième migration fournit les [protections historiques](PROTECTIONS_SQL.md). Les [tests BDD](TESTS_BDD.md) couvrent les contraintes SQL, le rejeu et les courses vote–clôture. Le [guide backend](GUIDE_INTEGRATION_BACKEND.md) détaille les règles encore applicatives.

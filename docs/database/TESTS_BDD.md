@@ -33,6 +33,8 @@ pnpm db:test
 
 La suite exige une URL PostgreSQL explicite vers `comite_scientifique_test`, sur l’interface locale et le port 5433, avec le compte `comite_dev`. Elle refuse la base de développement, les hôtes distants, les options d’URL et `NODE_ENV=production`. PostgreSQL confirme le nom, le rôle, le port interne et l’absence de réplication avant la préparation. La suite ne lit jamais `DATABASE_URL` comme solution de repli.
 
+Le test de Prisma Client utilise `db:check --json`. Il compare le nom de la base renvoyé par PostgreSQL et les 19 compteurs à des lectures SQL indépendantes de la base de rejeu. Cette lecture est indépendante du rendu de `console.table` sous PowerShell.
+
 Chaque exécution crée une base vérifiée vide à partir de `template0`, nommée `comite_scientifique_test_<suffixe>`. Les six migrations sont rejouées et le seed reçoit une valeur aléatoire propre au test, transmise aux sous-processus. Les bases de rejeu sont conservées pour inspection, y compris les données des scénarios qui nécessitent un vrai `COMMIT`. La suite ne supprime aucune base ni volume. Sur un runner éphémère, la disparition de l’instance suit le cycle de vie du runner.
 
 ## Organisation et couverture

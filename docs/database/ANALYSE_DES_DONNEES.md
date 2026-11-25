@@ -5,6 +5,8 @@
 
 ## 1. Périmètre et sources
 
+Cette analyse conserve l’état du prototype au commit indiqué. Les écarts relevés décrivent les fixtures et le frontend étudiés. La couche PostgreSQL et Prisma a été implémentée ensuite. Consulter le [guide BDD](GUIDE_BDD.md), le [seed](SEED.md) et les [tests](TESTS_BDD.md) pour l’état livré.
+
 Le prototype Next.js utilise neuf collections dans `DemoState` et des comptes gérés à part. Les clients React appellent `useDemoCollection`. `src/lib/demo-store.ts` charge les fixtures, autorise les mutations, appelle `src/lib/demo-business.ts`, puis publie et sérialise l’état dans le navigateur. Les convocations et transitions réunion/PV disposent de fonctions dédiées. Les comptes, la session et le profil ont leurs propres stockages locaux. Le middleware exploite un cookie indicateur et le garde React vérifie le compte. Le dépôt ne contient pas de persistance métier serveur intégrée. Les collections sont partagées entre les comptes du même navigateur et les restrictions de consultation sont appliquées à l’affichage.
 
 **Lecture du rapport.** « Observé » décrit les types, les valeurs effectivement produites ou les comportements dans le code. « Déduit » explicite une implication de ces comportements. « Proposé » désigne un choix pour la future base. Les références abrégées `store`, `business` et `auth` renvoient aux fichiers `src/lib/demo-store.ts`, `src/lib/demo-business.ts` et `src/lib/static-auth.ts`. Les chemins de modules sont relatifs à `src/features/`. Les documents Markdown d’architecture, permissions et installation sont comparés en section 7. Le PDF de simulation n’a pas pu être extrait avec les outils locaux disponibles.

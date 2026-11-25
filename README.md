@@ -1,55 +1,33 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Gestion du comité scientifique — Dev Rangers
 
-## Langues
+Application Next.js pour le suivi des réunions, décisions, actions et documents du comité.
 
-L'interface est disponible en français, anglais et arabe :
+## Installation
 
-- `/fr` : français (langue par défaut)
-- `/en` : anglais
-- `/ar` : arabe, avec affichage RTL
+Le [guide d’installation](docs/setup.md) couvre le clonage, Docker Compose, Prisma et les tests.
 
-Le sélecteur de langue conserve la page courante et la préférence dans le cookie `settings`. Les textes du shell sont chargés depuis `src/data/dictionaries/`; les modules métier conservent leurs données fictives cohérentes avec le comité scientifique.
+## Interface de démonstration
 
-## Authentification de démonstration
+Le frontend utilise les fixtures du navigateur et une connexion statique. Utiliser les indications de la page de connexion pour la démonstration. Les comptes PostgreSQL seront utilisés après intégration du backend.
 
-L'authentification actuelle est entièrement statique et locale au navigateur. Elle ne contacte aucun backend et ne remplace pas une authentification de production.
+- `/fr` — français, langue par défaut.
+- `/en` — anglais.
+- `/ar` — arabe avec affichage RTL.
 
-- Adresse : `admin@comite.test`
-- Mot de passe : `Comite2026`
+Le sélecteur conserve la page courante et la préférence dans le cookie `settings`. Le shell charge les dictionnaires depuis `src/data/dictionaries/`. La déconnexion est accessible dans le menu utilisateur.
 
-La déconnexion est disponible dans le menu utilisateur. La session de démonstration est conservée pendant sept jours dans le navigateur.
+## Base de données
 
-## Getting Started
+PostgreSQL 18.7 est lancé avec Docker Compose sur `127.0.0.1:5433`. Prisma ORM 7.10.1 et son adaptateur PostgreSQL donnent accès aux 19 tables. Six migrations versionnées installent la structure et les protections historiques.
 
-First, run the development server:
+| Commande | Usage |
+|---|---|
+| `pnpm db:migrate:deploy` | Appliquer les migrations versionnées |
+| `pnpm db:generate` | Générer Prisma Client |
+| `pnpm db:seed` | Charger les données de démonstration |
+| `pnpm db:check` ou `pnpm db:check --json` | Vérifier la connexion et les compteurs |
+| `pnpm db:test` | Rejouer les migrations et tester une base isolée |
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+- [Guide BDD](docs/database/GUIDE_BDD.md) et [guide backend](docs/database/GUIDE_INTEGRATION_BACKEND.md).
+- [Analyse](docs/database/ANALYSE_DES_DONNEES.md), [MCD](docs/database/MCD.md), [MLD](docs/database/MLD.md), [dictionnaire](docs/database/DICTIONNAIRE_DONNEES.md) et [règles d’intégrité](docs/database/REGLES_INTEGRITE.md).
+- [Protections SQL](docs/database/PROTECTIONS_SQL.md), [seed](docs/database/SEED.md) et [tests BDD](docs/database/TESTS_BDD.md).

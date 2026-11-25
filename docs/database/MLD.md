@@ -4,7 +4,7 @@
 **Version :** V1.1 — corrections ciblées après revue Codex  
 **Branche :** `feat/integration-bdd`  
 **Référence :** MCD V1.1 (fichier `MCD.md` après renommage), `ANALYSE_DES_DONNEES.md`, documentation des rôles et simulation du workflow.  
-**Statut :** revue MLD favorable sous réserve de quatre corrections ciblées, intégrées dans cette version. Le MCD V1.1 a reçu un avis favorable ; les arbitrages V1 restent à entériner. Aucun schéma Prisma ni migration exécutés à ce stade.
+**Statut** — Les corrections issues de la revue sont intégrées. Le schéma Prisma et les six migrations implémentent le MLD V1.1. Les arbitrages applicatifs restent à confirmer avec le backend.
 
 ## 1. Conventions
 
@@ -233,10 +233,10 @@ Au lot 1, placer `CREATE EXTENSION IF NOT EXISTS btree_gist;` dans la migration 
 
 - Couverture : 19 relations pour les 19 entités du MCD ; les 33 associations conceptuelles sont couvertes par des FK directes ou des chemins de FK, y compris les liens facultatifs et les acteurs. Le lien vote–siège est garanti transitivement par le mandat (cf. §2.3). Les colonnes de provenance redondantes servent aux FK composites. Les références polymorphes restent vérifiées par service.
 - Normalisation : présence, agenda, mandat, comptes et membres sans copies courantes ; seules les captures historiques et les clés de provenance volontairement redondantes sont conservées. Les archives, statistiques, compteurs non lus, retard d'action et statut de mandat restent calculés.
-- Revue MCD/MLD effectuée par Codex selon le retour transmis : 19 tables, clés et cardinalités cohérentes, FK composites jugées valides en PostgreSQL. Les quatre corrections demandées sont intégrées (cf. §10). La compatibilité effective du mapping Prisma et l’exécution sur base vierge restent à tester.
+- Les clés, les FK composites et les cardinalités ont été vérifiées sur une base vierge rejouée par la [suite BDD](TESTS_BDD.md). Le client Prisma expose `Decision.ballots` sous forme de liste. L’unicité SQL limite la relation à un scrutin par décision.
 - Entériner les choix V1 : absence de second scrutin, exception historique seule, représentation du siège vacant, droit de création d'une décision au président et au secrétaire, droits de lecture, conservation des comptes et mandats, JSONB et stockage privé sur volume Docker, mono-comité, fuseau, limites et conventions de noms.
 - Coordonner le système d'authentification et ses éventuelles tables de session avec le backend. Le compte métier n'est pas une session ; ces tables techniques ne sont pas incluses dans les 19 tables.
-- Produire le dictionnaire des données, les règles d'intégrité détaillées puis le schéma Prisma ; valider les migrations sur PostgreSQL et réaliser les tests de contraintes et de concurrence avec le backend.
+- Le [dictionnaire](DICTIONNAIRE_DONNEES.md), les [règles](REGLES_INTEGRITE.md), le [schéma Prisma](../../prisma/schema.prisma) et les [protections historiques](PROTECTIONS_SQL.md) documentent les artefacts livrés. Les tests des services et des permissions seront réalisés lors de l’intégration backend.
 
 ## 10. Traçabilité de la revue du MLD
 
@@ -247,4 +247,4 @@ Au lot 1, placer `CREATE EXTENSION IF NOT EXISTS btree_gist;` dans la migration 
 | Déduplication après retrait | Ajout de deleted_at, retrait logique terminal et conservation de l’unique sur toutes les lignes (§2.5, §5, §7) | Tester retrait, relance identique, nouvelle occurrence et exclusion des vues. |
 | Migrations PostgreSQL/Prisma | btree_gist avant EXCLUDE, droits sur base de validation, actions FK explicites et préservation du SQL personnalisé (§1, §2.3, §5.1, §8) | Valider le schéma et rejouer les migrations sur base vierge, puis inspecter les contraintes. |
 
-**Statut final :** MLD V1.1 corrigé à partir de la revue transmise ; 19 tables et 33 associations conceptuelles conservées, une colonne technique ajoutée. Les arbitrages V1 restent à entériner par l’équipe. La conformité documentaire ne constitue pas une validation d’exécution ; aucun test de migration ou de compatibilité Prisma n’a encore été exécuté.
+**Statut final** — Le MLD V1.1 est implémenté pour les 19 tables. Les vérifications de la colonne de retrait logique, des contraintes, des migrations et de la concurrence sont recensées dans [TESTS_BDD.md](TESTS_BDD.md). Le [guide d’intégration](GUIDE_INTEGRATION_BACKEND.md) indique les garanties à compléter dans les services.

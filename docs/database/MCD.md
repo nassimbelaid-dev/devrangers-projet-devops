@@ -261,4 +261,4 @@ Les événements identiques mais correspondant à deux mutations réelles distin
 
 Arbitrages V1 à confirmer avant de figer le MLD : règle de décision sans scrutin (exception historique uniquement), blocage sans quorum, vacance du siège, extension du droit de création des décisions au président, permissions de lecture, conservation des comptes et mandats, format des captures et stockage privé. Le choix d’authentification et ses tables techniques éventuelles restent à coordonner avec le backend. Les contraintes d’unicité, FK, CHECK/exclusions et protections transactionnelles seront spécifiées au MLD et mises à l’épreuve par des tests ; la seule validation du MCD ne les garantit pas.
 
-**Statut :** V1.1 corrigée sur la base de la revue Codex ; prête pour une revue ciblée et confirmation des choix V1. Aucune migration, table ou validation d’exécution réalisée par ce document.
+**Statut** — Le MCD V1.1 sert de référence à la couche BDD livrée. Le [MLD](MLD.md) formalise sa traduction et les [tests BDD](TESTS_BDD.md) documentent la validation réalisée. Les arbitrages applicatifs restant à confirmer sont signalés dans le texte.
