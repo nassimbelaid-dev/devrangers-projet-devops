@@ -43,19 +43,24 @@ enum AgendaStatus {
 }
 
 model Account {
-  id                String          @id @default(uuid()) @db.Uuid
-  firstName         String          @map("first_name") @db.Text
-  lastName          String          @map("last_name") @db.Text
-  email             String          @unique @db.Text
-  passwordHash      String          @map("password_hash") @db.Text
-  role              AccountRole
-  isActive          Boolean         @default(true) @map("is_active")
-  memberId          String?         @unique @map("member_id") @db.Uuid
-  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt         DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
-  member            Member?         @relation(fields: [memberId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  profile           AccountProfile?
-  archivedDecisions Decision[]
+  id                       String            @id @default(uuid()) @db.Uuid
+  firstName                String            @map("first_name") @db.Text
+  lastName                 String            @map("last_name") @db.Text
+  email                    String            @unique @db.Text
+  passwordHash             String            @map("password_hash") @db.Text
+  role                     AccountRole
+  isActive                 Boolean           @default(true) @map("is_active")
+  memberId                 String?           @unique @map("member_id") @db.Uuid
+  createdAt                DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  member                   Member?           @relation(fields: [memberId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  profile                  AccountProfile?
+  archivedDecisions        Decision[]
+  archivedDocuments        Document[]
+  authoredDocumentVersions DocumentVersion[]
+  draftedMinutes           MeetingMinutes[]  @relation("MinutesSecretary")
+  signedMinutes            MeetingMinutes[]  @relation("MinutesSigner")
+  archivedMinutes          MeetingMinutes[]  @relation("MinutesArchivist")
 
   @@map("accounts")
 }
@@ -134,6 +139,8 @@ model Meeting {
   participants      MeetingParticipant[]
   agendaProposals   AgendaProposal[]
   decisions         Decision[]
+  documents         Document[]
+  minutes           MeetingMinutes?
 
   @@index([status, meetingDate])
   @@map("meetings")
@@ -174,6 +181,7 @@ model AgendaProposal {
   author           Member       @relation("AgendaAuthor", fields: [authorMemberId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   reviewer         Member?      @relation("AgendaReviewer", fields: [reviewerMemberId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   decisions        Decision[]
+  attachments      StoredFile[]
 
   @@unique([id, meetingId])
   @@index([meetingId, status, sortOrder])
@@ -329,4 +337,119 @@ model CommitteeAction {
   @@index([decisionId])
   @@index([status, sortOrder])
   @@map("actions")
+}
+
+enum DocumentType {
+  AGENDA
+  MINUTES
+  REPORT
+  INVITATION
+  OTHER
+}
+
+enum DocumentStatus {
+  DRAFT
+  APPROVED
+  ARCHIVED
+}
+
+enum DocumentVisibility {
+  COMMITTEE
+  PRESIDENCY
+  ARCHIVES
+}
+
+enum MinutesStatus {
+  DRAFT
+  TO_SIGN
+  SIGNED
+  ARCHIVED
+}
+
+model Document {
+  id                  String             @id @default(uuid()) @db.Uuid
+  meetingId           String?            @map("meeting_id") @db.Uuid
+  reference           String             @unique @db.Text
+  title               String             @db.Text
+  description         String             @default("") @db.Text
+  type                DocumentType       @default(REPORT)
+  status              DocumentStatus     @default(DRAFT)
+  visibility          DocumentVisibility @default(COMMITTEE)
+  updatedAt           DateTime?          @map("updated_at") @db.Timestamptz(3)
+  archivedAt          DateTime?          @map("archived_at") @db.Timestamptz(3)
+  archivedByAccountId String?            @map("archived_by_account_id") @db.Uuid
+  archivedByName      String?            @map("archived_by_name") @db.Text
+  meeting             Meeting?           @relation(fields: [meetingId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  archivedByAccount   Account?           @relation(fields: [archivedByAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versions            DocumentVersion[]
+
+  @@index([meetingId])
+  @@index([status, visibility])
+  @@map("documents")
+}
+
+model DocumentVersion {
+  id              String      @id @default(uuid()) @db.Uuid
+  documentId      String      @map("document_id") @db.Uuid
+  number          Int
+  filename        String      @db.Text
+  note            String      @default("") @db.Text
+  versionDate     DateTime?   @map("version_date") @db.Date
+  authorAccountId String?     @map("author_account_id") @db.Uuid
+  authorName      String?     @map("author_name") @db.Text
+  isHistorical    Boolean     @default(false) @map("is_historical")
+  document        Document    @relation(fields: [documentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  authorAccount   Account?    @relation(fields: [authorAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  file            StoredFile?
+
+  @@unique([documentId, number])
+  @@map("document_versions")
+}
+
+model StoredFile {
+  id                String           @id @default(uuid()) @db.Uuid
+  agendaProposalId  String?          @map("agenda_proposal_id") @db.Uuid
+  documentVersionId String?          @unique @map("document_version_id") @db.Uuid
+  originalName      String           @map("original_name") @db.Text
+  sizeBytes         Int              @map("size_bytes")
+  mimeType          String           @map("mime_type") @db.Text
+  storageKey        String           @unique @map("storage_key") @db.Text
+  checksum          String?          @db.Text
+  uploadedAt        DateTime         @default(now()) @map("uploaded_at") @db.Timestamptz(3)
+  agendaProposal    AgendaProposal?  @relation(fields: [agendaProposalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  documentVersion   DocumentVersion? @relation(fields: [documentVersionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([agendaProposalId])
+  @@map("stored_files")
+}
+
+model MeetingMinutes {
+  id                  String        @id @default(uuid()) @db.Uuid
+  meetingId           String        @unique @map("meeting_id") @db.Uuid
+  reference           String        @unique @db.Text
+  summary             String        @default("") @db.Text
+  nextSteps           String        @default("") @map("next_steps") @db.Text
+  status              MinutesStatus @default(DRAFT)
+  version             Int           @default(1)
+  updatedAt           DateTime?     @map("updated_at") @db.Timestamptz(3)
+  submittedAt         DateTime?     @map("submitted_at") @db.Timestamptz(3)
+  returnedAt          DateTime?     @map("returned_at") @db.Timestamptz(3)
+  signedAt            DateTime?     @map("signed_at") @db.Timestamptz(3)
+  archivedAt          DateTime?     @map("archived_at") @db.Timestamptz(3)
+  correctionNote      String?       @map("correction_note") @db.Text
+  secretaryAccountId  String?       @map("secretary_account_id") @db.Uuid
+  signedByAccountId   String?       @map("signed_by_account_id") @db.Uuid
+  archivedByAccountId String?       @map("archived_by_account_id") @db.Uuid
+  secretaryName       String?       @map("secretary_name") @db.Text
+  presidentName       String?       @map("president_name") @db.Text
+  signedByName        String?       @map("signed_by_name") @db.Text
+  archivedByName      String?       @map("archived_by_name") @db.Text
+  snapshotVersion     Int?          @map("snapshot_version")
+  officialSnapshot    Json?         @map("official_snapshot") @db.JsonB
+  meeting             Meeting       @relation(fields: [meetingId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  secretaryAccount    Account?      @relation("MinutesSecretary", fields: [secretaryAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  signedByAccount     Account?      @relation("MinutesSigner", fields: [signedByAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  archivedByAccount   Account?      @relation("MinutesArchivist", fields: [archivedByAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("meeting_minutes")
 }
