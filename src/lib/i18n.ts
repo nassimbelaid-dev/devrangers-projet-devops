@@ -8,11 +8,13 @@ import { i18n } from "@/configs/i18n"
 import { ensureWithPrefix } from "@/lib/utils"
 
 export function isPathnameMissingLocale(pathname: string) {
-  return !i18n.locales.some((locale) => pathname.startsWith(`/${locale}`))
+  return !getLocaleFromPathname(pathname)
 }
 
 export function getLocaleFromPathname(pathname: string) {
-  return i18n.locales.find((locale) => pathname.startsWith(`/${locale}`))
+  return i18n.locales.find(
+    (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`)
+  )
 }
 
 export function ensureLocalizedPathname(pathname: string, locale: string) {

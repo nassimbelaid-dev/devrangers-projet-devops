@@ -1,7 +1,6 @@
-// More info: https://nextjs.org/docs/app/building-your-application/routing/internationalization#localization
 import "server-only"
 
-import type { LocaleType } from "@/types"
+import { notFound } from "next/navigation"
 
 const dictionaries = {
   fr: () =>
@@ -12,7 +11,11 @@ const dictionaries = {
     import("@/data/dictionaries/ar.json").then((module) => module.default),
 }
 
-export async function getDictionary(locale: LocaleType) {
+export async function getDictionary(locale: string) {
+  if (locale !== "fr" && locale !== "en" && locale !== "ar") {
+    notFound()
+  }
+
   return dictionaries[locale]()
 }
 
