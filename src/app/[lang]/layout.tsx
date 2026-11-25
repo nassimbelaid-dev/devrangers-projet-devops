@@ -1,4 +1,5 @@
 import { Cairo, Lato } from "next/font/google"
+
 import { i18n } from "@/configs/i18n"
 import { cn } from "@/lib/utils"
 

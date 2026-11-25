@@ -19,11 +19,27 @@ export type NotificationKind =
   | "pv-archives"
 
 export type NotificationPriority = "normale" | "importante"
-export type NotificationCategory = "meetings" | "agenda" | "decisions" | "actions" | "minutes"
-export type NotificationEntityType = "meeting" | "agenda" | "decision" | "action" | "ballot" | "minutes"
+export type NotificationCategory =
+  | "meetings"
+  | "agenda"
+  | "decisions"
+  | "actions"
+  | "minutes"
+export type NotificationEntityType =
+  | "meeting"
+  | "agenda"
+  | "decision"
+  | "action"
+  | "ballot"
+  | "minutes"
 export type NotificationTab = "toutes" | "non-lues" | "archivees"
 export type NotificationKindFilter = NotificationCategory | "tous"
-export type NotificationTarget = "/meetings" | "/agenda" | "/actions" | "/votes" | "/documents"
+export type NotificationTarget =
+  | "/meetings"
+  | "/agenda"
+  | "/actions"
+  | "/votes"
+  | "/documents"
 
 export type NotificationTemplateValues = Record<string, string | number>
 

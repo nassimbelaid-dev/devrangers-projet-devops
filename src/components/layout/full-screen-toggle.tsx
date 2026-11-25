@@ -24,7 +24,12 @@ declare global {
 export function FullscreenToggle() {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const locale = (useParams().lang as string) || "fr"
-  const label = locale === "ar" ? "ملء الشاشة" : locale === "en" ? "Fullscreen" : "Plein écran"
+  const label =
+    locale === "ar"
+      ? "ملء الشاشة"
+      : locale === "en"
+        ? "Fullscreen"
+        : "Plein écran"
 
   const toggleFullscreen = () => {
     const element = document.documentElement

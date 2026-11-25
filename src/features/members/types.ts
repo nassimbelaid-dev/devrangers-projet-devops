@@ -1,5 +1,9 @@
 export const MEMBER_ROLES = [
-  "Président", "Secrétaire", "Membre", "Responsable archives", "Administrateur",
+  "Président",
+  "Secrétaire",
+  "Membre",
+  "Responsable archives",
+  "Administrateur",
 ] as const
 
 export type MemberRole = (typeof MEMBER_ROLES)[number]

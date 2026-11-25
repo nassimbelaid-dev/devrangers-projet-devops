@@ -23,7 +23,11 @@ export interface BallotSession {
   closedResult?: BallotSummary
 }
 
-export type BallotOutcome = "À voter" | "Quorum non atteint" | "Adoptée" | "Rejetée"
+export type BallotOutcome =
+  | "À voter"
+  | "Quorum non atteint"
+  | "Adoptée"
+  | "Rejetée"
 
 export interface SeatRepresentation {
   seatId: string

@@ -18,13 +18,29 @@ export const initialMeetings: Meeting[] = [
     startTime: "09:00",
     endTime: "11:00",
     location: "Salle de conférences — Département d'informatique",
-    description: "Examen des dossiers pédagogiques et suivi des recommandations.",
+    description:
+      "Examen des dossiers pédagogiques et suivi des recommandations.",
     status: "Clôturée",
     participantIds: ["m1", "m2", "m3", "m4", "m5"],
     agenda: [
-      { id: "a1", title: "Validation de l'ordre du jour", proposedById: "m2", status: "Validé" },
-      { id: "a2", title: "Examen des propositions de sujets de mémoire", proposedById: "m3", status: "Validé" },
-      { id: "a3", title: "Questions diverses", proposedById: "m4", status: "Proposé" },
+      {
+        id: "a1",
+        title: "Validation de l'ordre du jour",
+        proposedById: "m2",
+        status: "Validé",
+      },
+      {
+        id: "a2",
+        title: "Examen des propositions de sujets de mémoire",
+        proposedById: "m3",
+        status: "Validé",
+      },
+      {
+        id: "a3",
+        title: "Questions diverses",
+        proposedById: "m4",
+        status: "Proposé",
+      },
     ],
   },
   {
@@ -38,8 +54,18 @@ export const initialMeetings: Meeting[] = [
     status: "Planifiée",
     participantIds: ["m1", "m2", "m3", "m6"],
     agenda: [
-      { id: "a4", title: "État des propositions de PFE", proposedById: "m1", status: "Validé" },
-      { id: "a5", title: "Répartition des encadrants", proposedById: "m3", status: "Proposé" },
+      {
+        id: "a4",
+        title: "État des propositions de PFE",
+        proposedById: "m1",
+        status: "Validé",
+      },
+      {
+        id: "a5",
+        title: "Répartition des encadrants",
+        proposedById: "m3",
+        status: "Proposé",
+      },
     ],
   },
   {
@@ -53,8 +79,18 @@ export const initialMeetings: Meeting[] = [
     status: "PV signé",
     participantIds: ["m1", "m2", "m3", "m5"],
     agenda: [
-      { id: "a6", title: "Présentation du bilan pédagogique", proposedById: "m2", status: "Validé" },
-      { id: "a7", title: "Évolution des modalités d'évaluation", proposedById: "m5", status: "Validé" },
+      {
+        id: "a6",
+        title: "Présentation du bilan pédagogique",
+        proposedById: "m2",
+        status: "Validé",
+      },
+      {
+        id: "a7",
+        title: "Évolution des modalités d'évaluation",
+        proposedById: "m5",
+        status: "Validé",
+      },
     ],
   },
 ]

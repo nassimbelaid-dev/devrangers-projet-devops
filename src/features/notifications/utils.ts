@@ -1,10 +1,15 @@
 import type { DemoState } from "@/lib/demo-business"
-import { hasPermission, moduleForPath } from "@/lib/static-auth"
 import type { DemoUser } from "@/lib/static-auth"
 import type {
-  CommitteeNotification, NotificationCategory, NotificationKind, NotificationKindFilter,
+  CommitteeNotification,
+  NotificationCategory,
+  NotificationKind,
+  NotificationKindFilter,
   NotificationTab,
 } from "./types"
+
+import { hasPermission, moduleForPath } from "@/lib/static-auth"
+
 import { notificationExamples } from "./mock-data"
 
 export const kindLabels: Record<NotificationKind, string> = {
@@ -36,7 +41,13 @@ export const categoryLabels: Record<NotificationCategory, string> = {
 }
 
 export function categoryForKind(kind: NotificationKind): NotificationCategory {
-  if (kind === "convocation" || kind === "reunion-modifiee" || kind === "reunion-annulee" || kind === "rappel-reunion") return "meetings"
+  if (
+    kind === "convocation" ||
+    kind === "reunion-modifiee" ||
+    kind === "reunion-annulee" ||
+    kind === "rappel-reunion"
+  )
+    return "meetings"
   if (kind === "proposition-agenda" || kind === "revue-agenda") return "agenda"
   if (kind === "avis-decision") return "decisions"
   if (kind.startsWith("pv-")) return "minutes"
@@ -44,9 +55,14 @@ export function categoryForKind(kind: NotificationKind): NotificationCategory {
 }
 
 export function formatNotificationDate(value: string, locale = "fr"): string {
-  const intlLocale = locale === "ar" ? "ar" : locale === "en" ? "en-GB" : "fr-FR"
+  const intlLocale =
+    locale === "ar" ? "ar" : locale === "en" ? "en-GB" : "fr-FR"
   return new Intl.DateTimeFormat(intlLocale, {
-    day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
     timeZone: "Africa/Algiers",
   }).format(new Date(value))
 }
@@ -55,18 +71,23 @@ export function filterNotifications(
   notifications: CommitteeNotification[],
   tab: NotificationTab,
   category: NotificationKindFilter,
-  search: string,
+  search: string
 ): CommitteeNotification[] {
   const query = search.trim().toLocaleLowerCase()
   return notifications
     .filter((item) => {
       if (tab === "archivees" ? !item.archived : item.archived) return false
       if (tab === "non-lues" && item.read) return false
-      if (category !== "tous" && (item.category ?? categoryForKind(item.kind)) !== category) return false
+      if (
+        category !== "tous" &&
+        (item.category ?? categoryForKind(item.kind)) !== category
+      )
+        return false
       if (!query) return true
       const values = Object.values(item.templateValues ?? {}).join(" ")
       return `${item.title} ${item.preview} ${item.detail} ${item.context} ${values}`
-        .toLocaleLowerCase().includes(query)
+        .toLocaleLowerCase()
+        .includes(query)
     })
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 }
@@ -75,21 +96,30 @@ export function unreadTotal(notifications: CommitteeNotification[]): number {
   return notifications.filter((item) => !item.archived && !item.read).length
 }
 
-export function notificationTitle(item: CommitteeNotification, t: (key: string, values?: Record<string, string | number>) => string) {
+export function notificationTitle(
+  item: CommitteeNotification,
+  t: (key: string, values?: Record<string, string | number>) => string
+) {
   if (item.titleKey) return t(item.titleKey, item.templateValues)
   const separator = item.title.indexOf(": ")
   if (separator > 0) {
     const prefix = item.title.slice(0, separator)
     const translatedPrefix = t(prefix)
-    if (translatedPrefix !== prefix) return `${translatedPrefix}: ${item.title.slice(separator + 2)}`
+    if (translatedPrefix !== prefix)
+      return `${translatedPrefix}: ${item.title.slice(separator + 2)}`
   }
   return t(item.title, item.templateValues)
 }
 
-export function notificationMessage(item: CommitteeNotification, t: (key: string, values?: Record<string, string | number>) => string) {
+export function notificationMessage(
+  item: CommitteeNotification,
+  t: (key: string, values?: Record<string, string | number>) => string
+) {
   if (!item.messageKey) return t(item.detail, item.templateValues)
   if (item.messageKey.startsWith("notification-message-")) {
-    const kind = item.messageKey.slice("notification-message-".length) as NotificationKind
+    const kind = item.messageKey.slice(
+      "notification-message-".length
+    ) as NotificationKind
     return `${t(kindLabels[kind])}: ${item.detail}`
   }
   const prefix = t(item.messageKey, item.templateValues)
@@ -101,39 +131,62 @@ export function notificationHref(
   item: CommitteeNotification,
   locale: string,
   user: DemoUser | null,
-  state: DemoState,
+  state: DemoState
 ): string | null {
   if (!user || item.recipientId !== user.id) return null
   const base = item.target.split("?")[0] as CommitteeNotification["target"]
-  const module = moduleForPath(base)
-  if (!hasPermission(user, module)) return null
+  const targetModule = moduleForPath(base)
+  if (!hasPermission(user, targetModule)) return null
 
   if (!item.entityType || !item.entityId) return `/${locale}${base}`
   const id = encodeURIComponent(item.entityId)
-  if (item.entityType === "meeting") return state.meetings.some((entry) => entry.id === item.entityId) ? `/${locale}/meetings?meeting=${id}` : null
+  if (item.entityType === "meeting")
+    return state.meetings.some((entry) => entry.id === item.entityId)
+      ? `/${locale}/meetings?meeting=${id}`
+      : null
   if (item.entityType === "agenda") {
     const proposal = state.agenda.find((entry) => entry.id === item.entityId)
-    return proposal && state.meetings.some((entry) => entry.id === proposal.meetingId) ? `/${locale}/agenda?meeting=${encodeURIComponent(proposal.meetingId)}&proposal=${id}` : null
+    return proposal &&
+      state.meetings.some((entry) => entry.id === proposal.meetingId)
+      ? `/${locale}/agenda?meeting=${encodeURIComponent(proposal.meetingId)}&proposal=${id}`
+      : null
   }
   if (item.entityType === "action") {
     const action = state.actions.find((entry) => entry.id === item.entityId)
-    if (!action || (user.role === "member" && action.assigneeId !== user.memberId)) return null
+    if (
+      !action ||
+      (user.role === "member" && action.assigneeId !== user.memberId)
+    )
+      return null
     return `/${locale}/actions?action=${id}`
   }
   if (item.entityType === "decision") {
     const decision = state.decisions.find((entry) => entry.id === item.entityId)
-    if (!decision || (user.role === "member" && decision.status !== "Adoptée")) return null
+    if (!decision || (user.role === "member" && decision.status !== "Adoptée"))
+      return null
     return `/${locale}/actions?decision=${id}`
   }
   if (item.entityType === "ballot") {
-    return state.ballots.some((entry) => entry.id === item.entityId) ? `/${locale}/votes?ballot=${id}` : null
+    return state.ballots.some((entry) => entry.id === item.entityId)
+      ? `/${locale}/votes?ballot=${id}`
+      : null
   }
   const minutes = state.minutes.find((entry) => entry.id === item.entityId)
-  const mayViewMinutes = user.role === "president" || user.role === "secretary" || minutes?.status === "Signé" || minutes?.status === "Archivé"
-  return minutes && mayViewMinutes ? `/${locale}/documents?minutes=${id}#pv` : null
+  const mayViewMinutes =
+    user.role === "president" ||
+    user.role === "secretary" ||
+    minutes?.status === "Signé" ||
+    minutes?.status === "Archivé"
+  return minutes && mayViewMinutes
+    ? `/${locale}/documents?minutes=${id}#pv`
+    : null
 }
 
-export function createDemoNotification(kind: NotificationKind, ordinal: number, recipientId: string): CommitteeNotification {
+export function createDemoNotification(
+  kind: NotificationKind,
+  ordinal: number,
+  recipientId: string
+): CommitteeNotification {
   const example = notificationExamples[kind]
   if (!example) throw new Error(`Aucun exemple de notification pour ${kind}`)
   return {

@@ -1,12 +1,27 @@
 "use client"
 
-import { AlertCircle, CheckCircle2, ChevronDown, CircleHelp, XCircle } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useUiText } from "@/features/ui-text"
+import {
+  AlertCircle,
+  CheckCircle2,
+  ChevronDown,
+  CircleHelp,
+  XCircle,
+} from "lucide-react"
+
 import type { CommitteeMemberRecord } from "@/features/members/types"
 import type { BallotSession, BallotSummary } from "./types"
+
+import { Badge } from "@/components/ui/badge"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { outcomeLabel } from "./utils"
-import { useUiText } from "@/features/ui-text"
 
 interface Props {
   ballot: BallotSession
@@ -17,34 +32,64 @@ interface Props {
 export function ResultsPanel({ ballot, summary, members }: Props) {
   const t = useUiText()
   const { pour, contre, abstention, votesCast } = summary
-  const percentage = (value: number) => votesCast ? Math.round(value * 100 / votesCast) : 0
-  const memberName = (id: string) => members.find((member) => member.id === id)?.name ?? "Membre inconnu"
-  const ResultIcon = ballot.state === "Ouvert" ? CircleHelp
-    : summary.outcome === "Adoptée" ? CheckCircle2
-      : summary.outcome === "Rejetée" ? XCircle : AlertCircle
+  const percentage = (value: number) =>
+    votesCast ? Math.round((value * 100) / votesCast) : 0
+  const memberName = (id: string) =>
+    members.find((member) => member.id === id)?.name ?? "Membre inconnu"
+  const ResultIcon =
+    ballot.state === "Ouvert"
+      ? CircleHelp
+      : summary.outcome === "Adoptée"
+        ? CheckCircle2
+        : summary.outcome === "Rejetée"
+          ? XCircle
+          : AlertCircle
 
   return (
     <div className="space-y-10">
       <div className="space-y-2">
         <h3 className="text-lg font-semibold">{t("Résultat du scrutin")}</h3>
-        <p className="text-sm text-muted-foreground">{t("Répartition des bulletins et état de la décision.")}</p>
+        <p className="text-sm text-muted-foreground">
+          {t("Répartition des bulletins et état de la décision.")}
+        </p>
       </div>
 
-      <section className="flex flex-col gap-5 rounded-2xl border bg-card p-6 sm:flex-row sm:items-center sm:gap-6 sm:p-8" aria-label={t("Issue du scrutin")}>
+      <section
+        className="flex flex-col gap-5 rounded-2xl border bg-card p-6 sm:flex-row sm:items-center sm:gap-6 sm:p-8"
+        aria-label={t("Issue du scrutin")}
+      >
         <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-muted">
           <ResultIcon className="size-5 text-foreground" />
         </div>
         <div className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">{t(ballot.state === "Ouvert" ? "En attente de clôture" : "Décision finale (simulation)")}</p>
-          <p className="text-xl font-semibold tracking-tight">{t(outcomeLabel(summary.outcome))}</p>
+          <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+            {t(
+              ballot.state === "Ouvert"
+                ? "En attente de clôture"
+                : "Décision finale (simulation)"
+            )}
+          </p>
+          <p className="text-xl font-semibold tracking-tight">
+            {t(outcomeLabel(summary.outcome))}
+          </p>
           <p className="text-sm leading-6 text-muted-foreground">
             {ballot.state === "Ouvert"
-              ? t("Le décompte est provisoire tant que le scrutin reste ouvert.")
+              ? t(
+                  "Le décompte est provisoire tant que le scrutin reste ouvert."
+                )
               : summary.outcome === "Quorum non atteint"
-                ? t("Le nombre de sièges représentés ne permet pas de valider la décision.")
+                ? t(
+                    "Le nombre de sièges représentés ne permet pas de valider la décision."
+                  )
                 : summary.outcome === "Adoptée"
-                  ? t("Les voix Pour dépassent le seuil de majorité requis ({percent} % des suffrages exprimés).", { percent: ballot.majorityPercent ?? 50 })
-                  : t("Les voix Pour n'atteignent pas le seuil de majorité requis ({percent} % des suffrages exprimés).", { percent: ballot.majorityPercent ?? 50 })}
+                  ? t(
+                      "Les voix Pour dépassent le seuil de majorité requis ({percent} % des suffrages exprimés).",
+                      { percent: ballot.majorityPercent ?? 50 }
+                    )
+                  : t(
+                      "Les voix Pour n'atteignent pas le seuil de majorité requis ({percent} % des suffrages exprimés).",
+                      { percent: ballot.majorityPercent ?? 50 }
+                    )}
           </p>
         </div>
       </section>
@@ -57,20 +102,54 @@ export function ResultsPanel({ ballot, summary, members }: Props) {
           <ResultMetric label={t("Abstention")} count={abstention} />
         </div>
         <div className="space-y-5 rounded-2xl border bg-card px-6 py-7 sm:px-8 sm:py-8">
-          <h4 className="text-sm font-semibold">{t("Répartition des bulletins")}</h4>
-          <VoteBar label={t("Pour")} count={pour} percent={percentage(pour)} color="bg-emerald-500" />
-          <VoteBar label={t("Contre")} count={contre} percent={percentage(contre)} color="bg-rose-500" />
-          <VoteBar label={t("Abstention")} count={abstention} percent={percentage(abstention)} color="bg-amber-500" />
-          <p className="pt-2 text-xs text-muted-foreground">{t("{count} bulletins enregistrés · {uncast} siège(s) représenté(s) sans bulletin", { count: votesCast, uncast: summary.uncastCount })}</p>
+          <h4 className="text-sm font-semibold">
+            {t("Répartition des bulletins")}
+          </h4>
+          <VoteBar
+            label={t("Pour")}
+            count={pour}
+            percent={percentage(pour)}
+            color="bg-emerald-500"
+          />
+          <VoteBar
+            label={t("Contre")}
+            count={contre}
+            percent={percentage(contre)}
+            color="bg-rose-500"
+          />
+          <VoteBar
+            label={t("Abstention")}
+            count={abstention}
+            percent={percentage(abstention)}
+            color="bg-amber-500"
+          />
+          <p className="pt-2 text-xs text-muted-foreground">
+            {t(
+              "{count} bulletins enregistrés · {uncast} siège(s) représenté(s) sans bulletin",
+              { count: votesCast, uncast: summary.uncastCount }
+            )}
+          </p>
         </div>
       </section>
 
       <section className="space-y-4" aria-labelledby="quorum-summary-heading">
-        <h4 id="quorum-summary-heading" className="text-sm font-semibold">{t("Participation et quorum")}</h4>
+        <h4 id="quorum-summary-heading" className="text-sm font-semibold">
+          {t("Participation et quorum")}
+        </h4>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-3 rounded-xl border bg-card p-6 sm:p-7">
-          <span className="text-2xl font-semibold tracking-tight">{summary.participationPercent} %</span>
+          <span className="text-2xl font-semibold tracking-tight">
+            {summary.participationPercent} %
+          </span>
           <div className="flex-1 text-sm leading-6 text-muted-foreground">
-            {t("{represented} sièges représentés sur {active} · Seuil requis : {count} sièges ({percent} %)", { represented: summary.representedSeatCount, active: summary.activeSeatCount, count: summary.quorumMinSeats, percent: ballot.quorumPercent })}
+            {t(
+              "{represented} sièges représentés sur {active} · Seuil requis : {count} sièges ({percent} %)",
+              {
+                represented: summary.representedSeatCount,
+                active: summary.activeSeatCount,
+                count: summary.quorumMinSeats,
+                percent: ballot.quorumPercent,
+              }
+            )}
           </div>
           <Badge variant={summary.quorumReached ? "secondary" : "outline"}>
             {t(summary.quorumReached ? "Quorum atteint" : "Quorum non atteint")}
@@ -87,23 +166,45 @@ export function ResultsPanel({ ballot, summary, members }: Props) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t("Siège")}</TableHead><TableHead>{t("Représentant")}</TableHead><TableHead>{t("Qualité")}</TableHead><TableHead>{t("Vote")}</TableHead>
+                <TableHead>{t("Siège")}</TableHead>
+                <TableHead>{t("Représentant")}</TableHead>
+                <TableHead>{t("Qualité")}</TableHead>
+                <TableHead>{t("Vote")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {summary.seats.map((seat) => {
                 const vote = ballot.votes[seat.seatId]
-                const validVote = vote?.memberId === seat.representativeId ? vote : null
+                const validVote =
+                  vote?.memberId === seat.representativeId ? vote : null
                 return (
                   <TableRow key={seat.seatId}>
-                    <TableCell className="font-medium">{seat.seatLabel}</TableCell>
-                    <TableCell>{seat.representativeId ? memberName(seat.representativeId) : "—"}</TableCell>
+                    <TableCell className="font-medium">
+                      {seat.seatLabel}
+                    </TableCell>
+                    <TableCell>
+                      {seat.representativeId
+                        ? memberName(seat.representativeId)
+                        : "—"}
+                    </TableCell>
                     <TableCell>{seat.representativeKind ?? "—"}</TableCell>
-                    <TableCell>{validVote ? (
-                      <Badge variant="outline" className="font-normal">
-                        {t(validVote.choice === "pour" ? "Pour" : validVote.choice === "contre" ? "Contre" : "Abstention")}
-                      </Badge>
-                    ) : <span className="text-muted-foreground">{t(seat.representativeId ? "Non voté" : "Absent")}</span>}</TableCell>
+                    <TableCell>
+                      {validVote ? (
+                        <Badge variant="outline" className="font-normal">
+                          {t(
+                            validVote.choice === "pour"
+                              ? "Pour"
+                              : validVote.choice === "contre"
+                                ? "Contre"
+                                : "Abstention"
+                          )}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">
+                          {t(seat.representativeId ? "Non voté" : "Absent")}
+                        </span>
+                      )}
+                    </TableCell>
                   </TableRow>
                 )
               })}
@@ -113,24 +214,51 @@ export function ResultsPanel({ ballot, summary, members }: Props) {
       </details>
 
       <p className="text-xs leading-6 text-muted-foreground">
-        {t("Mode de calcul : quorum sur les sièges représentés et seuil de majorité configurable ({percent} % des suffrages exprimés). Les abstentions comptent pour le quorum, pas pour la majorité. Le règlement réel devra être vérifié avant tout usage officiel.", { percent: ballot.majorityPercent ?? 50 })}
+        {t(
+          "Mode de calcul : quorum sur les sièges représentés et seuil de majorité configurable ({percent} % des suffrages exprimés). Les abstentions comptent pour le quorum, pas pour la majorité. Le règlement réel devra être vérifié avant tout usage officiel.",
+          { percent: ballot.majorityPercent ?? 50 }
+        )}
       </p>
     </div>
   )
 }
 
 function ResultMetric({ label, count }: { label: string; count: number }) {
-  return <div className="space-y-2 px-3 text-center sm:px-6"><p className="text-xs text-muted-foreground sm:text-sm">{label}</p><p className="text-2xl font-semibold sm:text-3xl">{count}</p></div>
+  return (
+    <div className="space-y-2 px-3 text-center sm:px-6">
+      <p className="text-xs text-muted-foreground sm:text-sm">{label}</p>
+      <p className="text-2xl font-semibold sm:text-3xl">{count}</p>
+    </div>
+  )
 }
 
-function VoteBar({ label, count, percent, color }: { label: string; count: number; percent: number; color: string }) {
+function VoteBar({
+  label,
+  count,
+  percent,
+  color,
+}: {
+  label: string
+  count: number
+  percent: number
+  color: string
+}) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-4 text-sm">
-        <span>{label}</span><span className="font-medium tabular-nums">{count} <span className="font-normal text-muted-foreground">· {percent} %</span></span>
+        <span>{label}</span>
+        <span className="font-medium tabular-nums">
+          {count}{" "}
+          <span className="font-normal text-muted-foreground">
+            · {percent} %
+          </span>
+        </span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-muted">
-        <div className={`h-full rounded-full ${color} transition-all`} style={{ width: `${percent}%` }} />
+        <div
+          className={`h-full rounded-full ${color} transition-all`}
+          style={{ width: `${percent}%` }}
+        />
       </div>
     </div>
   )

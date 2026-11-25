@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 
 import "./committee-ui.css"
+
 import { CommitteeFeedback } from "./committee-feedback"
 
 type CommitteeModule =

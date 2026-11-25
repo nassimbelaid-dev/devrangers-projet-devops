@@ -1,6 +1,5 @@
-import { PrismaPg } from "@prisma/adapter-pg"
-
 import { PrismaClient } from "@/generated/prisma/client"
+import { PrismaPg } from "@prisma/adapter-pg"
 
 if (typeof window !== "undefined") {
   throw new Error("Prisma is available only on the server.")

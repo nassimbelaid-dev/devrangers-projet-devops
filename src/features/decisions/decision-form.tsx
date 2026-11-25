@@ -1,24 +1,34 @@
 "use client"
 
-import { useDemoData } from "@/lib/demo-store"
-
 import { useState } from "react"
+import { useUiText } from "@/features/ui-text"
+
 import type { FormEvent } from "react"
+import type { DecisionRecord, DecisionStatus } from "./types"
+import { DECISION_STATUSES } from "./types"
+
+import { useDemoData } from "@/lib/demo-store"
 
 import { Button } from "@/components/ui/button"
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { DECISION_STATUSES } from "./types"
-import type { DecisionRecord, DecisionStatus } from "./types"
 import { dateToday } from "./utils"
-import { useUiText } from "@/features/ui-text"
 
 interface DecisionFormProps {
   open: boolean
@@ -31,17 +41,33 @@ interface DecisionFormProps {
 function blankDecision(reference: string): DecisionRecord {
   return {
     id: `d-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    reference, title: "", description: "", date: dateToday(), meetingId: "", status: "En attente",
+    reference,
+    title: "",
+    description: "",
+    date: dateToday(),
+    meetingId: "",
+    status: "En attente",
   }
 }
 
-export function DecisionForm({ open, initial, reference, onOpenChange, onSave }: DecisionFormProps) {
+export function DecisionForm({
+  open,
+  initial,
+  reference,
+  onOpenChange,
+  onSave,
+}: DecisionFormProps) {
   const t = useUiText()
   const { meetings } = useDemoData()
-  const [form, setForm] = useState<DecisionRecord>(() => initial ? { ...initial } : blankDecision(reference))
+  const [form, setForm] = useState<DecisionRecord>(() =>
+    initial ? { ...initial } : blankDecision(reference)
+  )
   const [error, setError] = useState("")
 
-  function change<K extends keyof DecisionRecord>(key: K, value: DecisionRecord[K]) {
+  function change<K extends keyof DecisionRecord>(
+    key: K,
+    value: DecisionRecord[K]
+  ) {
     setForm((current) => ({ ...current, [key]: value }))
     setError("")
   }
@@ -52,7 +78,11 @@ export function DecisionForm({ open, initial, reference, onOpenChange, onSave }:
       setError(t("Le titre, la réunion et la date sont obligatoires."))
       return
     }
-    const result = onSave({ ...form, title: form.title.trim(), description: form.description.trim() })
+    const result = onSave({
+      ...form,
+      title: form.title.trim(),
+      description: form.description.trim(),
+    })
     if (result) {
       setError(result)
       return
@@ -64,31 +94,57 @@ export function DecisionForm({ open, initial, reference, onOpenChange, onSave }:
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85dvh] overflow-y-auto w-[calc(100vw-2rem)] sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{t(initial ? "Modifier la décision" : "Nouvelle décision")}</DialogTitle>
+          <DialogTitle>
+            {t(initial ? "Modifier la décision" : "Nouvelle décision")}
+          </DialogTitle>
           <DialogDescription>
-            {t("Décision fictive rattachée à une réunion du comité, sans sauvegarde serveur.")}
+            {t(
+              "Décision fictive rattachée à une réunion du comité, sans sauvegarde serveur."
+            )}
           </DialogDescription>
         </DialogHeader>
         <form className="space-y-4" onSubmit={submit}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="decision-ref">{t("Référence")}</Label>
-              <Input id="decision-ref" value={form.reference} readOnly className="bg-muted/40" />
+              <Input
+                id="decision-ref"
+                value={form.reference}
+                readOnly
+                className="bg-muted/40"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="decision-date">{t("Date *")}</Label>
-              <Input id="decision-date" type="date" value={form.date} onChange={(event) => change("date", event.target.value)} />
+              <Input
+                id="decision-date"
+                type="date"
+                value={form.date}
+                onChange={(event) => change("date", event.target.value)}
+              />
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="decision-title">{t("Intitulé de la décision *")}</Label>
-            <Input id="decision-title" value={form.title} onChange={(event) => change("title", event.target.value)}
-              placeholder={t("Ex. Valider le calendrier des soutenances")} maxLength={160} />
+            <Label htmlFor="decision-title">
+              {t("Intitulé de la décision *")}
+            </Label>
+            <Input
+              id="decision-title"
+              value={form.title}
+              onChange={(event) => change("title", event.target.value)}
+              placeholder={t("Ex. Valider le calendrier des soutenances")}
+              maxLength={160}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="decision-meeting">{t("Réunion concernée *")}</Label>
-            <Select value={form.meetingId} onValueChange={(value) => change("meetingId", value)}>
-              <SelectTrigger id="decision-meeting"><SelectValue placeholder={t("Sélectionner une réunion")} /></SelectTrigger>
+            <Select
+              value={form.meetingId}
+              onValueChange={(value) => change("meetingId", value)}
+            >
+              <SelectTrigger id="decision-meeting">
+                <SelectValue placeholder={t("Sélectionner une réunion")} />
+              </SelectTrigger>
               <SelectContent>
                 {meetings.map((meeting) => (
                   <SelectItem key={meeting.id} value={meeting.id}>
@@ -100,26 +156,58 @@ export function DecisionForm({ open, initial, reference, onOpenChange, onSave }:
           </div>
           <div className="space-y-2">
             <Label htmlFor="decision-status">{t("Statut *")}</Label>
-            <Select value={form.status} onValueChange={(value) => change("status", value as DecisionStatus)}>
-              <SelectTrigger id="decision-status"><SelectValue /></SelectTrigger>
+            <Select
+              value={form.status}
+              onValueChange={(value) =>
+                change("status", value as DecisionStatus)
+              }
+            >
+              <SelectTrigger id="decision-status">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                {DECISION_STATUSES.map((status) => <SelectItem key={status} value={status}>{t(status)}</SelectItem>)}
+                {DECISION_STATUSES.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {t(status)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="decision-description">{t("Description")}</Label>
-            <Textarea id="decision-description" rows={4} value={form.description}
+            <Textarea
+              id="decision-description"
+              rows={4}
+              value={form.description}
               onChange={(event) => change("description", event.target.value)}
-              placeholder={t("Contenu et contexte de la décision...")} />
+              placeholder={t("Contenu et contexte de la décision...")}
+            />
           </div>
           <p className="text-xs text-muted-foreground">
-            {t("Les résultats des votes et le calcul du quorum seront traités dans un module séparé.")}
+            {t(
+              "Les résultats des votes et le calcul du quorum seront traités dans un module séparé."
+            )}
           </p>
-          {error && <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+          {error && (
+            <p
+              role="alert"
+              className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            >
+              {error}
+            </p>
+          )}
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("Annuler")}</Button>
-            <Button type="submit">{t(initial ? "Enregistrer" : "Créer la décision")}</Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              {t("Annuler")}
+            </Button>
+            <Button type="submit">
+              {t(initial ? "Enregistrer" : "Créer la décision")}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -1,31 +1,58 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { useDemoCollection, useDemoData } from "@/lib/demo-store"
 import { usePathname } from "next/navigation"
 import {
-  Archive, ArchiveRestore, Bell, CheckCheck, Inbox, Plus, RotateCcw, Search,
+  Archive,
+  ArchiveRestore,
+  Bell,
+  CheckCheck,
+  Inbox,
+  Plus,
+  RotateCcw,
+  Search,
 } from "lucide-react"
+
+import type {
+  NotificationKind,
+  NotificationKindFilter,
+  NotificationTab,
+} from "./types"
+
+import { useDemoCollection, useDemoData } from "@/lib/demo-store"
+import { useStaticAuth } from "@/lib/static-auth"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select"
-
-import type {
-  CommitteeNotification, NotificationKind, NotificationKindFilter, NotificationTab,
-} from "./types"
-import { NotificationIcon } from "./notification-icon"
-import { NotificationDetails } from "./notification-details"
-import { NotificationSimulator } from "./notification-simulator"
 import { useUiText } from "../ui-text"
-import { useStaticAuth } from "@/lib/static-auth"
+import { NotificationDetails } from "./notification-details"
+import { NotificationIcon } from "./notification-icon"
+import { NotificationSimulator } from "./notification-simulator"
 import {
-  categoryLabels, createDemoNotification, filterNotifications, formatNotificationDate, notificationMessage, notificationTitle, notificationHref, unreadTotal,
+  categoryLabels,
+  createDemoNotification,
+  filterNotifications,
+  formatNotificationDate,
+  notificationHref,
+  notificationMessage,
+  notificationTitle,
+  unreadTotal,
 } from "./utils"
 
-const kinds: NotificationKindFilter[] = ["meetings", "agenda", "decisions", "actions", "minutes"]
+const kinds: NotificationKindFilter[] = [
+  "meetings",
+  "agenda",
+  "decisions",
+  "actions",
+  "minutes",
+]
 const tabs: { value: NotificationTab; label: string }[] = [
   { value: "toutes", label: "Toutes" },
   { value: "non-lues", label: "Non lues" },
@@ -36,7 +63,9 @@ function Count({ title, value }: { title: string; value: number }) {
   return (
     <div className="space-y-2 px-2 sm:px-4">
       <p className="text-xs font-medium text-muted-foreground">{title}</p>
-      <p className="text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl">{value}</p>
+      <p className="text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl">
+        {value}
+      </p>
     </div>
   )
 }
@@ -51,13 +80,20 @@ export function NotificationsClient() {
   const [query, setQuery] = useState("")
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [simulateOpen, setSimulateOpen] = useState(false)
-  const [simulationKind, setSimulationKind] = useState<NotificationKind>("convocation")
+  const [simulationKind, setSimulationKind] =
+    useState<NotificationKind>("convocation")
   const [simulationOrdinal, setSimulationOrdinal] = useState(0)
 
   const pathname = usePathname()
   const locale = pathname.split("/").filter(Boolean)[0] || "en"
   const visible = useMemo(
-    () => filterNotifications(items.filter((item) => item.recipientId === user?.id), tab, kindFilter, query),
+    () =>
+      filterNotifications(
+        items.filter((item) => item.recipientId === user?.id),
+        tab,
+        kindFilter,
+        query
+      ),
     [items, tab, kindFilter, query, user?.id]
   )
   const ownedItems = items.filter((item) => item.recipientId === user?.id)
@@ -67,7 +103,13 @@ export function NotificationsClient() {
   const selected = ownedItems.find((item) => item.id === selectedId) ?? null
 
   function setRead(id: string, read: boolean) {
-    setItems((current) => current.map((item) => item.id === id && item.recipientId === user?.id ? { ...item, read } : item))
+    setItems((current) =>
+      current.map((item) =>
+        item.id === id && item.recipientId === user?.id
+          ? { ...item, read }
+          : item
+      )
+    )
   }
 
   function openDetails(id: string) {
@@ -76,20 +118,37 @@ export function NotificationsClient() {
   }
 
   function toggleArchive(id: string) {
-    setItems((current) => current.map((item) => item.id === id && item.recipientId === user?.id ? {
-      ...item, archived: !item.archived,
-    } : item))
+    setItems((current) =>
+      current.map((item) =>
+        item.id === id && item.recipientId === user?.id
+          ? {
+              ...item,
+              archived: !item.archived,
+            }
+          : item
+      )
+    )
     setSelectedId(null)
   }
 
   function markAllRead() {
-    setItems((current) => current.map((item) => item.recipientId === user?.id && !item.archived ? { ...item, read: true } : item))
+    setItems((current) =>
+      current.map((item) =>
+        item.recipientId === user?.id && !item.archived
+          ? { ...item, read: true }
+          : item
+      )
+    )
   }
 
   function simulate() {
     setSimulationOrdinal((current) => current + 1)
     if (!user) return
-    const fresh = createDemoNotification(simulationKind, simulationOrdinal + 1, user.id)
+    const fresh = createDemoNotification(
+      simulationKind,
+      simulationOrdinal + 1,
+      user.id
+    )
     setItems((current) => [fresh, ...current])
     setQuery("")
     setKindFilter("tous")
@@ -110,20 +169,31 @@ export function NotificationsClient() {
     <div className="mx-auto max-w-6xl space-y-10 px-4 py-6 md:px-8 md:py-9">
       <header className="flex flex-col justify-between gap-6 lg:flex-row lg:items-start">
         <div className="max-w-2xl space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("Comité scientifique")}</p>
-          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{t("Centre de notifications")}</h1>
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            {t("Comité scientifique")}
+          </p>
+          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
+            {t("Centre de notifications")}
+          </h1>
           <p className="text-sm leading-6 text-muted-foreground">
-            {t("Retrouvez les convocations, rappels, échéances des actions et avis de décisions du comité.")}
+            {t(
+              "Retrouvez les convocations, rappels, échéances des actions et avis de décisions du comité."
+            )}
           </p>
         </div>
-        <Button onClick={() => setSimulateOpen(true)} className="w-full shrink-0 sm:w-auto">
-          <Plus className="mr-2 size-4" aria-hidden="true" /> {t("Créer une notification")}
+        <Button
+          onClick={() => setSimulateOpen(true)}
+          className="w-full shrink-0 sm:w-auto"
+        >
+          <Plus className="mr-2 size-4" aria-hidden="true" />{" "}
+          {t("Créer une notification")}
         </Button>
       </header>
 
-      
-
-      <section aria-label={t("Résumé des notifications")} className="grid grid-cols-3 divide-x border-y py-7">
+      <section
+        aria-label={t("Résumé des notifications")}
+        className="grid grid-cols-3 divide-x border-y py-7"
+      >
         <Count title={t("Actives")} value={active} />
         <Count title={t("Non lues")} value={unread} />
         <Count title={t("Archivées")} value={archived} />
@@ -132,21 +202,44 @@ export function NotificationsClient() {
       <section className="space-y-7" aria-labelledby="inbox-title">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
-            <h2 id="inbox-title" className="text-lg font-semibold tracking-tight">{t("Boîte de réception")}</h2>
-            <p className="text-sm text-muted-foreground">{t("Consultez et classez les dernières notifications.")}</p>
+            <h2
+              id="inbox-title"
+              className="text-lg font-semibold tracking-tight"
+            >
+              {t("Boîte de réception")}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {t("Consultez et classez les dernières notifications.")}
+            </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={markAllRead} disabled={!unread}>
-              <CheckCheck className="mr-2 size-4" aria-hidden="true" /> {t("Tout marquer lu")}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={markAllRead}
+              disabled={!unread}
+            >
+              <CheckCheck className="mr-2 size-4" aria-hidden="true" />{" "}
+              {t("Tout marquer lu")}
             </Button>
-            <Button variant="ghost" size="sm" onClick={reset} title={t("Réinitialiser les filtres")}>
-              <RotateCcw className="mr-2 size-4" aria-hidden="true" /> {t("Réinitialiser les filtres")}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={reset}
+              title={t("Réinitialiser les filtres")}
+            >
+              <RotateCcw className="mr-2 size-4" aria-hidden="true" />{" "}
+              {t("Réinitialiser les filtres")}
             </Button>
           </div>
         </div>
 
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div role="tablist" aria-label={t("État des notifications")} className="flex max-w-full gap-1 overflow-x-auto border-b">
+          <div
+            role="tablist"
+            aria-label={t("État des notifications")}
+            className="flex max-w-full gap-1 overflow-x-auto border-b"
+          >
             {tabs.map((entry) => (
               <button
                 key={entry.value}
@@ -162,14 +255,19 @@ export function NotificationsClient() {
               >
                 {t(entry.label)}
                 {entry.value === "non-lues" && unread > 0 && (
-                  <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-foreground">{unread}</span>
+                  <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-foreground">
+                    {unread}
+                  </span>
                 )}
               </button>
             ))}
           </div>
           <div className="flex w-full flex-col gap-3 sm:flex-row lg:max-w-xl">
             <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-muted-foreground" aria-hidden="true" />
+              <Search
+                className="pointer-events-none absolute left-3 top-2.5 size-4 text-muted-foreground"
+                aria-hidden="true"
+              />
               <Input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
@@ -178,13 +276,27 @@ export function NotificationsClient() {
                 className="pl-9"
               />
             </div>
-            <Select value={kindFilter} onValueChange={(value) => setKindFilter(value as NotificationKindFilter)}>
-              <SelectTrigger aria-label={t("Filtrer par type")} className="w-full sm:w-48">
+            <Select
+              value={kindFilter}
+              onValueChange={(value) =>
+                setKindFilter(value as NotificationKindFilter)
+              }
+            >
+              <SelectTrigger
+                aria-label={t("Filtrer par type")}
+                className="w-full sm:w-48"
+              >
                 <SelectValue placeholder={t("Tous les types")} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="tous">{t("Tous les types")}</SelectItem>
-                {kinds.map((kind) => <SelectItem value={kind} key={kind}>{kind === "tous" ? t("Tous les types") : t(categoryLabels[kind])}</SelectItem>)}
+                {kinds.map((kind) => (
+                  <SelectItem value={kind} key={kind}>
+                    {kind === "tous"
+                      ? t("Tous les types")
+                      : t(categoryLabels[kind])}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -192,32 +304,63 @@ export function NotificationsClient() {
 
         <div aria-live="polite" className="min-h-64">
           <p className="mb-3 text-xs text-muted-foreground">
-            {t(visible.length > 1 ? "{count} notifications affichées" : "{count} notification affichée", { count: visible.length })}
+            {t(
+              visible.length > 1
+                ? "{count} notifications affichées"
+                : "{count} notification affichée",
+              { count: visible.length }
+            )}
           </p>
           {visible.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 border-y px-5 py-16 text-center">
-              <Inbox className="size-8 text-muted-foreground/70" aria-hidden="true" />
-              <p className="font-medium">{t("Aucune notification à afficher")}</p>
-              <p className="max-w-sm text-sm leading-6 text-muted-foreground">
-                {t("Modifiez les filtres, consultez un autre onglet ou simulez un nouvel événement.")}
+              <Inbox
+                className="size-8 text-muted-foreground/70"
+                aria-hidden="true"
+              />
+              <p className="font-medium">
+                {t("Aucune notification à afficher")}
               </p>
-              <Button variant="outline" size="sm" onClick={() => { setQuery(""); setKindFilter("tous"); setTab("toutes") }}>
+              <p className="max-w-sm text-sm leading-6 text-muted-foreground">
+                {t(
+                  "Modifiez les filtres, consultez un autre onglet ou simulez un nouvel événement."
+                )}
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setQuery("")
+                  setKindFilter("tous")
+                  setTab("toutes")
+                }}
+              >
                 {t("Réinitialiser les filtres")}
               </Button>
             </div>
           ) : (
             <ul className="divide-y border-y">
               {visible.map((item) => (
-                <li key={item.id} className="group flex items-start gap-4 px-1 py-5 transition-colors hover:bg-muted/20 sm:px-3 sm:py-6">
+                <li
+                  key={item.id}
+                  className="group flex items-start gap-4 px-1 py-5 transition-colors hover:bg-muted/20 sm:px-3 sm:py-6"
+                >
                   <NotificationIcon kind={item.kind} />
                   <div className="min-w-0 flex-1 space-y-2">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <span className="text-xs font-medium text-muted-foreground">{t(categoryLabels[item.category])}</span>
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {t(categoryLabels[item.category])}
+                      </span>
                       {item.priority === "importante" && (
-                            <span className="text-xs font-medium text-foreground/80">{t("À surveiller")}</span>
+                        <span className="text-xs font-medium text-foreground/80">
+                          {t("À surveiller")}
+                        </span>
                       )}
                       {!item.read && !item.archived && (
-                            <span className="size-2 rounded-full bg-foreground" aria-label={t("Non lue")} title={t("Non lue")} />
+                        <span
+                          className="size-2 rounded-full bg-foreground"
+                          aria-label={t("Non lue")}
+                          title={t("Non lue")}
+                        />
                       )}
                     </div>
                     <button
@@ -227,8 +370,13 @@ export function NotificationsClient() {
                     >
                       {notificationTitle(item, t)}
                     </button>
-                    <p className="text-sm leading-6 text-muted-foreground">{notificationMessage(item, t)}</p>
-                    <p className="text-xs text-muted-foreground">{formatNotificationDate(item.createdAt, locale)} · {item.context}</p>
+                    <p className="text-sm leading-6 text-muted-foreground">
+                      {notificationMessage(item, t)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatNotificationDate(item.createdAt, locale)} ·{" "}
+                      {item.context}
+                    </p>
                   </div>
                   <Button
                     type="button"
@@ -236,13 +384,21 @@ export function NotificationsClient() {
                     size="icon"
                     className="shrink-0"
                     onClick={() => toggleArchive(item.id)}
-                    title={t(item.archived ? "Restaurer la notification" : "Archiver la notification")}
+                    title={t(
+                      item.archived
+                        ? "Restaurer la notification"
+                        : "Archiver la notification"
+                    )}
                     aria-label={t("{action} : {title}", {
                       action: t(item.archived ? "Restaurer" : "Archiver"),
                       title: item.title,
                     })}
                   >
-                    {item.archived ? <ArchiveRestore className="size-4" /> : <Archive className="size-4" />}
+                    {item.archived ? (
+                      <ArchiveRestore className="size-4" />
+                    ) : (
+                      <Archive className="size-4" />
+                    )}
                   </Button>
                 </li>
               ))}
@@ -254,7 +410,9 @@ export function NotificationsClient() {
       <div className="flex items-start gap-3 border-t pt-6 text-sm text-muted-foreground">
         <Bell className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
         <p className="leading-6">
-          {t("Les rappels sont vérifiés pendant que l’application est ouverte. Les événements métier sont enregistrés dans le magasin local de démonstration.")}
+          {t(
+            "Les rappels sont vérifiés pendant que l’application est ouverte. Les événements métier sont enregistrés dans le magasin local de démonstration."
+          )}
         </p>
       </div>
 

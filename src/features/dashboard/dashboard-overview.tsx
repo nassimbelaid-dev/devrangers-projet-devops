@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useUiText } from "@/features/ui-text"
 import {
   ArrowRight,
   ArrowUpRight,
@@ -24,7 +25,6 @@ import type { LucideIcon } from "lucide-react"
 import type { ReactNode } from "react"
 
 import { frenchDate, useDashboardData } from "./dashboard-data"
-import { useUiText } from "@/features/ui-text"
 
 type DashboardProps = { lang: string }
 type Tone = "blue" | "amber" | "emerald" | "violet"
@@ -255,17 +255,28 @@ function ActionBreakdown({ lang }: DashboardProps) {
           <p className="text-4xl font-semibold tabular-nums text-foreground">
             {dashboardActionTotal}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">{t("actions au total")}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {t("actions au total")}
+          </p>
         </div>
         <div className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
           <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-          {t("{percent} % terminées", { percent: Math.round((dashboardActionCounts.done / total) * 100) })}
+          {t("{percent} % terminées", {
+            percent: Math.round((dashboardActionCounts.done / total) * 100),
+          })}
         </div>
       </div>
       <div
         className="mt-7 flex h-3 w-full overflow-hidden rounded-full bg-muted"
         role="img"
-        aria-label={t("Actions : {todo} à faire, {progress} en cours et {done} terminées", { todo: dashboardActionCounts.todo, progress: dashboardActionCounts.inProgress, done: dashboardActionCounts.done })}
+        aria-label={t(
+          "Actions : {todo} à faire, {progress} en cours et {done} terminées",
+          {
+            todo: dashboardActionCounts.todo,
+            progress: dashboardActionCounts.inProgress,
+            done: dashboardActionCounts.done,
+          }
+        )}
       >
         {items.map((item) => (
           <div
@@ -373,17 +384,22 @@ function DecisionBreakdown({ lang }: DashboardProps) {
           className="relative flex h-40 w-40 shrink-0 items-center justify-center rounded-full"
           style={{ background }}
           role="img"
-          aria-label={t("{adopted} décisions adoptées, {pending} en attente, {rejected} rejetées", {
-            adopted: dashboardDecisionCounts.adopted,
-            pending: dashboardDecisionCounts.pending,
-            rejected: dashboardDecisionCounts.rejected,
-          })}
+          aria-label={t(
+            "{adopted} décisions adoptées, {pending} en attente, {rejected} rejetées",
+            {
+              adopted: dashboardDecisionCounts.adopted,
+              pending: dashboardDecisionCounts.pending,
+              rejected: dashboardDecisionCounts.rejected,
+            }
+          )}
         >
           <div className="flex h-[122px] w-[122px] flex-col items-center justify-center rounded-full bg-card">
             <span className="text-3xl font-semibold tabular-nums text-foreground">
               {dashboardDecisionTotal}
             </span>
-            <span className="text-[11px] text-muted-foreground">{t("décisions")}</span>
+            <span className="text-[11px] text-muted-foreground">
+              {t("décisions")}
+            </span>
           </div>
         </div>
         <div className="min-w-[148px] flex-1 space-y-4">
@@ -591,7 +607,9 @@ export function DashboardOverview({ lang }: DashboardProps) {
     {
       title: t("Décisions adoptées"),
       value: dashboardMetrics.adoptedDecisions,
-      description: t("Parmi {count} décisions", { count: dashboardDecisionTotal }),
+      description: t("Parmi {count} décisions", {
+        count: dashboardDecisionTotal,
+      }),
       icon: CheckCircle2,
       tone: "emerald",
       href: `/${lang}/votes`,
@@ -599,7 +617,9 @@ export function DashboardOverview({ lang }: DashboardProps) {
     {
       title: t("Notifications non lues"),
       value: dashboardMetrics.unreadNotifications,
-      description: t("{count} notifications actives", { count: dashboardNotifications.length }),
+      description: t("{count} notifications actives", {
+        count: dashboardNotifications.length,
+      }),
       icon: Bell,
       tone: "violet",
       href: `/${lang}/notifications`,
@@ -617,7 +637,9 @@ export function DashboardOverview({ lang }: DashboardProps) {
             {t("Tableau de bord")}
           </h1>
           <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-            {t("Vue d'ensemble des réunions, décisions et actions du comité scientifique.")}
+            {t(
+              "Vue d'ensemble des réunions, décisions et actions du comité scientifique."
+            )}
           </p>
         </div>
         <span className="inline-flex w-fit items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-700 dark:border-violet-900 dark:bg-violet-950/40 dark:text-violet-300">
@@ -645,7 +667,9 @@ export function DashboardOverview({ lang }: DashboardProps) {
               {t("Pilotez les activités du comité en un seul endroit.")}
             </h2>
             <p className="max-w-xl text-sm leading-6 text-indigo-50">
-              {t("Consultez les réunions à venir, suivez les décisions et gardez un œil sur les actions prioritaires.")}
+              {t(
+                "Consultez les réunions à venir, suivez les décisions et gardez un œil sur les actions prioritaires."
+              )}
             </p>
           </div>
           <Link
@@ -696,10 +720,15 @@ export function DashboardOverview({ lang }: DashboardProps) {
 
       <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border/70 pt-4 text-xs text-muted-foreground">
         <span>
-          {dashboardMetrics.activeMembers} {t("membres avec mandat en cours · Données fictives au 12 novembre 2026")}
+          {dashboardMetrics.activeMembers}{" "}
+          {t(
+            "membres avec mandat en cours · Données fictives au 12 novembre 2026"
+          )}
         </span>
         <span>
-          {t("Les changements des autres modules ne sont pas encore synchronisés.")}
+          {t(
+            "Les changements des autres modules ne sont pas encore synchronisés."
+          )}
         </span>
       </footer>
     </main>

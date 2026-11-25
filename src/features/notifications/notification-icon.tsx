@@ -1,4 +1,15 @@
-import { CalendarDays, Clock3, FileCheck2, ListTodo, Archive, Bell, CircleCheck, CircleX, UserRound, CalendarClock } from "lucide-react"
+import {
+  Archive,
+  Bell,
+  CalendarClock,
+  CalendarDays,
+  CircleX,
+  Clock3,
+  FileCheck2,
+  ListTodo,
+  UserRound,
+} from "lucide-react"
+
 import type { NotificationKind } from "./types"
 
 export function NotificationIcon({ kind }: { kind: NotificationKind }) {

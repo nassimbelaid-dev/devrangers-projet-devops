@@ -14,8 +14,8 @@ import {
   SunMoon,
 } from "lucide-react"
 
-import type { LocaleType, ModeType, ThemeType } from "@/types"
 import type { DictionaryType } from "@/lib/get-dictionary"
+import type { LocaleType, ModeType, ThemeType } from "@/types"
 import type { CSSProperties } from "react"
 
 import { i18n } from "@/configs/i18n"

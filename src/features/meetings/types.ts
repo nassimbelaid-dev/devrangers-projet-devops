@@ -1,4 +1,9 @@
-export type MeetingStatus = "Planifiée" | "En cours" | "Clôturée" | "PV signé" | "Annulée"
+export type MeetingStatus =
+  | "Planifiée"
+  | "En cours"
+  | "Clôturée"
+  | "PV signé"
+  | "Annulée"
 export type AgendaStatus = "Proposé" | "Validé" | "Rejeté"
 
 export interface CommitteeMember {

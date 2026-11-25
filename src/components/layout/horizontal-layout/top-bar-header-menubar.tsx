@@ -12,9 +12,9 @@ import type {
 } from "@/types"
 
 import { navigationsData } from "@/data/navigations"
-import { hasPermission, moduleForPath, useStaticAuth } from "@/lib/static-auth"
 
 import { ensureLocalizedPathname } from "@/lib/i18n"
+import { hasPermission, moduleForPath, useStaticAuth } from "@/lib/static-auth"
 import {
   cn,
   getDictionaryValue,
@@ -106,7 +106,14 @@ export function TopBarHeaderMenubar({
   return (
     <Menubar className="border-0">
       {navigationsData.map((nav) => {
-        const allowedItems = nav.items.filter((item) => !("href" in item && typeof item.href === "string" && !hasPermission(user, moduleForPath(item.href))))
+        const allowedItems = nav.items.filter(
+          (item) =>
+            !(
+              "href" in item &&
+              typeof item.href === "string" &&
+              !hasPermission(user, moduleForPath(item.href))
+            )
+        )
         if (!allowedItems.length) return null
         const title = getDictionaryValue(
           titleCaseToCamelCase(nav.title),

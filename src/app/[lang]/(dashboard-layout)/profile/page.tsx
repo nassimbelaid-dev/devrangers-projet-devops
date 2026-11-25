@@ -1,7 +1,8 @@
+import { ProfileClient } from "@/features/profile/profile-client"
+
 import type { Metadata } from "next"
 
 import { CommitteeShell } from "@/components/committee-ui/committee-shell"
-import { ProfileClient } from "@/features/profile/profile-client"
 
 export const metadata: Metadata = {
   title: "Mon profil | Gestion du comité scientifique",

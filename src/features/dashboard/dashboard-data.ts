@@ -10,7 +10,10 @@ export function useDashboardData() {
   const { user } = useStaticAuth()
   const { meetings, members, decisions, actions, notifications } = useDemoData()
   const dashboardMeetings = [...meetings]
-    .filter((meeting) => meeting.status === "Planifiée" && meeting.date >= DEMO_REFERENCE_DATE)
+    .filter(
+      (meeting) =>
+        meeting.status === "Planifiée" && meeting.date >= DEMO_REFERENCE_DATE
+    )
     .sort((a, b) =>
       `${a.date}T${a.startTime}`.localeCompare(`${b.date}T${b.startTime}`)
     )
@@ -20,8 +23,7 @@ export function useDashboardData() {
 
   const dashboardActionCounts = {
     todo: actions.filter((action) => action.status === "À faire").length,
-    inProgress: actions.filter((action) => action.status === "En cours")
-      .length,
+    inProgress: actions.filter((action) => action.status === "En cours").length,
     done: actions.filter((action) => action.status === "Terminée").length,
   }
 
@@ -56,7 +58,10 @@ export function useDashboardData() {
   ).length
 
   const dashboardNotifications = [...notifications]
-    .filter((notification) => notification.recipientId === user?.id && !notification.archived)
+    .filter(
+      (notification) =>
+        notification.recipientId === user?.id && !notification.archived
+    )
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 
   const dashboardUnreadCount = dashboardNotifications.filter(
@@ -67,18 +72,32 @@ export function useDashboardData() {
 
   const dashboardMetrics = {
     scheduledMeetings: dashboardMeetings.length,
-    openActions:
-      dashboardActionCounts.todo + dashboardActionCounts.inProgress,
+    openActions: dashboardActionCounts.todo + dashboardActionCounts.inProgress,
     adoptedDecisions: dashboardDecisionCounts.adopted,
     unreadNotifications: dashboardUnreadCount,
     activeMembers: dashboardActiveMembers,
   }
 
-
-  return { dashboardMeetings, dashboardMembers, dashboardActionCounts, dashboardDecisionCounts, dashboardActionTotal, dashboardDecisionTotal, dashboardPendingActions, dashboardActiveMembers, dashboardNotifications, dashboardUnreadCount, dashboardRecentNotifications, dashboardMetrics }
+  return {
+    dashboardMeetings,
+    dashboardMembers,
+    dashboardActionCounts,
+    dashboardDecisionCounts,
+    dashboardActionTotal,
+    dashboardDecisionTotal,
+    dashboardPendingActions,
+    dashboardActiveMembers,
+    dashboardNotifications,
+    dashboardUnreadCount,
+    dashboardRecentNotifications,
+    dashboardMetrics,
+  }
 }
 
-export function frenchDate(isoDate: string, options?: Intl.DateTimeFormatOptions) {
+export function frenchDate(
+  isoDate: string,
+  options?: Intl.DateTimeFormatOptions
+) {
   const timestamp = isoDate.includes("T")
     ? new Date(isoDate)
     : new Date(`${isoDate}T12:00:00Z`)

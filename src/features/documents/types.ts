@@ -1,5 +1,11 @@
 /** Modèles purement UI : aucune donnée n'est transmise à un serveur. */
-export const DOCUMENT_TYPES = ["Ordre du jour", "Procès-verbal", "Rapport", "Convocation", "Autre"] as const
+export const DOCUMENT_TYPES = [
+  "Ordre du jour",
+  "Procès-verbal",
+  "Rapport",
+  "Convocation",
+  "Autre",
+] as const
 export type DocumentType = (typeof DOCUMENT_TYPES)[number]
 export const DOCUMENT_STATUSES = ["Brouillon", "Validé", "Archivé"] as const
 export type DocumentStatus = (typeof DOCUMENT_STATUSES)[number]

@@ -1,4 +1,10 @@
-import type { BallotOutcome, BallotSession, BallotSummary, SeatRepresentation, SeatVote } from "./types"
+import type {
+  BallotOutcome,
+  BallotSession,
+  BallotSummary,
+  SeatRepresentation,
+  SeatVote,
+} from "./types"
 
 /** Contrat minimal avec le module Membres : l'algorithme reste facile à tester seul. */
 export interface MemberForVote {
@@ -8,10 +14,15 @@ export interface MemberForVote {
   mandateStart: string // YYYY-MM-DD
   mandateEnd: string // YYYY-MM-DD
 }
-export interface SeatForVote { id: string; label: string }
+export interface SeatForVote {
+  id: string
+  label: string
+}
 
 export function activeOnDate(member: MemberForVote, date: string): boolean {
-  return Boolean(date) && member.mandateStart <= date && member.mandateEnd >= date
+  return (
+    Boolean(date) && member.mandateStart <= date && member.mandateEnd >= date
+  )
 }
 
 /**
@@ -23,25 +34,32 @@ export function seatRepresentations(
   members: readonly MemberForVote[],
   seats: readonly SeatForVote[],
   date: string,
-  presentMemberIds: readonly string[],
+  presentMemberIds: readonly string[]
 ): SeatRepresentation[] {
   const present = new Set(presentMemberIds)
   return seats.flatMap((seat) => {
-    const active = members.filter((member) => member.seatId === seat.id && activeOnDate(member, date))
+    const active = members.filter(
+      (member) => member.seatId === seat.id && activeOnDate(member, date)
+    )
     if (!active.length) return []
     const titular = active.find((member) => member.kind === "Titulaire")
     const substitute = active.find((member) => member.kind === "Suppléant")
-    const representative = titular && present.has(titular.id)
-      ? titular
-      : substitute && present.has(substitute.id) ? substitute : null
-    return [{
-      seatId: seat.id,
-      seatLabel: seat.label,
-      titularId: titular?.id ?? null,
-      substituteId: substitute?.id ?? null,
-      representativeId: representative?.id ?? null,
-      representativeKind: representative?.kind ?? null,
-    }]
+    const representative =
+      titular && present.has(titular.id)
+        ? titular
+        : substitute && present.has(substitute.id)
+          ? substitute
+          : null
+    return [
+      {
+        seatId: seat.id,
+        seatLabel: seat.label,
+        titularId: titular?.id ?? null,
+        substituteId: substitute?.id ?? null,
+        representativeId: representative?.id ?? null,
+        representativeKind: representative?.kind ?? null,
+      },
+    ]
   })
 }
 
@@ -49,14 +67,25 @@ export function calculateBallot(
   ballot: BallotSession,
   members: readonly MemberForVote[],
   seats: readonly SeatForVote[],
-  meetingDate: string,
+  meetingDate: string
 ): BallotSummary {
-  if (ballot.state === "Clôturé" && ballot.closedResult) return ballot.closedResult
-  const activeSeats = seatRepresentations(members, seats, meetingDate, ballot.presentMemberIds)
+  if (ballot.state === "Clôturé" && ballot.closedResult)
+    return ballot.closedResult
+  const activeSeats = seatRepresentations(
+    members,
+    seats,
+    meetingDate,
+    ballot.presentMemberIds
+  )
   const activeSeatCount = activeSeats.length
-  const representedSeatCount = activeSeats.filter((seat) => Boolean(seat.representativeId)).length
-  const quorumMinSeats = activeSeatCount ? Math.ceil(activeSeatCount * ballot.quorumPercent / 100) : 0
-  const quorumReached = activeSeatCount > 0 && representedSeatCount >= quorumMinSeats
+  const representedSeatCount = activeSeats.filter((seat) =>
+    Boolean(seat.representativeId)
+  ).length
+  const quorumMinSeats = activeSeatCount
+    ? Math.ceil((activeSeatCount * ballot.quorumPercent) / 100)
+    : 0
+  const quorumReached =
+    activeSeatCount > 0 && representedSeatCount >= quorumMinSeats
   // Un vote est compté uniquement si son auteur reste le représentant habilité du siège.
   const validVotes = activeSeats.flatMap((seat) => {
     const vote = ballot.votes[seat.seatId]
@@ -64,7 +93,9 @@ export function calculateBallot(
   })
   const pour = validVotes.filter((vote) => vote.choice === "pour").length
   const contre = validVotes.filter((vote) => vote.choice === "contre").length
-  const abstention = validVotes.filter((vote) => vote.choice === "abstention").length
+  const abstention = validVotes.filter(
+    (vote) => vote.choice === "abstention"
+  ).length
   const votesCast = validVotes.length
   const expressedCount = pour + contre
   const uncastCount = representedSeatCount - votesCast
@@ -77,19 +108,33 @@ export function calculateBallot(
   let outcome: BallotOutcome = "À voter"
   if (ballot.state === "Clôturé") {
     if (!quorumReached) outcome = "Quorum non atteint"
-    else outcome = expressedCount > 0 && pour * 100 / expressedCount > majorityPercent ? "Adoptée" : "Rejetée"
+    else
+      outcome =
+        expressedCount > 0 && (pour * 100) / expressedCount > majorityPercent
+          ? "Adoptée"
+          : "Rejetée"
   }
   return {
-    seats: activeSeats, activeSeatCount, representedSeatCount, quorumMinSeats,
-    quorumReached, participationPercent, pour, contre, abstention,
-    votesCast, uncastCount, expressedCount, outcome,
+    seats: activeSeats,
+    activeSeatCount,
+    representedSeatCount,
+    quorumMinSeats,
+    quorumReached,
+    participationPercent,
+    pour,
+    contre,
+    abstention,
+    votesCast,
+    uncastCount,
+    expressedCount,
+    outcome,
   }
 }
 
 /** Efface tous les bulletins devenus invalides après une modification de présence. */
 export function removeStaleVotes(
   votes: Record<string, SeatVote>,
-  seats: readonly SeatRepresentation[],
+  seats: readonly SeatRepresentation[]
 ): Record<string, SeatVote> {
   const next: Record<string, SeatVote> = {}
   for (const seat of seats) {
@@ -103,9 +148,13 @@ export function removeStaleVotes(
 
 export function outcomeLabel(outcome: BallotOutcome): string {
   switch (outcome) {
-    case "À voter": return "Scrutin en cours"
-    case "Quorum non atteint": return "Quorum non atteint"
-    case "Adoptée": return "Décision adoptée"
-    case "Rejetée": return "Décision rejetée"
+    case "À voter":
+      return "Scrutin en cours"
+    case "Quorum non atteint":
+      return "Quorum non atteint"
+    case "Adoptée":
+      return "Décision adoptée"
+    case "Rejetée":
+      return "Décision rejetée"
   }
 }

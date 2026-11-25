@@ -1,8 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { Landmark } from "lucide-react"
 import { useParams } from "next/navigation"
+import { Landmark } from "lucide-react"
 
 import type { DictionaryType } from "@/lib/get-dictionary"
 import type { LocaleType } from "@/types"

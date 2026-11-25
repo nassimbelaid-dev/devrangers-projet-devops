@@ -7,10 +7,12 @@ import { DirectionProvider } from "./direction-provider"
 import { ModeProvider } from "./mode-provider"
 import { ThemeProvider } from "./theme-provider"
 
-export function Providers({  locale,
+export function Providers({
+  locale,
   direction,
   children,
-}: Readonly<{  locale: LocaleType
+}: Readonly<{
+  locale: LocaleType
   direction: DirectionType
   children: ReactNode
 }>) {
@@ -18,7 +20,9 @@ export function Providers({  locale,
     <SettingsProvider locale={locale}>
       <ModeProvider>
         <ThemeProvider>
-          <DirectionProvider direction={direction}>              <SidebarProvider>{children}</SidebarProvider>          </DirectionProvider>
+          <DirectionProvider direction={direction}>
+            <SidebarProvider>{children}</SidebarProvider>
+          </DirectionProvider>
         </ThemeProvider>
       </ModeProvider>
     </SettingsProvider>

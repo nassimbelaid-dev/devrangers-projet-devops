@@ -12,10 +12,10 @@ import type {
 } from "@/types"
 
 import { navigationsData } from "@/data/navigations"
-import { hasPermission, moduleForPath, useStaticAuth } from "@/lib/static-auth"
 
 import { i18n } from "@/configs/i18n"
 import { ensureLocalizedPathname } from "@/lib/i18n"
+import { hasPermission, moduleForPath, useStaticAuth } from "@/lib/static-auth"
 import {
   getDictionaryValue,
   isActivePathname,
@@ -134,7 +134,10 @@ export function Sidebar({ dictionary }: { dictionary: DictionaryType }) {
           className="w-fit flex text-foreground font-black p-2 pb-0 mb-2"
           onClick={() => isMobile && setOpenMobile(!openMobile)}
         >
-          <Landmark className="me-2 size-5 text-indigo-600" aria-hidden="true" />
+          <Landmark
+            className="me-2 size-5 text-indigo-600"
+            aria-hidden="true"
+          />
           <span>{dictionary.navigation.comitéScientifique}</span>
         </Link>
         <CommandMenu dictionary={dictionary} buttonClassName="max-w-full" />
@@ -142,7 +145,14 @@ export function Sidebar({ dictionary }: { dictionary: DictionaryType }) {
       <ScrollArea>
         <SidebarContent className="gap-0">
           {navigationsData.map((nav) => {
-            const allowedItems = nav.items.filter((item) => !("href" in item && typeof item.href === "string" && !hasPermission(user, moduleForPath(item.href))))
+            const allowedItems = nav.items.filter(
+              (item) =>
+                !(
+                  "href" in item &&
+                  typeof item.href === "string" &&
+                  !hasPermission(user, moduleForPath(item.href))
+                )
+            )
             if (!allowedItems.length) return null
             const title = getDictionaryValue(
               titleCaseToCamelCase(nav.title),
