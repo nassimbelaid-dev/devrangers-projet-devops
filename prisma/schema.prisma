@@ -28,6 +28,20 @@ enum MandateKind {
   SUBSTITUTE
 }
 
+enum MeetingStatus {
+  PLANNED
+  IN_PROGRESS
+  CLOSED
+  MINUTES_SIGNED
+  CANCELLED
+}
+
+enum AgendaStatus {
+  PROPOSED
+  APPROVED
+  REJECTED
+}
+
 model Account {
   id           String          @id @default(uuid()) @db.Uuid
   firstName    String          @map("first_name") @db.Text
@@ -61,13 +75,16 @@ model AccountProfile {
 }
 
 model Member {
-  id       String    @id @default(uuid()) @db.Uuid
-  fullName String    @map("full_name") @db.Text
-  email    String    @unique @db.Text
-  phone    String?   @db.Text
-  notes    String?   @db.Text
-  account  Account?
-  mandates Mandate[]
+  id                    String               @id @default(uuid()) @db.Uuid
+  fullName              String               @map("full_name") @db.Text
+  email                 String               @unique @db.Text
+  phone                 String?              @db.Text
+  notes                 String?              @db.Text
+  account               Account?
+  mandates              Mandate[]
+  meetingParticipations MeetingParticipant[]
+  authoredProposals     AgendaProposal[]     @relation("AgendaAuthor")
+  reviewedProposals     AgendaProposal[]     @relation("AgendaReviewer")
 
   @@map("members")
 }
@@ -81,19 +98,79 @@ model Seat {
 }
 
 model Mandate {
-  id        String          @id @default(uuid()) @db.Uuid
-  memberId  String          @map("member_id") @db.Uuid
-  seatId    String          @map("seat_id") @db.Uuid
-  function  MandateFunction
-  kind      MandateKind
-  startDate DateTime        @map("start_date") @db.Date
-  endDate   DateTime        @map("end_date") @db.Date
-  member    Member          @relation(fields: [memberId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  seat      Seat            @relation(fields: [seatId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  id                    String               @id @default(uuid()) @db.Uuid
+  memberId              String               @map("member_id") @db.Uuid
+  seatId                String               @map("seat_id") @db.Uuid
+  function              MandateFunction
+  kind                  MandateKind
+  startDate             DateTime             @map("start_date") @db.Date
+  endDate               DateTime             @map("end_date") @db.Date
+  member                Member               @relation(fields: [memberId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  seat                  Seat                 @relation(fields: [seatId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  meetingParticipations MeetingParticipant[]
 
   @@unique([id, memberId])
   @@unique([id, seatId])
   @@index([seatId, startDate])
   @@index([memberId, startDate])
   @@map("mandates")
+}
+
+model Meeting {
+  id                String               @id @default(uuid()) @db.Uuid
+  title             String               @db.Text
+  meetingDate       DateTime             @map("meeting_date") @db.Date
+  startTime         DateTime             @map("start_time") @db.Time(0)
+  endTime           DateTime             @map("end_time") @db.Time(0)
+  location          String               @db.Text
+  description       String               @default("") @db.Text
+  status            MeetingStatus        @default(PLANNED)
+  invitationsSentAt DateTime?            @map("invitations_sent_at") @db.Timestamptz(3)
+  startedAt         DateTime?            @map("started_at") @db.Timestamptz(3)
+  closedAt          DateTime?            @map("closed_at") @db.Timestamptz(3)
+  participants      MeetingParticipant[]
+  agendaProposals   AgendaProposal[]
+
+  @@index([status, meetingDate])
+  @@map("meetings")
+}
+
+model MeetingParticipant {
+  id                   String    @id @default(uuid()) @db.Uuid
+  meetingId            String    @map("meeting_id") @db.Uuid
+  memberId             String    @map("member_id") @db.Uuid
+  mandateId            String    @map("mandate_id") @db.Uuid
+  attendance           Boolean?
+  attendanceRecordedAt DateTime? @map("attendance_recorded_at") @db.Timestamptz(3)
+  meeting              Meeting   @relation(fields: [meetingId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  member               Member    @relation(fields: [memberId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  mandate              Mandate   @relation(fields: [mandateId, memberId], references: [id, memberId], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([meetingId, memberId])
+  @@unique([id, meetingId, mandateId])
+  @@index([memberId])
+  @@index([mandateId])
+  @@map("meeting_participants")
+}
+
+model AgendaProposal {
+  id               String       @id @default(uuid()) @db.Uuid
+  meetingId        String       @map("meeting_id") @db.Uuid
+  authorMemberId   String       @map("author_member_id") @db.Uuid
+  reviewerMemberId String?      @map("reviewer_member_id") @db.Uuid
+  title            String       @db.Text
+  description      String       @default("") @db.Text
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  status           AgendaStatus @default(PROPOSED)
+  sortOrder        Int?         @map("sort_order")
+  reviewNote       String?      @map("review_note") @db.Text
+  reviewedAt       DateTime?    @map("reviewed_at") @db.Timestamptz(3)
+  meeting          Meeting      @relation(fields: [meetingId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  author           Member       @relation("AgendaAuthor", fields: [authorMemberId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  reviewer         Member?      @relation("AgendaReviewer", fields: [reviewerMemberId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([id, meetingId])
+  @@index([meetingId, status, sortOrder])
+  @@index([authorMemberId])
+  @@map("agenda_proposals")
 }
