@@ -10,16 +10,19 @@ const translations: Record<string, Record<string, string>> = {
     "Membre du comité": "Committee member",
     "Membre suppléante": "Alternate committee member",
     "Accès non autorisé": "Access denied",
-    "Votre rôle ne permet pas de consulter cette page.": "Your role does not allow you to view this page.",
+    "Votre rôle ne permet pas de consulter cette page.":
+      "Your role does not allow you to view this page.",
     "Retour au tableau de bord": "Back to dashboard",
-    "Convocations": "Meeting invitations",
+    Convocations: "Meeting invitations",
     "Non envoyées": "Not sent",
     "Envoyées le {date}": "Sent on {date}",
     "Envoyer les convocations": "Send invitations",
     "Renvoyer les convocations": "Resend invitations",
-    "Confirmer l'envoi des convocations à tous les participants ?": "Send invitations to all participants?",
-    "Les convocations ont été envoyées aux participants disposant d'un compte.": "Invitations were sent to participants with demo accounts.",
-    "Absents": "Absent",
+    "Confirmer l'envoi des convocations à tous les participants ?":
+      "Send invitations to all participants?",
+    "Les convocations ont été envoyées aux participants disposant d'un compte.":
+      "Invitations were sent to participants with demo accounts.",
+    Absents: "Absent",
     "Non renseignés": "Not recorded",
     "Marquer tous présents": "Mark everyone present",
     "Remplace le titulaire absent": "Replaces the absent full member",
@@ -40,21 +43,34 @@ const translations: Record<string, Record<string, string>> = {
     "Confirmer la clôture de cette réunion ?": "Close this meeting?",
     "La réunion a démarré.": "The meeting has started.",
     "La réunion est clôturée.": "The meeting is closed.",
-    "Clôturez tous les scrutins associés avant de clôturer la réunion.": "Close all associated ballots before closing the meeting.",
-    "La clôture est bloquée : {count} scrutin(s) sont encore ouverts.": "Closure is blocked: {count} ballot(s) are still open.",
-    "Points non traités : ils seront signalés dans le compte rendu sans bloquer la clôture.": "Uncovered agenda items will be identified in the minutes; they do not block closure.",
-    "Statut géré par le workflow de la réunion.": "Meeting status is controlled by its workflow.",
-    "Confirmer la signature simulée du PV ?": "Confirm simulated signing of the minutes?",
-    "Retourner ce PV au secrétaire pour correction ?": "Return these minutes to the secretary for correction?",
+    "Clôturez tous les scrutins associés avant de clôturer la réunion.":
+      "Close all associated ballots before closing the meeting.",
+    "La clôture est bloquée : {count} scrutin(s) sont encore ouverts.":
+      "Closure is blocked: {count} ballot(s) are still open.",
+    "Points non traités : ils seront signalés dans le compte rendu sans bloquer la clôture.":
+      "Uncovered agenda items will be identified in the minutes; they do not block closure.",
+    "Statut géré par le workflow de la réunion.":
+      "Meeting status is controlled by its workflow.",
+    "Confirmer la signature simulée du PV ?":
+      "Confirm simulated signing of the minutes?",
+    "Retourner ce PV au secrétaire pour correction ?":
+      "Return these minutes to the secretary for correction?",
     "Demander une correction": "Request corrections",
-    "Le PV a été retourné au secrétaire pour correction.": "The minutes were returned to the secretary for corrections.",
-    "Seul le secrétaire peut créer le PV pendant ou après une réunion démarrée.": "Only the secretary can create minutes during or after a meeting has started.",
-    "Un PV existe déjà pour cette réunion.": "Minutes already exist for this meeting.",
-    "Un PV peut être créé pendant ou après la réunion.": "Minutes can be created during or after the meeting.",
-    "Le statut du PV doit évoluer par une action métier dédiée.": "Minutes status must change through a dedicated workflow action.",
-    "Le statut d'une réunion ne peut être modifié que par une action du workflow.": "Meeting status can only change through a workflow action.",
+    "Le PV a été retourné au secrétaire pour correction.":
+      "The minutes were returned to the secretary for corrections.",
+    "Seul le secrétaire peut créer le PV pendant ou après une réunion démarrée.":
+      "Only the secretary can create minutes during or after a meeting has started.",
+    "Un PV existe déjà pour cette réunion.":
+      "Minutes already exist for this meeting.",
+    "Un PV peut être créé pendant ou après la réunion.":
+      "Minutes can be created during or after the meeting.",
+    "Le statut du PV doit évoluer par une action métier dédiée.":
+      "Minutes status must change through a dedicated workflow action.",
+    "Le statut d'une réunion ne peut être modifié que par une action du workflow.":
+      "Meeting status can only change through a workflow action.",
     "Centre de notifications": "Notification center",
-    "Retrouvez les convocations, rappels, échéances des actions et avis de décisions du comité.": "Find the committee's meeting notices, reminders, action deadlines, and decision notices.",
+    "Retrouvez les convocations, rappels, échéances des actions et avis de décisions du comité.":
+      "Find the committee's meeting notices, reminders, action deadlines, and decision notices.",
     "Résumé des notifications": "Notification summary",
     "Réinitialiser les notifications": "Reset notifications",
     "État des notifications": "Notification status",
@@ -66,35 +82,41 @@ const translations: Record<string, Record<string, string>> = {
     "Non lue": "Unread",
     "Restaurer la notification": "Restore notification",
     "Archiver la notification": "Archive notification",
-    "Restaurer": "Restore",
-    "Archiver": "Archive",
+    Restaurer: "Restore",
+    Archiver: "Archive",
     "{action} : {title}": "{action}: {title}",
-    "Les exemples sont indépendants des autres modules. Les changements de réunions, d'actions et de décisions ne déclenchent pas automatiquement de notifications dans cette maquette.": "These examples are independent of other modules. Changes to meetings, actions, and decisions do not automatically trigger notifications in this demo.",
-    "Ajoutez un exemple local à la boîte de réception, sans envoi réel.": "Add a local example to the inbox; nothing will actually be sent.",
+    "Les exemples sont indépendants des autres modules. Les changements de réunions, d'actions et de décisions ne déclenchent pas automatiquement de notifications dans cette maquette.":
+      "These examples are independent of other modules. Changes to meetings, actions, and decisions do not automatically trigger notifications in this demo.",
+    "Ajoutez un exemple local à la boîte de réception, sans envoi réel.":
+      "Add a local example to the inbox; nothing will actually be sent.",
     "Type d'événement": "Event type",
     "Rappel de réunion": "Meeting reminder",
     "Échéance d'action": "Action deadline",
     "Avis de décision": "Decision notice",
-    "Cet exemple sera marqué « non lu » et disparaîtra à la prochaine actualisation de la page.": "This example will be marked as unread and disappear the next time the page is refreshed.",
+    "Cet exemple sera marqué « non lu » et disparaîtra à la prochaine actualisation de la page.":
+      "This example will be marked as unread and disappear the next time the page is refreshed.",
     "Ajouter l'exemple": "Add example",
     "Notification fictive": "Demo notification",
     "Élément associé": "Related item",
     "Marquer non lue": "Mark as unread",
     "Marquer comme lue": "Mark as read",
     "Voir le module lié": "View related module",
-    "Retrouvez les événements importants du comité au même endroit.": "Find the committee's important events in one place.",
+    "Retrouvez les événements importants du comité au même endroit.":
+      "Find the committee's important events in one place.",
     "Simuler une notification": "Simulate a notification",
-    "Actives": "Active",
+    Actives: "Active",
     "Non lues": "Unread",
-    "Archivées": "Archived",
+    Archivées: "Archived",
     "Boîte de réception": "Inbox",
-    "Consultez et classez les dernières notifications.": "Review and organize recent notifications.",
+    "Consultez et classez les dernières notifications.":
+      "Review and organize recent notifications.",
     "Tout marquer lu": "Mark all as read",
-    "Réinitialiser": "Reset",
+    Réinitialiser: "Reset",
     "Toutes les catégories": "All categories",
     "Rechercher une notification...": "Search notifications...",
     "Aucune notification à afficher": "No notifications to display",
-    "Modifiez les filtres, consultez un autre onglet ou simulez un nouvel événement.": "Change the filters, view another tab, or simulate a new event.",
+    "Modifiez les filtres, consultez un autre onglet ou simulez un nouvel événement.":
+      "Change the filters, view another tab, or simulate a new event.",
     "Créer une notification": "Create a notification",
     "Gestion des réunions": "Meeting management",
     "Planifiez les réunions du comité, sélectionnez les participants et préparez les ordres du jour.":
@@ -576,7 +598,6 @@ const translations: Record<string, Record<string, string>> = {
     "Quelques informations complémentaires…": "A few additional details…",
     "Modifications non enregistrées": "Unsaved changes",
     "Informations à jour": "Information is up to date",
-    Réinitialiser: "Reset",
     Enregistrer: "Save",
     "Le stockage local n’est pas disponible dans ce navigateur.":
       "Local storage is unavailable in this browser.",
@@ -617,7 +638,6 @@ const translations: Record<string, Record<string, string>> = {
     "Ce siège possède déjà un membre « {kind} » pour une période chevauchante ({name}).":
       "This seat already has a {kind} member during an overlapping period ({name}).",
     "Numéro de téléphone": "Phone number",
-    "Ordre du jour": "Agenda",
     "Procès-verbal": "Meeting minutes",
     Rapport: "Report",
     Convocation: "Meeting notice",
@@ -626,7 +646,8 @@ const translations: Record<string, Record<string, string>> = {
     Présidence: "Chair",
     Archives: "Archives",
     "Document de séance": "Meeting document",
-    "Consultation des documents, décisions et PV archivés. Les éléments archivés sont en lecture seule.": "Browse archived documents, decisions, and minutes. Archived items are read-only.",
+    "Consultation des documents, décisions et PV archivés. Les éléments archivés sont en lecture seule.":
+      "Browse archived documents, decisions, and minutes. Archived items are read-only.",
     "Filtrer par réunion": "Filter by meeting",
     "Filtrer par type de document": "Filter by document type",
     "Filtrer par date d’archivage": "Filter by archive date",
@@ -635,11 +656,15 @@ const translations: Record<string, Record<string, string>> = {
     "Aucune archive pour le moment.": "No archived items yet.",
     "Décisions à archiver": "Decisions to archive",
     "Responsable inconnu": "Unknown archivist",
-    "Archiver définitivement ce document ?": "Archive this document permanently?",
-    "Archiver définitivement ce PV signé ?": "Archive these signed minutes permanently?",
+    "Archiver définitivement ce document ?":
+      "Archive this document permanently?",
+    "Archiver définitivement ce PV signé ?":
+      "Archive these signed minutes permanently?",
     "Archiver cette décision ?": "Archive this decision?",
-    "Feuille de présence liée à la réunion": "Attendance sheet linked to the meeting",
-    "Les présences sont reprises automatiquement depuis la réunion.": "Attendance is filled automatically from the meeting.",
+    "Feuille de présence liée à la réunion":
+      "Attendance sheet linked to the meeting",
+    "Les présences sont reprises automatiquement depuis la réunion.":
+      "Attendance is filled automatically from the meeting.",
     "État de la réunion": "Meeting status",
     Démarrée: "Started",
     Clôturée: "Closed",
@@ -683,10 +708,8 @@ const translations: Record<string, Record<string, string>> = {
     "Supprimer « {title} » de cette session ?":
       "Delete “{title}” from this session?",
     "Rechercher un document": "Search documents",
-    "Filtrer par statut": "Filter by status",
     "Télécharger {filename}": "Download {filename}",
     "Note de version": "Version note",
-    "Créer le brouillon": "Create draft",
     "Brouillon enregistré en mémoire pour cette session.":
       "Draft saved in memory for this session.",
     "Ajoutez au moins un membre présent et un compte rendu avant de valider.":
@@ -728,43 +751,6 @@ const translations: Record<string, Record<string, string>> = {
     "À compléter…": "To be completed…",
     Décisions: "Decisions",
     "Aucune décision associée.": "No associated decisions.",
-    "Proposé par {name}": "Proposed by {name}",
-    "Retirer {name}": "Remove {name}",
-    "Retirer cette pièce jointe": "Remove this attachment",
-    "Limite de {count} pièces jointes par proposition.":
-      "Maximum {count} attachments per proposal.",
-    "Fichier refusé : {name}. Formats autorisés : PDF, DOC, DOCX, PNG, JPG, TXT ; 10 Mo maximum.":
-      "File rejected: {name}. Allowed formats: PDF, DOC, DOCX, PNG, JPG, TXT; 10 MB maximum.",
-    "Les points sont classés à l'aide des flèches (profil Président). Cet ordre est repris dans la fiche de la réunion.":
-      "Use the arrows to order items (Chair profile). This order is reflected in the meeting details.",
-    "Monter ce point": "Move this item up",
-    "Descendre ce point": "Move this item down",
-    "Profil actif": "Active profile",
-    "Cette réunion est {status}. Son ordre du jour est consultable, mais sa modification est désactivée dans son état actuel.":
-      "This meeting is {status}. Its agenda can be viewed, but cannot be edited in its current state.",
-    "{count} point(s) affiché(s) sur {total} pour cette réunion.":
-      "{count} item(s) shown out of {total} for this meeting.",
-    "Ordre du jour validé": "Approved agenda",
-    "Tous les points": "All items",
-    "Afficher les points": "Show agenda items",
-    "Aucun point à afficher": "No items to display",
-    "Essayez une autre recherche.": "Try another search.",
-    "Les propositions à examiner apparaîtront ici.":
-      "Proposals awaiting review will appear here.",
-    "Le président n'a pas encore validé de point.":
-      "The chair has not approved any items yet.",
-    "Aucun point pour cette réunion.": "No items for this meeting.",
-    "Aperçu de l'ordre du jour validé": "Approved agenda preview",
-    "Aucun point validé pour cette réunion.":
-      "No approved items for this meeting.",
-    "Rejeter la proposition": "Reject proposal",
-    "Motif du rejet *": "Reason for rejection *",
-    "Précisez pourquoi ce sujet n'est pas retenu…":
-      "Explain why this topic was not selected…",
-    "Confirmer le rejet": "Confirm rejection",
-    "Indiquez un motif pour expliquer le rejet au membre.":
-      "Provide a reason for rejecting the proposal to the member.",
-    "Département d'informatique": "Department of Computer Science",
     "Séances à venir dans la démo": "Upcoming demo meetings",
     "À faire ou en cours": "To do or in progress",
     "Parmi {count} décisions": "Out of {count} decisions",
@@ -793,7 +779,6 @@ const translations: Record<string, Record<string, string>> = {
     Adoptées: "Adopted",
     "Activité récente": "Recent activity",
     "Dernières notifications": "Latest notifications",
-    "Ordres du jour": "Agendas",
     "Propositions et validations": "Proposals and approvals",
     "PV et rapports": "Minutes and reports",
     "Scrutins et résultats": "Ballots and results",
@@ -840,43 +825,13 @@ const translations: Record<string, Record<string, string>> = {
     "Un siège ne peut avoir qu'un titulaire et un suppléant sur une même période. Si le titulaire est absent, le suppléant peut représenter le siège : cette règle est uniquement simulée dans l'onglet « Sièges et suppléances ».":
       "A seat can have only one primary and one substitute member during the same period. If the primary member is absent, the substitute may represent the seat; this is simulated in the “Seats and substitutes” tab.",
     "Ajouter le membre": "Add member",
-    "Membres et mandats": "Members and mandates",
-    "Gérez l'annuaire, les fonctions, les périodes de mandat et les suppléants du comité scientifique.":
-      "Manage the scientific committee directory, roles, mandate periods, and substitutes.",
-    "Ajouter un membre": "Add member",
-    "Total des membres": "Total members",
-    "Mandats en cours": "Current mandates",
-    "Suppléants actifs": "Active substitutes",
-    "Mandats à échéance (90 j)": "Mandates expiring (90 days)",
-    "Annuaire des membres": "Member directory",
-    "Sièges et suppléances": "Seats and substitutes",
-    "Annuaire du comité": "Committee directory",
-    "Rechercher un membre": "Search members",
-    "Nom, e-mail, fonction...": "Name, email, role...",
-    "Filtrer par rôle": "Filter by role",
-    "Filtrer par mandat": "Filter by mandate",
-    "Siège / qualité": "Seat / member type",
-    "Aucun membre ne correspond à ces critères.":
-      "No members match these criteria.",
-    "Voir la fiche": "View member details",
-    "Supprimer ce membre ?": "Delete this member?",
-    "{name} sera retiré de l'annuaire, à condition de ne pas être référencé par une réunion, un scrutin ou une action.":
-      "{name} will be removed from the directory if they are not referenced by a meeting, ballot, or action.",
-    "Informations sur le membre et son mandat.":
-      "Information about the member and their mandate.",
-    "Mandat et siège": "Mandate and seat",
-    "Nom complet": "Full name",
-    Observations: "Notes",
-    "Aucun membre associé sur cette période":
-      "No associated member during this period",
-    "Modifier le membre": "Edit member",
-    Coordonnées: "Contact details",
   },
 
   ar: {
     Archives: "الأرشيف",
     "Document de séance": "وثيقة الاجتماع",
-    "Consultation des documents, décisions et PV archivés. Les éléments archivés sont en lecture seule.": "استعراض الوثائق والقرارات والمحاضر المؤرشفة. العناصر المؤرشفة للقراءة فقط.",
+    "Consultation des documents, décisions et PV archivés. Les éléments archivés sont en lecture seule.":
+      "استعراض الوثائق والقرارات والمحاضر المؤرشفة. العناصر المؤرشفة للقراءة فقط.",
     "Filtrer par réunion": "تصفية حسب الاجتماع",
     "Filtrer par type de document": "تصفية حسب نوع الوثيقة",
     "Filtrer par date d’archivage": "تصفية حسب تاريخ الأرشفة",
@@ -885,11 +840,14 @@ const translations: Record<string, Record<string, string>> = {
     "Aucune archive pour le moment.": "لا توجد عناصر مؤرشفة حالياً.",
     "Décisions à archiver": "قرارات بانتظار الأرشفة",
     "Responsable inconnu": "مسؤول أرشيف غير معروف",
-    "Archiver définitivement ce document ?": "هل تريد أرشفة هذه الوثيقة نهائياً؟",
-    "Archiver définitivement ce PV signé ?": "هل تريد أرشفة هذا المحضر الموقّع نهائياً؟",
+    "Archiver définitivement ce document ?":
+      "هل تريد أرشفة هذه الوثيقة نهائياً؟",
+    "Archiver définitivement ce PV signé ?":
+      "هل تريد أرشفة هذا المحضر الموقّع نهائياً؟",
     "Archiver cette décision ?": "هل تريد أرشفة هذا القرار؟",
     "Feuille de présence liée à la réunion": "ورقة الحضور المرتبطة بالاجتماع",
-    "Les présences sont reprises automatiquement depuis la réunion.": "يتم جلب الحضور تلقائياً من بيانات الاجتماع.",
+    "Les présences sont reprises automatiquement depuis la réunion.":
+      "يتم جلب الحضور تلقائياً من بيانات الاجتماع.",
     "État de la réunion": "حالة الاجتماع",
     Démarrée: "بدأت",
     Clôturée: "اختُتمت",
@@ -903,16 +861,19 @@ const translations: Record<string, Record<string, string>> = {
     "Membre du comité": "عضو اللجنة",
     "Membre suppléante": "عضوة بديلة",
     "Accès non autorisé": "الوصول غير مسموح",
-    "Votre rôle ne permet pas de consulter cette page.": "لا يسمح دورك بعرض هذه الصفحة.",
+    "Votre rôle ne permet pas de consulter cette page.":
+      "لا يسمح دورك بعرض هذه الصفحة.",
     "Retour au tableau de bord": "العودة إلى لوحة المعلومات",
-    "Convocations": "الدعوات",
+    Convocations: "الدعوات",
     "Non envoyées": "لم تُرسل",
     "Envoyées le {date}": "أُرسلت في {date}",
     "Envoyer les convocations": "إرسال الدعوات",
     "Renvoyer les convocations": "إعادة إرسال الدعوات",
-    "Confirmer l'envoi des convocations à tous les participants ?": "هل تريد إرسال الدعوات إلى جميع المشاركين؟",
-    "Les convocations ont été envoyées aux participants disposant d'un compte.": "أُرسلت الدعوات إلى المشاركين الذين لديهم حسابات تجريبية.",
-    "Absents": "غائبون",
+    "Confirmer l'envoi des convocations à tous les participants ?":
+      "هل تريد إرسال الدعوات إلى جميع المشاركين؟",
+    "Les convocations ont été envoyées aux participants disposant d'un compte.":
+      "أُرسلت الدعوات إلى المشاركين الذين لديهم حسابات تجريبية.",
+    Absents: "غائبون",
     "Non renseignés": "غير محدد",
     "Marquer tous présents": "تحديد حضور الجميع",
     "Remplace le titulaire absent": "يعوض العضو الأصيل الغائب",
@@ -933,21 +894,33 @@ const translations: Record<string, Record<string, string>> = {
     "Confirmer la clôture de cette réunion ?": "هل تؤكد اختتام هذا الاجتماع؟",
     "La réunion a démarré.": "بدأ الاجتماع.",
     "La réunion est clôturée.": "اختُتم الاجتماع.",
-    "Clôturez tous les scrutins associés avant de clôturer la réunion.": "يجب إغلاق جميع عمليات التصويت المرتبطة قبل اختتام الاجتماع.",
-    "La clôture est bloquée : {count} scrutin(s) sont encore ouverts.": "تعذر الاختتام: لا تزال عمليات التصويت مفتوحة ({count}).",
-    "Points non traités : ils seront signalés dans le compte rendu sans bloquer la clôture.": "ستُذكر بنود جدول الأعمال غير المعالجة في المحضر ولا تمنع اختتام الاجتماع.",
-    "Statut géré par le workflow de la réunion.": "تُدار حالة الاجتماع عبر سير العمل.",
-    "Confirmer la signature simulée du PV ?": "هل تؤكد التوقيع التجريبي على المحضر؟",
-    "Retourner ce PV au secrétaire pour correction ?": "هل تعيد المحضر إلى أمين السر للتصحيح؟",
+    "Clôturez tous les scrutins associés avant de clôturer la réunion.":
+      "يجب إغلاق جميع عمليات التصويت المرتبطة قبل اختتام الاجتماع.",
+    "La clôture est bloquée : {count} scrutin(s) sont encore ouverts.":
+      "تعذر الاختتام: لا تزال عمليات التصويت مفتوحة ({count}).",
+    "Points non traités : ils seront signalés dans le compte rendu sans bloquer la clôture.":
+      "ستُذكر بنود جدول الأعمال غير المعالجة في المحضر ولا تمنع اختتام الاجتماع.",
+    "Statut géré par le workflow de la réunion.":
+      "تُدار حالة الاجتماع عبر سير العمل.",
+    "Confirmer la signature simulée du PV ?":
+      "هل تؤكد التوقيع التجريبي على المحضر؟",
+    "Retourner ce PV au secrétaire pour correction ?":
+      "هل تعيد المحضر إلى أمين السر للتصحيح؟",
     "Demander une correction": "طلب التصحيح",
-    "Le PV a été retourné au secrétaire pour correction.": "أُعيد المحضر إلى أمين السر للتصحيح.",
-    "Seul le secrétaire peut créer le PV pendant ou après une réunion démarrée.": "يمكن لأمين السر وحده إنشاء المحضر أثناء الاجتماع أو بعده.",
+    "Le PV a été retourné au secrétaire pour correction.":
+      "أُعيد المحضر إلى أمين السر للتصحيح.",
+    "Seul le secrétaire peut créer le PV pendant ou après une réunion démarrée.":
+      "يمكن لأمين السر وحده إنشاء المحضر أثناء الاجتماع أو بعده.",
     "Un PV existe déjà pour cette réunion.": "يوجد محضر لهذا الاجتماع بالفعل.",
-    "Un PV peut être créé pendant ou après la réunion.": "يمكن إنشاء المحضر أثناء الاجتماع أو بعده.",
-    "Le statut du PV doit évoluer par une action métier dédiée.": "يجب تغيير حالة المحضر عبر إجراء مخصص في سير العمل.",
-    "Le statut d'une réunion ne peut être modifié que par une action du workflow.": "لا يمكن تغيير حالة الاجتماع إلا عبر إجراء في سير العمل.",
+    "Un PV peut être créé pendant ou après la réunion.":
+      "يمكن إنشاء المحضر أثناء الاجتماع أو بعده.",
+    "Le statut du PV doit évoluer par une action métier dédiée.":
+      "يجب تغيير حالة المحضر عبر إجراء مخصص في سير العمل.",
+    "Le statut d'une réunion ne peut être modifié que par une action du workflow.":
+      "لا يمكن تغيير حالة الاجتماع إلا عبر إجراء في سير العمل.",
     "Centre de notifications": "مركز الإشعارات",
-    "Retrouvez les convocations, rappels, échéances des actions et avis de décisions du comité.": "اطلع على دعوات اللجنة وتذكيراتها ومواعيد الإجراءات وإشعارات القرارات.",
+    "Retrouvez les convocations, rappels, échéances des actions et avis de décisions du comité.":
+      "اطلع على دعوات اللجنة وتذكيراتها ومواعيد الإجراءات وإشعارات القرارات.",
     "Résumé des notifications": "ملخص الإشعارات",
     "Réinitialiser les notifications": "إعادة تعيين الإشعارات",
     "État des notifications": "حالة الإشعارات",
@@ -959,35 +932,41 @@ const translations: Record<string, Record<string, string>> = {
     "Non lue": "غير مقروءة",
     "Restaurer la notification": "استعادة الإشعار",
     "Archiver la notification": "أرشفة الإشعار",
-    "Restaurer": "استعادة",
-    "Archiver": "أرشفة",
+    Restaurer: "استعادة",
+    Archiver: "أرشفة",
     "{action} : {title}": "{action}: {title}",
-    "Les exemples sont indépendants des autres modules. Les changements de réunions, d'actions et de décisions ne déclenchent pas automatiquement de notifications dans cette maquette.": "هذه الأمثلة مستقلة عن الوحدات الأخرى. لا تؤدي تغييرات الاجتماعات والإجراءات والقرارات إلى إنشاء إشعارات تلقائيًا في هذا النموذج.",
-    "Ajoutez un exemple local à la boîte de réception, sans envoi réel.": "أضف مثالًا محليًا إلى صندوق الوارد دون إرسال فعلي.",
+    "Les exemples sont indépendants des autres modules. Les changements de réunions, d'actions et de décisions ne déclenchent pas automatiquement de notifications dans cette maquette.":
+      "هذه الأمثلة مستقلة عن الوحدات الأخرى. لا تؤدي تغييرات الاجتماعات والإجراءات والقرارات إلى إنشاء إشعارات تلقائيًا في هذا النموذج.",
+    "Ajoutez un exemple local à la boîte de réception, sans envoi réel.":
+      "أضف مثالًا محليًا إلى صندوق الوارد دون إرسال فعلي.",
     "Type d'événement": "نوع الحدث",
     "Rappel de réunion": "تذكير باجتماع",
     "Échéance d'action": "موعد نهائي لإجراء",
     "Avis de décision": "إشعار بقرار",
-    "Cet exemple sera marqué « non lu » et disparaîtra à la prochaine actualisation de la page.": "سيُعلّم هذا المثال بأنه غير مقروء وسيختفي عند تحديث الصفحة التالي.",
+    "Cet exemple sera marqué « non lu » et disparaîtra à la prochaine actualisation de la page.":
+      "سيُعلّم هذا المثال بأنه غير مقروء وسيختفي عند تحديث الصفحة التالي.",
     "Ajouter l'exemple": "إضافة المثال",
     "Notification fictive": "إشعار تجريبي",
     "Élément associé": "العنصر المرتبط",
     "Marquer non lue": "تحديد كغير مقروء",
     "Marquer comme lue": "تحديد كمقروء",
     "Voir le module lié": "عرض الوحدة المرتبطة",
-    "Retrouvez les événements importants du comité au même endroit.": "اعثر على أهم أحداث اللجنة في مكان واحد.",
+    "Retrouvez les événements importants du comité au même endroit.":
+      "اعثر على أهم أحداث اللجنة في مكان واحد.",
     "Simuler une notification": "محاكاة إشعار",
-    "Actives": "نشطة",
+    Actives: "نشطة",
     "Non lues": "غير مقروءة",
-    "Archivées": "مؤرشفة",
+    Archivées: "مؤرشفة",
     "Boîte de réception": "صندوق الوارد",
-    "Consultez et classez les dernières notifications.": "راجع الإشعارات الأخيرة ونظمها.",
+    "Consultez et classez les dernières notifications.":
+      "راجع الإشعارات الأخيرة ونظمها.",
     "Tout marquer lu": "تحديد الكل كمقروء",
-    "Réinitialiser": "إعادة تعيين",
+    Réinitialiser: "إعادة تعيين",
     "Toutes les catégories": "كل الفئات",
     "Rechercher une notification...": "البحث في الإشعارات...",
     "Aucune notification à afficher": "لا توجد إشعارات لعرضها",
-    "Modifiez les filtres, consultez un autre onglet ou simulez un nouvel événement.": "غيّر عوامل التصفية أو اعرض تبويبًا آخر أو حاكِ حدثًا جديدًا.",
+    "Modifiez les filtres, consultez un autre onglet ou simulez un nouvel événement.":
+      "غيّر عوامل التصفية أو اعرض تبويبًا آخر أو حاكِ حدثًا جديدًا.",
     "Créer une notification": "إنشاء إشعار",
     "Gestion des réunions": "إدارة الاجتماعات",
     "Planifiez les réunions du comité, sélectionnez les participants et préparez les ordres du jour.":
@@ -1254,7 +1233,6 @@ const translations: Record<string, Record<string, string>> = {
     "Le titre, la réunion et la date sont obligatoires.":
       "العنوان والاجتماع والتاريخ مطلوبة.",
     "Créer la décision": "إنشاء القرار",
-    "Modifier l'action": "تعديل الإجراء",
     "Attribuez une responsabilité, une échéance et un statut. Les changements sont locaux à cette page.":
       "حدد المسؤولية والموعد النهائي والحالة. التغييرات محلية لهذه الصفحة.",
     "Intitulé de l'action *": "عنوان الإجراء *",
@@ -1462,7 +1440,6 @@ const translations: Record<string, Record<string, string>> = {
     "Quelques informations complémentaires…": "بعض المعلومات الإضافية…",
     "Modifications non enregistrées": "تغييرات غير محفوظة",
     "Informations à jour": "المعلومات محدثة",
-    Réinitialiser: "إعادة تعيين",
     Enregistrer: "حفظ",
     "Le stockage local n’est pas disponible dans ce navigateur.":
       "التخزين المحلي غير متاح في هذا المتصفح.",
@@ -1531,7 +1508,6 @@ const translations: Record<string, Record<string, string>> = {
     "Réunion *": "الاجتماع *",
     "Supprimer « {title} » de cette session ?": "حذف «{title}» من هذه الجلسة؟",
     "Rechercher un document": "ابحث عن مستند",
-    "Filtrer par statut": "تصفية حسب الحالة",
     "Télécharger {filename}": "تنزيل {filename}",
     "Note de version": "ملاحظة الإصدار",
     "Brouillon enregistré en mémoire pour cette session.":
@@ -1573,42 +1549,10 @@ const translations: Record<string, Record<string, string>> = {
     "À compléter…": "يُستكمل…",
     Décisions: "القرارات",
     "Aucune décision associée.": "لا توجد قرارات مرتبطة.",
-    "Proposé par {name}": "مقدم من {name}",
-    "Retirer {name}": "إزالة {name}",
-    "Retirer cette pièce jointe": "إزالة هذا المرفق",
     "Limite de {count} pièces jointes par proposition.":
       "الحد الأقصى {count} مرفقات لكل مقترح.",
     "Fichier refusé : {name}. Formats autorisés : PDF, DOC, DOCX, PNG, JPG, TXT ; 10 Mo maximum.":
       "تم رفض الملف {name}. التنسيقات المسموحة: PDF وDOC وDOCX وPNG وJPG وTXT؛ الحد الأقصى 10 ميغابايت.",
-    "Les points sont classés à l'aide des flèches (profil Président). Cet ordre est repris dans la fiche de la réunion.":
-      "رتب الموضوعات باستخدام الأسهم (ملف الرئيس). سيظهر هذا الترتيب في تفاصيل الاجتماع.",
-    "Monter ce point": "نقل هذا الموضوع لأعلى",
-    "Descendre ce point": "نقل هذا الموضوع لأسفل",
-    "Profil actif": "الملف النشط",
-    "Cette réunion est {status}. Son ordre du jour est consultable, mais sa modification est désactivée dans son état actuel.":
-      "هذا الاجتماع {status}. يمكن الاطلاع على جدول أعماله، لكن لا يمكن تعديله في حالته الحالية.",
-    "{count} point(s) affiché(s) sur {total} pour cette réunion.":
-      "يتم عرض {count} من أصل {total} موضوعًا لهذا الاجتماع.",
-    "Ordre du jour validé": "جدول الأعمال المعتمد",
-    "Tous les points": "كل الموضوعات",
-    "Afficher les points": "عرض الموضوعات",
-    "Aucun point à afficher": "لا توجد موضوعات لعرضها",
-    "Essayez une autre recherche.": "جرّب بحثًا آخر.",
-    "Les propositions à examiner apparaîtront ici.":
-      "ستظهر هنا المقترحات التي تنتظر المراجعة.",
-    "Le président n'a pas encore validé de point.":
-      "لم يعتمد الرئيس أي موضوع بعد.",
-    "Aucun point pour cette réunion.": "لا توجد موضوعات لهذا الاجتماع.",
-    "Aperçu de l'ordre du jour validé": "معاينة جدول الأعمال المعتمد",
-    "Aucun point validé pour cette réunion.":
-      "لا توجد موضوعات معتمدة لهذا الاجتماع.",
-    "Rejeter la proposition": "رفض المقترح",
-    "Motif du rejet *": "سبب الرفض *",
-    "Précisez pourquoi ce sujet n'est pas retenu…":
-      "وضح سبب عدم اختيار هذا الموضوع…",
-    "Confirmer le rejet": "تأكيد الرفض",
-    "Indiquez un motif pour expliquer le rejet au membre.":
-      "أدخل سببًا لشرح رفض المقترح للعضو.",
     "Séances à venir dans la démo": "اجتماعات تجريبية قادمة",
     "À faire ou en cours": "مطلوب أو جارٍ",
     "Parmi {count} décisions": "من أصل {count} قرار",
@@ -1637,7 +1581,6 @@ const translations: Record<string, Record<string, string>> = {
     Adoptées: "معتمدة",
     "Activité récente": "النشاط الأخير",
     "Dernières notifications": "أحدث الإشعارات",
-    "Ordres du jour": "جداول الأعمال",
     "Propositions et validations": "المقترحات والاعتمادات",
     "PV et rapports": "المحاضر والتقارير",
     "Scrutins et résultats": "الاقتراعات والنتائج",
@@ -1682,54 +1625,123 @@ const translations: Record<string, Record<string, string>> = {
     "Un siège ne peut avoir qu'un titulaire et un suppléant sur une même période. Si le titulaire est absent, le suppléant peut représenter le siège : cette règle est uniquement simulée dans l'onglet « Sièges et suppléances ».":
       "يمكن أن يكون للمقعد عضو أساسي وبديل واحد فقط خلال الفترة نفسها. إذا غاب الأساسي، يمكن للبديل تمثيل المقعد؛ وهذه القاعدة محاكاة فقط في علامة تبويب «المقاعد والبدلاء».",
     "Ajouter le membre": "إضافة العضو",
-    "Membres et mandats": "الأعضاء والعضويات",
-    "Gérez l'annuaire, les fonctions, les périodes de mandat et les suppléants du comité scientifique.":
-      "أدر دليل أعضاء اللجنة العلمية ومناصبهم وفترات عضويتهم وأعضاءهم البدلاء.",
-    "Ajouter un membre": "إضافة عضو",
-    "Total des membres": "إجمالي الأعضاء",
-    "Mandats en cours": "العضويات الحالية",
-    "Suppléants actifs": "الأعضاء البدلاء النشطون",
-    "Mandats à échéance (90 j)": "عضويات تنتهي خلال 90 يومًا",
-    "Annuaire des membres": "دليل الأعضاء",
-    "Sièges et suppléances": "المقاعد والبدلاء",
-    "Annuaire du comité": "دليل اللجنة",
-    "Rechercher un membre": "ابحث عن عضو",
-    "Nom, e-mail, fonction...": "الاسم والبريد الإلكتروني والمنصب...",
-    "Filtrer par rôle": "تصفية حسب الدور",
-    "Filtrer par mandat": "تصفية حسب العضوية",
-    "Siège / qualité": "المقعد / الصفة",
-    "Aucun membre ne correspond à ces critères.":
-      "لا يوجد أعضاء يطابقون هذه المعايير.",
-    "Voir la fiche": "عرض تفاصيل العضو",
-    "Supprimer ce membre ?": "هل تريد حذف هذا العضو؟",
-    "{name} sera retiré de l'annuaire, à condition de ne pas être référencé par une réunion, un scrutin ou une action.":
-      "سيتم حذف {name} من الدليل ما لم يكن مرتبطًا باجتماع أو اقتراع أو إجراء.",
-    "Informations sur le membre et son mandat.": "معلومات عن العضو وعضويته.",
-    "Mandat et siège": "العضوية والمقعد",
-    "Nom complet": "الاسم الكامل",
-    Observations: "ملاحظات",
-    "Aucun membre associé sur cette période":
-      "لا يوجد عضو مرتبط خلال هذه الفترة",
-    "Modifier le membre": "تعديل العضو",
-    Coordonnées: "معلومات الاتصال",
   },
 }
 
 // Notification labels are registered separately so they can be added without
 // duplicating the legacy dictionary entries shared by other modules.
 Object.assign(translations.en, {
-  "L’exemple reste enregistré dans la boîte de réception du compte connecté.": "This example remains in the connected account’s inbox.",
-  "Réunion modifiée": "Meeting updated", "Réunion annulée": "Meeting cancelled", "Proposition d'ordre du jour": "Agenda proposal", "Décision sur une proposition": "Proposal review", "Nouvelle action attribuée": "New action assigned", "Action réattribuée": "Action reassigned", "Échéance d'action modifiée": "Action deadline changed", "Rappel d'action": "Action reminder", "Action en retard": "Overdue action", "Réunions": "Meetings", "Ordre du jour": "Agenda", "Décisions": "Decisions", "Actions": "Actions", "Procès-verbaux": "Minutes", "Notification interne": "Internal notification", "Voir l’élément associé": "View related item", "Cet élément n’est plus disponible ou votre compte n’y a plus accès.": "This item is no longer available or your account no longer has access.", "Les rappels sont vérifiés pendant que l’application est ouverte. Les événements métier sont conservés dans le magasin local de démonstration.": "Reminders are checked while the application is open. Business events are stored in the local demo store.", "Convocation": "Invitation", "Rappel": "Reminder", "Nouvelle proposition": "New proposal", "Proposition validée": "Proposal approved", "Proposition rejetée": "Proposal rejected", "Décision": "Decision", "Action": "Action", "Échéance prochaine": "Upcoming deadline", "Procès-verbal en attente de signature": "Minutes awaiting signature", "Correction du procès-verbal demandée": "Minutes correction requested", "Procès-verbal signé": "Minutes signed", "Procès-verbal disponible pour archivage": "Minutes ready for archiving"
+  "L’exemple reste enregistré dans la boîte de réception du compte connecté.":
+    "This example remains in the connected account’s inbox.",
+  "Réunion modifiée": "Meeting updated",
+  "Réunion annulée": "Meeting cancelled",
+  "Proposition d'ordre du jour": "Agenda proposal",
+  "Décision sur une proposition": "Proposal review",
+  "Nouvelle action attribuée": "New action assigned",
+  "Action réattribuée": "Action reassigned",
+  "Échéance d'action modifiée": "Action deadline changed",
+  "Rappel d'action": "Action reminder",
+  "Action en retard": "Overdue action",
+  Réunions: "Meetings",
+  "Ordre du jour": "Agenda",
+  Décisions: "Decisions",
+  Actions: "Actions",
+  "Procès-verbaux": "Minutes",
+  "Notification interne": "Internal notification",
+  "Voir l’élément associé": "View related item",
+  "Cet élément n’est plus disponible ou votre compte n’y a plus accès.":
+    "This item is no longer available or your account no longer has access.",
+  "Les rappels sont vérifiés pendant que l’application est ouverte. Les événements métier sont conservés dans le magasin local de démonstration.":
+    "Reminders are checked while the application is open. Business events are stored in the local demo store.",
+  Convocation: "Invitation",
+  Rappel: "Reminder",
+  "Nouvelle proposition": "New proposal",
+  "Proposition validée": "Proposal approved",
+  "Proposition rejetée": "Proposal rejected",
+  Décision: "Decision",
+  Action: "Action",
+  "Échéance prochaine": "Upcoming deadline",
+  "Procès-verbal en attente de signature": "Minutes awaiting signature",
+  "Correction du procès-verbal demandée": "Minutes correction requested",
+  "Procès-verbal signé": "Minutes signed",
+  "Procès-verbal disponible pour archivage": "Minutes ready for archiving",
 })
 Object.assign(translations.ar, {
-  "L’exemple reste enregistré dans la boîte de réception du compte connecté.": "يبقى هذا المثال محفوظاً في صندوق وارد الحساب المتصل.",
-  "Réunion modifiée": "تم تعديل الاجتماع", "Réunion annulée": "تم إلغاء الاجتماع", "Proposition d'ordre du jour": "اقتراح جدول الأعمال", "Décision sur une proposition": "مراجعة الاقتراح", "Nouvelle action attribuée": "تم إسناد إجراء جديد", "Action réattribuée": "تمت إعادة إسناد الإجراء", "Échéance d'action modifiée": "تم تعديل موعد الإجراء", "Rappel d'action": "تذكير بإجراء", "Action en retard": "إجراء متأخر", "Réunions": "الاجتماعات", "Ordre du jour": "جدول الأعمال", "Décisions": "القرارات", "Actions": "الإجراءات", "Procès-verbaux": "محاضر الاجتماعات", "Notification interne": "إشعار داخلي", "Voir l’élément associé": "عرض العنصر المرتبط", "Cet élément n’est plus disponible ou votre compte n’y a plus accès.": "هذا العنصر غير متاح أو لم يعد حسابك مخولاً للوصول إليه.", "Les rappels sont vérifiés pendant que l’application est ouverte. Les événements métier sont conservés dans le magasin local de démonstration.": "يتم التحقق من التذكيرات أثناء بقاء التطبيق مفتوحاً. تُحفظ أحداث العمل في مخزن العرض المحلي.", "Convocation": "دعوة", "Rappel": "تذكير", "Nouvelle proposition": "اقتراح جديد", "Proposition validée": "تمت الموافقة على الاقتراح", "Proposition rejetée": "تم رفض الاقتراح", "Décision": "قرار", "Action": "إجراء", "Échéance prochaine": "موعد قريب", "Procès-verbal en attente de signature": "محضر بانتظار التوقيع", "Correction du procès-verbal demandée": "طُلب تصحيح المحضر", "Procès-verbal signé": "تم توقيع المحضر", "Procès-verbal disponible pour archivage": "المحضر جاهز للأرشفة"
+  "L’exemple reste enregistré dans la boîte de réception du compte connecté.":
+    "يبقى هذا المثال محفوظاً في صندوق وارد الحساب المتصل.",
+  "Réunion modifiée": "تم تعديل الاجتماع",
+  "Réunion annulée": "تم إلغاء الاجتماع",
+  "Proposition d'ordre du jour": "اقتراح جدول الأعمال",
+  "Décision sur une proposition": "مراجعة الاقتراح",
+  "Nouvelle action attribuée": "تم إسناد إجراء جديد",
+  "Action réattribuée": "تمت إعادة إسناد الإجراء",
+  "Échéance d'action modifiée": "تم تعديل موعد الإجراء",
+  "Rappel d'action": "تذكير بإجراء",
+  "Action en retard": "إجراء متأخر",
+  Réunions: "الاجتماعات",
+  "Ordre du jour": "جدول الأعمال",
+  Décisions: "القرارات",
+  Actions: "الإجراءات",
+  "Procès-verbaux": "محاضر الاجتماعات",
+  "Notification interne": "إشعار داخلي",
+  "Voir l’élément associé": "عرض العنصر المرتبط",
+  "Cet élément n’est plus disponible ou votre compte n’y a plus accès.":
+    "هذا العنصر غير متاح أو لم يعد حسابك مخولاً للوصول إليه.",
+  "Les rappels sont vérifiés pendant que l’application est ouverte. Les événements métier sont conservés dans le magasin local de démonstration.":
+    "يتم التحقق من التذكيرات أثناء بقاء التطبيق مفتوحاً. تُحفظ أحداث العمل في مخزن العرض المحلي.",
+  Convocation: "دعوة",
+  Rappel: "تذكير",
+  "Nouvelle proposition": "اقتراح جديد",
+  "Proposition validée": "تمت الموافقة على الاقتراح",
+  "Proposition rejetée": "تم رفض الاقتراح",
+  Décision: "قرار",
+  Action: "إجراء",
+  "Échéance prochaine": "موعد قريب",
+  "Procès-verbal en attente de signature": "محضر بانتظار التوقيع",
+  "Correction du procès-verbal demandée": "طُلب تصحيح المحضر",
+  "Procès-verbal signé": "تم توقيع المحضر",
+  "Procès-verbal disponible pour archivage": "المحضر جاهز للأرشفة",
 })
 Object.assign(translations.en, {
-  "notification-message-convocation": "Meeting invitation:", "notification-message-reunion-modifiee": "Meeting information changed:", "notification-message-reunion-annulee": "Meeting cancelled:", "notification-message-rappel-reunion": "Upcoming meeting reminder:", "notification-message-proposition-agenda": "A new agenda proposal needs review:", "notification-message-revue-agenda": "Your agenda proposal was reviewed:", "notification-message-avis-decision": "A committee decision was published:", "notification-message-echeance-action": "An action was assigned or updated:", "notification-message-action-attribuee": "A new action was assigned to you:", "notification-message-action-reattribuee": "An action assignment changed:", "notification-message-action-echeance-modifiee": "An action deadline changed:", "notification-message-rappel-action": "An action deadline is approaching:", "notification-message-action-en-retard": "An unfinished action is overdue:", "notification-message-pv-signature": "Minutes were submitted for signature:", "notification-message-pv-correction": "The president requested a correction:", "notification-message-pv-signe": "Minutes were signed:", "notification-message-pv-archives": "Signed minutes are ready for archiving:"
+  "notification-message-convocation": "Meeting invitation:",
+  "notification-message-reunion-modifiee": "Meeting information changed:",
+  "notification-message-reunion-annulee": "Meeting cancelled:",
+  "notification-message-rappel-reunion": "Upcoming meeting reminder:",
+  "notification-message-proposition-agenda":
+    "A new agenda proposal needs review:",
+  "notification-message-revue-agenda": "Your agenda proposal was reviewed:",
+  "notification-message-avis-decision": "A committee decision was published:",
+  "notification-message-echeance-action": "An action was assigned or updated:",
+  "notification-message-action-attribuee": "A new action was assigned to you:",
+  "notification-message-action-reattribuee": "An action assignment changed:",
+  "notification-message-action-echeance-modifiee":
+    "An action deadline changed:",
+  "notification-message-rappel-action": "An action deadline is approaching:",
+  "notification-message-action-en-retard": "An unfinished action is overdue:",
+  "notification-message-pv-signature": "Minutes were submitted for signature:",
+  "notification-message-pv-correction": "The president requested a correction:",
+  "notification-message-pv-signe": "Minutes were signed:",
+  "notification-message-pv-archives": "Signed minutes are ready for archiving:",
 })
 Object.assign(translations.ar, {
-  "notification-message-convocation": "دعوة اجتماع:", "notification-message-reunion-modifiee": "تم تعديل معلومات الاجتماع:", "notification-message-reunion-annulee": "تم إلغاء الاجتماع:", "notification-message-rappel-reunion": "تذكير باجتماع قادم:", "notification-message-proposition-agenda": "يوجد اقتراح جديد لجدول الأعمال للمراجعة:", "notification-message-revue-agenda": "تمت مراجعة اقتراحك لجدول الأعمال:", "notification-message-avis-decision": "تم نشر قرار اللجنة:", "notification-message-echeance-action": "تم إسناد إجراء أو تحديثه:", "notification-message-action-attribuee": "تم إسناد إجراء جديد إليك:", "notification-message-action-reattribuee": "تم تغيير المسؤول عن الإجراء:", "notification-message-action-echeance-modifiee": "تم تعديل موعد الإجراء:", "notification-message-rappel-action": "اقترب موعد الإجراء:", "notification-message-action-en-retard": "تجاوز إجراء غير مكتمل موعده:", "notification-message-pv-signature": "تم إرسال المحضر للتوقيع:", "notification-message-pv-correction": "طلب الرئيس تصحيح المحضر:", "notification-message-pv-signe": "تم توقيع المحضر:", "notification-message-pv-archives": "المحضر الموقع جاهز للأرشفة:"
+  "notification-message-convocation": "دعوة اجتماع:",
+  "notification-message-reunion-modifiee": "تم تعديل معلومات الاجتماع:",
+  "notification-message-reunion-annulee": "تم إلغاء الاجتماع:",
+  "notification-message-rappel-reunion": "تذكير باجتماع قادم:",
+  "notification-message-proposition-agenda":
+    "يوجد اقتراح جديد لجدول الأعمال للمراجعة:",
+  "notification-message-revue-agenda": "تمت مراجعة اقتراحك لجدول الأعمال:",
+  "notification-message-avis-decision": "تم نشر قرار اللجنة:",
+  "notification-message-echeance-action": "تم إسناد إجراء أو تحديثه:",
+  "notification-message-action-attribuee": "تم إسناد إجراء جديد إليك:",
+  "notification-message-action-reattribuee": "تم تغيير المسؤول عن الإجراء:",
+  "notification-message-action-echeance-modifiee": "تم تعديل موعد الإجراء:",
+  "notification-message-rappel-action": "اقترب موعد الإجراء:",
+  "notification-message-action-en-retard": "تجاوز إجراء غير مكتمل موعده:",
+  "notification-message-pv-signature": "تم إرسال المحضر للتوقيع:",
+  "notification-message-pv-correction": "طلب الرئيس تصحيح المحضر:",
+  "notification-message-pv-signe": "تم توقيع المحضر:",
+  "notification-message-pv-archives": "المحضر الموقع جاهز للأرشفة:",
 })
 
 export function useUiText() {
@@ -1738,9 +1750,7 @@ export function useUiText() {
 
   return (source: string, values: Record<string, string | number> = {}) => {
     let text =
-      locale === "fr"
-        ? source
-        : (translations[locale]?.[source] ?? source)
+      locale === "fr" ? source : (translations[locale]?.[source] ?? source)
     for (const [key, value] of Object.entries(values)) {
       text = text.split(`{${key}}`).join(String(value))
     }
