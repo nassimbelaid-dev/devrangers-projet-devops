@@ -6,3 +6,94 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum AccountRole {
+  ADMIN
+  PRESIDENT
+  SECRETARY
+  ARCHIVIST
+  MEMBER
+}
+
+enum MandateFunction {
+  PRESIDENT
+  SECRETARY
+  MEMBER
+  ARCHIVIST
+  ADMIN
+}
+
+enum MandateKind {
+  TITULAR
+  SUBSTITUTE
+}
+
+model Account {
+  id           String          @id @default(uuid()) @db.Uuid
+  firstName    String          @map("first_name") @db.Text
+  lastName     String          @map("last_name") @db.Text
+  email        String          @unique @db.Text
+  passwordHash String          @map("password_hash") @db.Text
+  role         AccountRole
+  isActive     Boolean         @default(true) @map("is_active")
+  memberId     String?         @unique @map("member_id") @db.Uuid
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  member       Member?         @relation(fields: [memberId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  profile      AccountProfile?
+
+  @@map("accounts")
+}
+
+model AccountProfile {
+  id           String  @id @default(uuid()) @db.Uuid
+  accountId    String  @unique @map("account_id") @db.Uuid
+  firstName    String? @map("first_name") @db.Text
+  lastName     String? @map("last_name") @db.Text
+  contactEmail String? @map("contact_email") @db.Text
+  phone        String? @db.Text
+  position     String? @db.Text
+  department   String? @db.Text
+  bio          String? @db.Text
+  account      Account @relation(fields: [accountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("account_profiles")
+}
+
+model Member {
+  id       String    @id @default(uuid()) @db.Uuid
+  fullName String    @map("full_name") @db.Text
+  email    String    @unique @db.Text
+  phone    String?   @db.Text
+  notes    String?   @db.Text
+  account  Account?
+  mandates Mandate[]
+
+  @@map("members")
+}
+
+model Seat {
+  id       String    @id @default(uuid()) @db.Uuid
+  label    String    @unique @db.Text
+  mandates Mandate[]
+
+  @@map("seats")
+}
+
+model Mandate {
+  id        String          @id @default(uuid()) @db.Uuid
+  memberId  String          @map("member_id") @db.Uuid
+  seatId    String          @map("seat_id") @db.Uuid
+  function  MandateFunction
+  kind      MandateKind
+  startDate DateTime        @map("start_date") @db.Date
+  endDate   DateTime        @map("end_date") @db.Date
+  member    Member          @relation(fields: [memberId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  seat      Seat            @relation(fields: [seatId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([id, memberId])
+  @@unique([id, seatId])
+  @@index([seatId, startDate])
+  @@index([memberId, startDate])
+  @@map("mandates")
+}
