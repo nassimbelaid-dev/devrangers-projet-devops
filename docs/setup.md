@@ -126,28 +126,7 @@ docker compose version
 docker info
 ```
 
-Si aucun fichier Compose n'existe encore, voici une proposition à intégrer dans un futur `compose.yaml` à la racine (ne pas écraser un fichier existant) :
-
-```yaml
-services:
-  db:
-    image: postgres:18.7
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:?required}
-      POSTGRES_USER: ${POSTGRES_USER:?required}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
-    ports:
-      - "127.0.0.1:5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-volumes:
-  postgres_data:
-```
+Le fichier `compose.yaml` fourni lance le service `db` avec PostgreSQL 18.7, le volume `postgres_data` et un contrôle de santé. Il publie PostgreSQL sur `127.0.0.1:5433` par défaut. Le serveur écoute sur le port 5432 dans le conteneur.
 
 Avec l’image officielle PostgreSQL 18, le volume se monte sur `/var/lib/postgresql` (et non sur `/var/lib/postgresql/data`). Si une base PostgreSQL 17 existe déjà, sauvegarder et planifier une migration de version majeure avant de réutiliser ses données ; ne pas simplement remplacer l’image sur un ancien volume. Référence : https://hub.docker.com/_/postgres.
 
@@ -157,6 +136,7 @@ Créer un fichier `.env` local non versionné pour Compose (valeurs de développ
 POSTGRES_DB=comite_scientifique
 POSTGRES_USER=comite_dev
 POSTGRES_PASSWORD=REMPLACER_PAR_UN_MOT_DE_PASSE_LOCAL
+POSTGRES_PORT=5433
 ```
 
 Le compte créé par l'image est un compte d'administration du cluster de développement. Prévoir un compte applicatif à privilèges limités avant tout déploiement réel.
@@ -219,21 +199,22 @@ Dans pgAdmin : Register > Server. Renseigner les paramètres suivants :
 
 Ces paramètres supposent que pgAdmin tourne sur la machine hôte. Si pgAdmin est lui-même dans le même réseau Compose, utiliser `db` comme hôte. Ne pas exposer PostgreSQL publiquement.
 
-## 8. Variables d'environnement et backend (à venir)
+## 8. Variables d'environnement et tests PostgreSQL
 
-Lorsque l'équipe aura intégré la couche de données, créer `.env.local` à la racine à partir du futur `.env.example`. Sous PowerShell : `Copy-Item .env.example .env.local` ; sous Linux : `cp .env.example .env.local` (si le modèle existe).
+Au premier clonage, créer `.env` à la racine à partir de `.env.example` s’il est absent. Sous PowerShell, utiliser `Copy-Item .env.example .env`. Sous Linux, utiliser `cp .env.example .env`. Conserver les configurations privées existantes.
 
-Exemple de configuration cible, non requise pour le frontend statique :
+Renseigner deux URL distinctes dans `.env` pour le développement et la base de contrôle des tests.
 
 ```dotenv
-DATABASE_URL=postgresql://comite_dev:MOT_DE_PASSE_ENCODE@localhost:5432/comite_scientifique
+DATABASE_URL=postgresql://comite_dev:MOT_DE_PASSE_ENCODE@localhost:5433/comite_scientifique
+TEST_DATABASE_URL=postgresql://comite_dev:MOT_DE_PASSE_ENCODE@localhost:5433/comite_scientifique_test
 ```
 
 Encoder les caractères spéciaux du mot de passe dans l'URL. Si Next.js tourne lui aussi dans Compose, remplacer `localhost` par `db`. `DATABASE_URL` et les secrets d'authentification restent exclusivement côté serveur : jamais de préfixe `NEXT_PUBLIC_` pour ces valeurs.
 
 Vérifier que `.env` et `.env.local` sont ignorés par Git, et que `.env.example` ne contient que des valeurs fictives. Ne pas écraser les configurations locales existantes.
 
-Le choix du pilote SQL/ORM, des migrations, du système d'authentification et du stockage des pièces jointes n'est pas confirmé. Ne pas installer Prisma ou une autre bibliothèque individuellement avant la décision de l'équipe. Les commandes de migration, seed et lancement backend devront être ajoutées à ce document dès leur implémentation. Si l'architecture Next.js full-stack est retenue, `pnpm dev` lancera à la fois le frontend et les routes serveur ; il n'y aura pas de deuxième serveur à démarrer.
+Prisma est installé avec les dépendances du dépôt. Le script `pnpm db:test` charge `.env` automatiquement depuis la racine. Il exige `TEST_DATABASE_URL` et prépare une base vierge distincte à chaque exécution. Créer une fois la base de contrôle et générer le client en suivant le [guide des tests BDD](database/TESTS_BDD.md). Pour charger des données de démonstration dans la base locale, suivre le [guide du seed](database/SEED.md).
 
 ## 9. Vérifications et tests
 
