@@ -43,18 +43,19 @@ enum AgendaStatus {
 }
 
 model Account {
-  id           String          @id @default(uuid()) @db.Uuid
-  firstName    String          @map("first_name") @db.Text
-  lastName     String          @map("last_name") @db.Text
-  email        String          @unique @db.Text
-  passwordHash String          @map("password_hash") @db.Text
-  role         AccountRole
-  isActive     Boolean         @default(true) @map("is_active")
-  memberId     String?         @unique @map("member_id") @db.Uuid
-  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt    DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
-  member       Member?         @relation(fields: [memberId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  profile      AccountProfile?
+  id                String          @id @default(uuid()) @db.Uuid
+  firstName         String          @map("first_name") @db.Text
+  lastName          String          @map("last_name") @db.Text
+  email             String          @unique @db.Text
+  passwordHash      String          @map("password_hash") @db.Text
+  role              AccountRole
+  isActive          Boolean         @default(true) @map("is_active")
+  memberId          String?         @unique @map("member_id") @db.Uuid
+  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  member            Member?         @relation(fields: [memberId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  profile           AccountProfile?
+  archivedDecisions Decision[]
 
   @@map("accounts")
 }
@@ -85,6 +86,7 @@ model Member {
   meetingParticipations MeetingParticipant[]
   authoredProposals     AgendaProposal[]     @relation("AgendaAuthor")
   reviewedProposals     AgendaProposal[]     @relation("AgendaReviewer")
+  assignedActions       CommitteeAction[]
 
   @@map("members")
 }
@@ -108,6 +110,7 @@ model Mandate {
   member                Member               @relation(fields: [memberId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   seat                  Seat                 @relation(fields: [seatId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   meetingParticipations MeetingParticipant[]
+  ballotVotes           BallotVote[]
 
   @@unique([id, memberId])
   @@unique([id, seatId])
@@ -130,21 +133,23 @@ model Meeting {
   closedAt          DateTime?            @map("closed_at") @db.Timestamptz(3)
   participants      MeetingParticipant[]
   agendaProposals   AgendaProposal[]
+  decisions         Decision[]
 
   @@index([status, meetingDate])
   @@map("meetings")
 }
 
 model MeetingParticipant {
-  id                   String    @id @default(uuid()) @db.Uuid
-  meetingId            String    @map("meeting_id") @db.Uuid
-  memberId             String    @map("member_id") @db.Uuid
-  mandateId            String    @map("mandate_id") @db.Uuid
+  id                   String       @id @default(uuid()) @db.Uuid
+  meetingId            String       @map("meeting_id") @db.Uuid
+  memberId             String       @map("member_id") @db.Uuid
+  mandateId            String       @map("mandate_id") @db.Uuid
   attendance           Boolean?
-  attendanceRecordedAt DateTime? @map("attendance_recorded_at") @db.Timestamptz(3)
-  meeting              Meeting   @relation(fields: [meetingId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  member               Member    @relation(fields: [memberId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  mandate              Mandate   @relation(fields: [mandateId, memberId], references: [id, memberId], onDelete: Restrict, onUpdate: Restrict)
+  attendanceRecordedAt DateTime?    @map("attendance_recorded_at") @db.Timestamptz(3)
+  meeting              Meeting      @relation(fields: [meetingId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  member               Member       @relation(fields: [memberId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  mandate              Mandate      @relation(fields: [mandateId, memberId], references: [id, memberId], onDelete: Restrict, onUpdate: Restrict)
+  ballotVotes          BallotVote[]
 
   @@unique([meetingId, memberId])
   @@unique([id, meetingId, mandateId])
@@ -168,9 +173,160 @@ model AgendaProposal {
   meeting          Meeting      @relation(fields: [meetingId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   author           Member       @relation("AgendaAuthor", fields: [authorMemberId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   reviewer         Member?      @relation("AgendaReviewer", fields: [reviewerMemberId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  decisions        Decision[]
 
   @@unique([id, meetingId])
   @@index([meetingId, status, sortOrder])
   @@index([authorMemberId])
   @@map("agenda_proposals")
+}
+
+enum DecisionStatus {
+  PENDING
+  ADOPTED
+  REJECTED
+}
+
+enum DecisionFinalSource {
+  BALLOT
+  HISTORICAL_IMPORT
+}
+
+enum BallotState {
+  OPEN
+  CLOSED
+}
+
+enum VoteChoice {
+  FOR
+  AGAINST
+  ABSTAIN
+}
+
+enum BallotOutcome {
+  ADOPTED
+  REJECTED
+  QUORUM_NOT_REACHED
+}
+
+enum ActionStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum ActionPriority {
+  LOW
+  NORMAL
+  HIGH
+}
+
+model Decision {
+  id                  String               @id @default(uuid()) @db.Uuid
+  meetingId           String               @map("meeting_id") @db.Uuid
+  agendaProposalId    String?              @map("agenda_proposal_id") @db.Uuid
+  reference           String               @unique @db.Text
+  title               String               @db.Text
+  description         String               @default("") @db.Text
+  decisionDate        DateTime             @map("decision_date") @db.Date
+  status              DecisionStatus       @default(PENDING)
+  finalSource         DecisionFinalSource? @map("final_source")
+  archivedAt          DateTime?            @map("archived_at") @db.Timestamptz(3)
+  archivedByAccountId String?              @map("archived_by_account_id") @db.Uuid
+  archivedByName      String?              @map("archived_by_name") @db.Text
+  meeting             Meeting              @relation(fields: [meetingId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  agendaProposal      AgendaProposal?      @relation(fields: [agendaProposalId, meetingId], references: [id, meetingId], onDelete: Restrict, onUpdate: Restrict)
+  archivedByAccount   Account?             @relation(fields: [archivedByAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  // The database limits this list to one row via Ballot.decisionId.
+  // Prisma requires a list here because the relation uses a composite FK.
+  ballots             Ballot[]
+  actions             CommitteeAction[]
+
+  @@unique([id, meetingId])
+  @@index([meetingId, status])
+  @@index([agendaProposalId])
+  @@map("decisions")
+}
+
+model Ballot {
+  id              String        @id @default(uuid()) @db.Uuid
+  decisionId      String        @unique @map("decision_id") @db.Uuid
+  meetingId       String        @map("meeting_id") @db.Uuid
+  state           BallotState   @default(OPEN)
+  quorumPercent   Decimal       @default(60.00) @map("quorum_percent") @db.Decimal(5, 2)
+  majorityPercent Decimal       @default(50.00) @map("majority_percent") @db.Decimal(5, 2)
+  openedAt        DateTime?     @map("opened_at") @db.Timestamptz(3)
+  closedAt        DateTime?     @map("closed_at") @db.Timestamptz(3)
+  decision        Decision      @relation(fields: [decisionId, meetingId], references: [id, meetingId], onDelete: Restrict, onUpdate: Restrict)
+  votes           BallotVote[]
+  result          BallotResult?
+
+  @@unique([id, meetingId])
+  @@map("ballots")
+}
+
+model BallotVote {
+  id              String             @id @default(uuid()) @db.Uuid
+  ballotId        String             @map("ballot_id") @db.Uuid
+  meetingId       String             @map("meeting_id") @db.Uuid
+  participationId String             @map("participation_id") @db.Uuid
+  mandateId       String             @map("mandate_id") @db.Uuid
+  seatId          String             @map("seat_id") @db.Uuid
+  choice          VoteChoice
+  votedAt         DateTime?          @map("voted_at") @db.Timestamptz(3)
+  ballot          Ballot             @relation(fields: [ballotId, meetingId], references: [id, meetingId], onDelete: Restrict, onUpdate: Restrict)
+  participation   MeetingParticipant @relation(fields: [participationId, meetingId, mandateId], references: [id, meetingId, mandateId], onDelete: Restrict, onUpdate: Restrict)
+  mandate         Mandate            @relation(fields: [mandateId, seatId], references: [id, seatId], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([ballotId, seatId])
+  @@unique([ballotId, participationId])
+  @@index([participationId])
+  @@index([mandateId, seatId])
+  @@map("ballot_votes")
+}
+
+model BallotResult {
+  id                     String        @id @default(uuid()) @db.Uuid
+  ballotId               String        @unique @map("ballot_id") @db.Uuid
+  capturedAt             DateTime?     @map("captured_at") @db.Timestamptz(3)
+  quorumPercent          Decimal       @map("quorum_percent") @db.Decimal(5, 2)
+  majorityPercent        Decimal       @map("majority_percent") @db.Decimal(5, 2)
+  ruleVersion            String        @map("rule_version") @db.Text
+  activeSeatCount        Int           @map("active_seat_count")
+  representedSeatCount   Int           @map("represented_seat_count")
+  quorumMinSeats         Int           @map("quorum_min_seats")
+  participationPercent   Int           @map("participation_percent")
+  forCount               Int           @map("for_count")
+  againstCount           Int           @map("against_count")
+  abstainCount           Int           @map("abstain_count")
+  votesCast              Int           @map("votes_cast")
+  uncastCount            Int           @map("uncast_count")
+  expressedCount         Int           @map("expressed_count")
+  snapshotVersion        Int           @map("snapshot_version")
+  quorumReached          Boolean       @map("quorum_reached")
+  outcome                BallotOutcome
+  representationSnapshot Json          @map("representation_snapshot") @db.JsonB
+  presenceSnapshot       Json          @map("presence_snapshot") @db.JsonB
+  ballot                 Ballot        @relation(fields: [ballotId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("ballot_results")
+}
+
+model CommitteeAction {
+  id               String         @id @default(uuid()) @db.Uuid
+  decisionId       String?        @map("decision_id") @db.Uuid
+  assigneeMemberId String         @map("assignee_member_id") @db.Uuid
+  title            String         @db.Text
+  description      String         @default("") @db.Text
+  dueDate          DateTime       @map("due_date") @db.Date
+  priority         ActionPriority @default(NORMAL)
+  status           ActionStatus   @default(TODO)
+  sortOrder        Int            @map("sort_order")
+  decision         Decision?      @relation(fields: [decisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  assignee         Member         @relation(fields: [assigneeMemberId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([assigneeMemberId, status, dueDate])
+  @@index([decisionId])
+  @@index([status, sortOrder])
+  @@map("actions")
 }
