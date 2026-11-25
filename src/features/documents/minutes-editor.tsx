@@ -36,6 +36,10 @@ export function MinutesEditor({ minutes, onSave, onWorkflow }: Props) {
   const [feedback, setFeedback] = useState("")
   const meeting = meetings.find((item) => item.id === form.meetingId)
   const isLocked = form.status === "Signé" || form.status === "Archivé"
+  const recordedPresence =
+    form.status === "Brouillon"
+      ? meeting?.attendance
+      : Object.fromEntries(form.presentMemberIds.map((id) => [id, true]))
   const canDraft = hasPermission(user, "minutes", "edit")
   const canSign = hasPermission(user, "minutes", "approve")
   const canArchive = hasPermission(user, "minutes", "archive")
@@ -218,7 +222,7 @@ export function MinutesEditor({ minutes, onSave, onWorkflow }: Props) {
               <div className="divide-y rounded-xl border px-4">
                 {(meeting?.participantIds ?? []).map((id) => {
                   const member = members.find((item) => item.id === id)
-                  const presence = meeting?.attendance?.[id]
+                  const presence = recordedPresence?.[id]
                   return (
                     <div
                       key={id}

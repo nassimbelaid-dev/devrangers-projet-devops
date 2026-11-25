@@ -508,6 +508,13 @@ const translations: Record<string, Record<string, string>> = {
     "Votes par siège": "Votes by seat",
     "Chaque siège dispose d'une seule voix. Gérez les présences uniquement si nécessaire.":
       "Each seat has one vote. Manage attendance only when necessary.",
+    "Chaque siège dispose d'une seule voix. Les présences proviennent de la réunion associée.":
+      "Each seat has one vote. Attendance comes from the associated meeting.",
+    "Présences enregistrées dans la réunion": "Attendance recorded in the meeting",
+    "Le scrutin est clôturé. Les présences et les votes de ce scrutin sont figés.":
+      "The ballot is closed. Its attendance and votes are frozen.",
+    "Les présences se modifient dans les détails de la réunion. Le quorum et les représentants sont actualisés automatiquement.":
+      "Change attendance in the meeting details. Quorum and representatives update automatically.",
     "{votes} / {seats} bulletin(s) enregistré(s)":
       "{votes} / {seats} ballot(s) recorded",
     "Aucun représentant présent": "No representative present",
@@ -1352,6 +1359,13 @@ const translations: Record<string, Record<string, string>> = {
     "Votes par siège": "الأصوات حسب المقعد",
     "Chaque siège dispose d'une seule voix. Gérez les présences uniquement si nécessaire.":
       "لكل مقعد صوت واحد. أدر الحضور عند الحاجة فقط.",
+    "Chaque siège dispose d'une seule voix. Les présences proviennent de la réunion associée.":
+      "لكل مقعد صوت واحد. تُستمدّ بيانات الحضور من الاجتماع المرتبط.",
+    "Présences enregistrées dans la réunion": "الحضور المسجّل في الاجتماع",
+    "Le scrutin est clôturé. Les présences et les votes de ce scrutin sont figés.":
+      "أُغلق الاقتراع. تم تثبيت الحضور والأصوات لهذا الاقتراع.",
+    "Les présences se modifient dans les détails de la réunion. Le quorum et les représentants sont actualisés automatiquement.":
+      "يمكن تعديل الحضور من تفاصيل الاجتماع. يتم تحديث النصاب والممثلين تلقائياً.",
     "{votes} / {seats} bulletin(s) enregistré(s)":
       "تم تسجيل {votes} من أصل {seats} بطاقة اقتراع",
     "Aucun représentant présent": "لا يوجد ممثل حاضر",

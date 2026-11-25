@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
+import { usePathname, useRouter } from "next/navigation"
 import { useUiText } from "@/features/ui-text"
 import {
   Archive,
@@ -13,6 +14,7 @@ import {
 
 import type { CommitteeDocument, DocumentType, MeetingMinutes } from "./types"
 import { DOCUMENT_TYPES } from "./types"
+import { canViewDocument } from "./access"
 
 import {
   runMeetingWorkflow,
@@ -50,6 +52,8 @@ type View = "library" | "minutes" | "archives"
 
 export function DocumentsClient() {
   const t = useUiText()
+  const router = useRouter()
+  const pathname = usePathname()
   const { decisions } = useDemoData()
   const [, setDecisions] = useDemoCollection("decisions")
   const { user } = useStaticAuth()
@@ -101,7 +105,9 @@ export function DocumentsClient() {
   }, [minutes])
 
   const selectedDocument =
-    documents.find((doc) => doc.id === selectedDocId) ?? null
+    documents.find(
+      (doc) => doc.id === selectedDocId && canViewDocument(user, doc)
+    ) ?? null
   const canSeeMinutes = useCallback(
     (pv: MeetingMinutes) =>
       user?.role === "secretary" ||
@@ -122,13 +128,7 @@ export function DocumentsClient() {
   const visibleDocuments = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("fr")
     return documents.filter((doc) => {
-      const canSeeVisibility =
-        doc.visibility === "Comité" ||
-        user?.role === "admin" ||
-        user?.role === "president" ||
-        user?.role === "archivist" ||
-        (doc.visibility === "Présidence" && user?.role === "secretary")
-      if (!canSeeVisibility) return false
+      if (!canViewDocument(user, doc)) return false
       const matchesText =
         !query ||
         `${doc.title} ${doc.reference} ${doc.type} ${meetingLabel(doc.meetingId, meetings)}`
@@ -141,7 +141,7 @@ export function DocumentsClient() {
         (filterStatus === "all" || doc.status === filterStatus)
       )
     })
-  }, [documents, search, filterStatus, filterType, meetings, user?.role])
+  }, [documents, search, filterStatus, filterType, meetings, user])
   const visibleMinutes = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("fr")
     return minutes.filter((pv) => {
@@ -183,7 +183,10 @@ export function DocumentsClient() {
   }, [decisions, meetings, search])
   const archiveItems = [
     ...documents
-      .filter((item) => item.status === "Archivé")
+      .filter(
+        (item) =>
+          item.status === "Archivé" && canViewDocument(user, item)
+      )
       .map((item) => ({
         id: item.id,
         kind: t("Document de séance"),
@@ -222,7 +225,12 @@ export function DocumentsClient() {
         date: item.archivedAt,
         by: item.archivedBy,
         type: t("Décision"),
-        action: () => undefined,
+        action: () => {
+          const locale = pathname.split("/")[1] || "fr"
+          router.push(
+            `/${locale}/actions?decision=${encodeURIComponent(item.id)}`
+          )
+        },
       })),
   ]
     .filter(

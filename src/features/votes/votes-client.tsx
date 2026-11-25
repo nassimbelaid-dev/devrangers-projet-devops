@@ -42,7 +42,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BallotPanel } from "./ballot-panel"
 import { CreateBallotDialog } from "./create-ballot-dialog"
 import { ResultsPanel } from "./results-panel"
-import { calculateBallot, removeStaleVotes, seatRepresentations } from "./utils"
+import { calculateBallot, seatRepresentations } from "./utils"
 
 const readableDate = (date: string) =>
   date
@@ -126,27 +126,6 @@ export function VotesClient() {
         ballot.id === selected.id ? updater(ballot) : ballot
       )
     )
-  }
-
-  function changePresence(memberId: string, isPresent: boolean) {
-    if (!hasPermission(user, "votes", "managePresence")) return
-    updateSelected((ballot) => {
-      if (ballot.state === "Clôturé") return ballot
-      const newPresence = isPresent
-        ? Array.from(new Set([...ballot.presentMemberIds, memberId]))
-        : ballot.presentMemberIds.filter((id) => id !== memberId)
-      const seats = seatRepresentations(
-        members,
-        committeeSeats,
-        meetingDateFor(ballot.decisionId),
-        newPresence
-      )
-      return {
-        ...ballot,
-        presentMemberIds: newPresence,
-        votes: removeStaleVotes(ballot.votes, seats),
-      }
-    })
   }
 
   function changeVote(
@@ -521,14 +500,9 @@ export function VotesClient() {
                 ballot={selected}
                 summary={summary}
                 members={members}
-                onTogglePresence={changePresence}
+                attendance={meeting?.attendance}
                 onVote={changeVote}
                 votingMemberId={canVote ? user?.memberId : undefined}
-                canManagePresence={hasPermission(
-                  user,
-                  "votes",
-                  "managePresence"
-                )}
               />
             </TabsContent>
             <TabsContent value="resultats" className="mt-0">

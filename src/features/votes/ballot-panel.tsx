@@ -6,7 +6,7 @@ import { ChevronDown, Info } from "lucide-react"
 import type { CommitteeMemberRecord } from "@/features/members/types"
 import type { BallotSession, BallotSummary, VoteChoice } from "./types"
 
-import { Checkbox } from "@/components/ui/checkbox"
+import { Badge } from "@/components/ui/badge"
 
 const voteChoices: { value: VoteChoice; label: string }[] = [
   { value: "pour", label: "Pour" },
@@ -18,20 +18,18 @@ interface Props {
   ballot: BallotSession
   summary: BallotSummary
   members: CommitteeMemberRecord[]
-  onTogglePresence: (memberId: string, present: boolean) => void
+  attendance?: Record<string, boolean>
   onVote: (seatId: string, memberId: string, choice: VoteChoice | null) => void
   votingMemberId?: string
-  canManagePresence: boolean
 }
 
 export function BallotPanel({
   ballot,
   summary,
   members,
-  onTogglePresence,
+  attendance,
   onVote,
   votingMemberId,
-  canManagePresence,
 }: Props) {
   const t = useUiText()
   const locked = ballot.state === "Clôturé"
@@ -149,22 +147,30 @@ export function BallotPanel({
               <details className="group border-t border-border/50 bg-muted/10 px-5 py-4 sm:px-7">
                 <summary className="flex cursor-pointer list-none items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
                   <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" />
-                  {t("Gérer les présences")}
+                  {t("Présences enregistrées dans la réunion")}
                 </summary>
                 <div className="mt-5 grid gap-6 pb-2 sm:grid-cols-2">
                   <PresenceField
                     label={t("Titulaire")}
                     member={titular}
-                    present={Boolean(titular && present.has(titular.id))}
-                    disabled={locked || !canManagePresence}
-                    onTogglePresence={onTogglePresence}
+                    presence={
+                      titular
+                        ? locked
+                          ? present.has(titular.id)
+                          : attendance?.[titular.id]
+                        : undefined
+                    }
                   />
                   <PresenceField
                     label={t("Suppléant")}
                     member={substitute}
-                    present={Boolean(substitute && present.has(substitute.id))}
-                    disabled={locked || !canManagePresence}
-                    onTogglePresence={onTogglePresence}
+                    presence={
+                      substitute
+                        ? locked
+                          ? present.has(substitute.id)
+                          : attendance?.[substitute.id]
+                        : undefined
+                    }
                   />
                 </div>
                 <p className="mt-4 text-xs leading-5 text-muted-foreground">
@@ -187,10 +193,10 @@ export function BallotPanel({
         <Info className="mt-1 size-3.5 shrink-0" />
         {locked
           ? t(
-              "Le scrutin est clôturé. Rouvrez la simulation pour modifier les présences ou les votes."
+              "Le scrutin est clôturé. Les présences et les votes de ce scrutin sont figés."
             )
           : t(
-              "Simulation locale : les choix et les présences ne sont pas enregistrés après actualisation de la page."
+              "Les présences se modifient dans les détails de la réunion. Le quorum et les représentants sont actualisés automatiquement."
             )}
       </p>
     </div>
@@ -200,15 +206,11 @@ export function BallotPanel({
 function PresenceField({
   label,
   member,
-  present,
-  disabled,
-  onTogglePresence,
+  presence,
 }: {
   label: string
   member?: CommitteeMemberRecord
-  present: boolean
-  disabled: boolean
-  onTogglePresence: (memberId: string, present: boolean) => void
+  presence?: boolean
 }) {
   const t = useUiText()
   return (
@@ -220,17 +222,13 @@ function PresenceField({
         </p>
       </div>
       {member ? (
-        <label className="flex shrink-0 cursor-pointer items-center gap-2 text-xs">
-          <Checkbox
-            aria-label={t("Présence de {name}", { name: member.name })}
-            checked={present}
-            disabled={disabled}
-            onCheckedChange={(checked) =>
-              onTogglePresence(member.id, checked === true)
-            }
-          />
-          {t("Présent")}
-        </label>
+        <Badge variant={presence === true ? "secondary" : "outline"}>
+          {presence === undefined
+            ? t("Non renseigné")
+            : presence
+              ? t("Présent")
+              : t("Absent")}
+        </Badge>
       ) : (
         <span className="text-xs text-muted-foreground">{t("Vacant")}</span>
       )}

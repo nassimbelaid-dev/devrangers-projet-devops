@@ -1066,6 +1066,25 @@ export function applyDemoChange<K extends CollectionKey>(
       const meetingForDecision = next.meetings.find(
         (m) => m.id === decision.meetingId
       )
+      const archiveOnly =
+        old !== undefined &&
+        (old.status === "Adoptée" || old.status === "Rejetée") &&
+        !old.archivedAt &&
+        Boolean(
+          decision.archivedAt &&
+            Number.isFinite(Date.parse(decision.archivedAt)) &&
+            decision.archivedBy?.trim()
+        ) &&
+        JSON.stringify({
+          ...old,
+          archivedAt: undefined,
+          archivedBy: undefined,
+        }) ===
+          JSON.stringify({
+            ...decision,
+            archivedAt: undefined,
+            archivedBy: undefined,
+          })
       if (!next.meetings.some((m) => m.id === decision.meetingId)) {
         return {
           state,
@@ -1075,7 +1094,8 @@ export function applyDemoChange<K extends CollectionKey>(
       if (
         meetingForDecision &&
         meetingForDecision.status !== "En cours" &&
-        (!old || JSON.stringify(old) !== JSON.stringify(decision))
+        (!old || JSON.stringify(old) !== JSON.stringify(decision)) &&
+        !archiveOnly
       )
         return {
           state,
@@ -1248,6 +1268,12 @@ export function applyDemoChange<K extends CollectionKey>(
     for (const ballot of next.ballots) {
       const old = state.ballots.find((b) => b.id === ballot.id)
       if (old && JSON.stringify(old) === JSON.stringify(ballot)) continue
+      if (old?.state === "Clôturé") {
+        return {
+          state,
+          error: "Un scrutin clôturé est entièrement immuable.",
+        }
+      }
       if (
         old &&
         (old.decisionId !== ballot.decisionId ||
@@ -1284,6 +1310,20 @@ export function applyDemoChange<K extends CollectionKey>(
           state,
           error: "Le scrutin doit être lié à une réunion existante.",
         }
+      if (ballot.state !== "Clôturé") {
+        const meetingPresence = meetingForBallot.participantIds
+          .filter((id) => meetingForBallot.attendance?.[id] === true)
+          .sort()
+        if (
+          JSON.stringify([...ballot.presentMemberIds].sort()) !==
+          JSON.stringify(meetingPresence)
+        )
+          return {
+            state,
+            error:
+              "Les présences du scrutin doivent reprendre la feuille de présence de la réunion.",
+          }
+      }
       if (
         new Set(ballot.presentMemberIds).size !==
           ballot.presentMemberIds.length ||
@@ -1341,54 +1381,19 @@ export function applyDemoChange<K extends CollectionKey>(
             "Les scrutins ne peuvent être modifiés que pendant une réunion en cours.",
         }
       }
+      const meetingPresence = meetingForBallot.participantIds
+        .filter((id) => meetingForBallot.attendance?.[id] === true)
+        .sort()
       if (
-        old &&
         ballot.state !== "Clôturé" &&
-        old.state !== "Clôturé" &&
-        JSON.stringify(old.presentMemberIds) !==
-          JSON.stringify(ballot.presentMemberIds) &&
-        meetingForBallot
-      ) {
-        const attendance = { ...(meetingForBallot.attendance ?? {}) }
-        for (const id of meetingForBallot.participantIds)
-          attendance[id] = ballot.presentMemberIds.includes(id)
-        next.meetings = next.meetings.map((m) =>
-          m.id === meetingForBallot.id ? { ...m, attendance } : m
-        )
-        next.minutes = next.minutes.map((minutes) =>
-          minutes.meetingId === meetingForBallot.id &&
-          minutes.status === "Brouillon"
-            ? {
-                ...minutes,
-                presentMemberIds: ballot.presentMemberIds.filter((id) =>
-                  meetingForBallot.participantIds.includes(id)
-                ),
-              }
-            : minutes
-        )
-        const relatedDecisionIds = next.decisions
-          .filter((d) => d.meetingId === meetingForBallot.id)
-          .map((d) => d.id)
-        next.ballots = next.ballots.map((related) => {
-          if (
-            related.id === ballot.id ||
-            !relatedDecisionIds.includes(related.decisionId) ||
-            related.state === "Clôturé"
-          )
-            return related
-          const seats = seatRepresentations(
-            next.members,
-            committeeSeats,
-            meetingForBallot.date,
-            ballot.presentMemberIds
-          )
-          return {
-            ...related,
-            presentMemberIds: [...ballot.presentMemberIds],
-            votes: removeStaleVotes(related.votes, seats),
-          }
-        })
-      }
+        JSON.stringify([...ballot.presentMemberIds].sort()) !==
+          JSON.stringify(meetingPresence)
+      )
+        return {
+          state,
+          error:
+            "Les présences du scrutin doivent reprendre la feuille de présence de la réunion.",
+        }
       if (!old || old.state === ballot.state) continue
       const index = decisions.findIndex((d) => d.id === ballot.decisionId)
       if (index < 0) continue
@@ -1409,10 +1414,9 @@ export function applyDemoChange<K extends CollectionKey>(
             : summary.outcome === "Rejetée"
               ? "Rejetée"
               : "En attente"
-        if (old?.state !== "Clôturé")
-          next.ballots = next.ballots.map((item) =>
-            item.id === ballot.id ? { ...item, closedResult: summary } : item
-          )
+        next.ballots = next.ballots.map((item) =>
+          item.id === ballot.id ? { ...item, closedResult: summary } : item
+        )
       }
       if (
         newStatus !== "Adoptée" &&

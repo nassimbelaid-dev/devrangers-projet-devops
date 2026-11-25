@@ -14,6 +14,7 @@ import {
 import type { CommitteeDocument, DocumentVersion } from "./types"
 
 import { useDemoData } from "@/lib/demo-store"
+import { useStaticAuth } from "@/lib/static-auth"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -27,6 +28,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { formatDate, meetingLabel } from "./utils"
+import { canViewDocument } from "./access"
 
 interface Props {
   document: CommitteeDocument | null
@@ -56,12 +58,13 @@ export function DocumentDetails({
   canArchive,
 }: Props) {
   const t = useUiText()
+  const { user } = useStaticAuth()
   const { meetings } = useDemoData()
   const [showUpload, setShowUpload] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [note, setNote] = useState("")
   const [error, setError] = useState("")
-  if (!item) return null
+  if (!item || !canViewDocument(user, item)) return null
 
   function openVersion(version: DocumentVersion) {
     if (!version.file) return

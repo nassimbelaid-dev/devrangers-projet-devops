@@ -15,7 +15,11 @@ import { committeeSeats, initialMembers } from "@/features/members/mock-data"
 import { initialNotifications } from "@/features/notifications/mock-data"
 import { categoryForKind } from "@/features/notifications/utils"
 import { initialBallots } from "@/features/votes/mock-data"
-import { calculateBallot, seatRepresentations } from "@/features/votes/utils"
+import {
+  calculateBallot,
+  removeStaleVotes,
+  seatRepresentations,
+} from "@/features/votes/utils"
 
 import type { CommitteeNotification } from "@/features/notifications/types"
 import type { SetStateAction } from "react"
@@ -219,6 +223,47 @@ function initialize() {
           }
         }),
       }
+      current = {
+        ...current,
+        ballots: current.ballots.map((ballot) => {
+          if (ballot.state === "Clôturé") return ballot
+          const decision = current.decisions.find(
+            (item) => item.id === ballot.decisionId
+          )
+          const meeting = current.meetings.find(
+            (item) => item.id === decision?.meetingId
+          )
+          if (!meeting) return ballot
+          const presentMemberIds = meeting.participantIds.filter(
+            (id) => meeting.attendance?.[id] === true
+          )
+          const seats = seatRepresentations(
+            current.members,
+            committeeSeats,
+            meeting.date,
+            presentMemberIds
+          )
+          return {
+            ...ballot,
+            presentMemberIds,
+            votes: removeStaleVotes(ballot.votes, seats),
+          }
+        }),
+        minutes: current.minutes.map((minutes) => {
+          if (minutes.status !== "Brouillon") return minutes
+          const meeting = current.meetings.find(
+            (item) => item.id === minutes.meetingId
+          )
+          return meeting
+            ? {
+                ...minutes,
+                presentMemberIds: meeting.participantIds.filter(
+                  (id) => meeting.attendance?.[id] === true
+                ),
+              }
+            : minutes
+        }),
+      }
     }
   } catch {
     current = initial
@@ -340,12 +385,18 @@ function authorizeDemoWrite<K extends keyof DemoState>(
       const afterAttendance = JSON.stringify(item.attendance ?? {})
       const withoutAttendance = (value: typeof item) =>
         JSON.stringify({ ...value, attendance: undefined })
-      if (
-        beforeAttendance !== afterAttendance &&
+      const attendanceChanged = beforeAttendance !== afterAttendance
+      const attendanceOnly =
+        attendanceChanged &&
         withoutAttendance(old) === withoutAttendance(item)
-      ) {
-        if (!allowed("meetings", "managePresence") || old.status !== "En cours")
+      if (attendanceChanged) {
+        if (
+          !allowed("meetings", "managePresence") ||
+          old.status !== "En cours"
+        )
           return "Seuls le président et le secrétaire peuvent gérer les présences d'une réunion en cours."
+      }
+      if (attendanceOnly) {
         continue
       }
       if (JSON.stringify(old.agenda) !== JSON.stringify(item.agenda)) {
@@ -451,6 +502,8 @@ function authorizeDemoWrite<K extends keyof DemoState>(
         continue
       }
       if (JSON.stringify(old) === JSON.stringify(ballot)) continue
+      if (old.state === "Clôturé")
+        return "Un scrutin clôturé est entièrement immuable."
       if (
         ballot.id !== old.id ||
         ballot.decisionId !== old.decisionId ||
@@ -472,24 +525,13 @@ function authorizeDemoWrite<K extends keyof DemoState>(
         if (!allowed("votes", "approve"))
           return "Seul le président peut gérer les paramètres ou l'état du scrutin."
       }
-      if (
-        JSON.stringify(old.presentMemberIds) !==
-        JSON.stringify(ballot.presentMemberIds)
-      ) {
-        if (
-          !allowed("votes", "managePresence") ||
-          meeting?.status !== "En cours" ||
-          old.state === "Clôturé"
-        )
-          return "Votre rôle ne permet pas de modifier les présences de ce scrutin."
-      }
       const presenceChanged =
         JSON.stringify(old.presentMemberIds) !==
         JSON.stringify(ballot.presentMemberIds)
+      if (presenceChanged)
+        return "Les présences des scrutins sont gérées depuis la feuille de présence de la réunion."
       const votesChanged =
         JSON.stringify(old.votes) !== JSON.stringify(ballot.votes)
-      if (presenceChanged && votesChanged)
-        return "Modifiez les présences puis les votes lors d'actions distinctes."
       if (votesChanged) {
         if (
           !allowed("votes", "vote") ||
@@ -544,9 +586,14 @@ function authorizeDemoWrite<K extends keyof DemoState>(
       const old = oldItems.find((entry) => entry.id === item.id)
       if (!old || JSON.stringify(old) === JSON.stringify(item)) continue
       const archiveOnly =
-        actor.role === "archivist" &&
+        allowed("documents", "archive") &&
+        (old.status === "Adoptée" || old.status === "Rejetée") &&
         !old.archivedAt &&
-        Boolean(item.archivedAt && item.archivedBy) &&
+        Boolean(
+          item.archivedAt &&
+            Number.isFinite(Date.parse(item.archivedAt)) &&
+            item.archivedBy === `${actor.firstName} ${actor.lastName}`
+        ) &&
         JSON.stringify({
           ...old,
           archivedAt: undefined,
@@ -653,10 +700,15 @@ function authorizeDemoWrite<K extends keyof DemoState>(
       }
       if (JSON.stringify(old) === JSON.stringify(item)) continue
       const archiveOnly =
-        actor.role === "archivist" &&
+        allowed("minutes", "archive") &&
         old.status === "Signé" &&
         item.status === "Archivé" &&
-        Boolean(item.archivedAt && item.archivedBy) &&
+        Boolean(
+          item.archivedAt &&
+            Number.isFinite(Date.parse(item.archivedAt)) &&
+            item.archivedBy === `${actor.firstName} ${actor.lastName}` &&
+            item.version === old.version + 1
+        ) &&
         JSON.stringify({
           ...old,
           status: undefined,
