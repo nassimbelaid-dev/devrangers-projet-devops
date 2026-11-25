@@ -103,24 +103,32 @@ export async function provision() {
 
 export type TestRun = Awaited<ReturnType<typeof provision>>
 
-export function pnpm(run: TestRun, script: string, nodeEnv = "test") {
+export function pnpm(
+  run: TestRun,
+  script: string,
+  nodeEnv = "test",
+  args: string[] = []
+) {
   const executable = process.env.npm_execpath
   if (!executable) throw Error("Lancez la suite avec pnpm db:test.")
-  const result = spawnSync(process.execPath, [executable, "run", script], {
-    encoding: "utf8",
-    timeout: 90_000,
-    windowsHide: true,
-    env: {
-      ...process.env,
-      DATABASE_URL: run.url.href,
-      NODE_ENV: nodeEnv,
-      SEED_DEMO_PASSWORD: run.password,
-    },
-  })
-  return {
-    status: result.status,
-    output: (result.stdout ?? "") + (result.stderr ?? ""),
-  }
+  const result = spawnSync(
+    process.execPath,
+    [executable, "--silent", "run", script, ...args],
+    {
+      encoding: "utf8",
+      timeout: 90_000,
+      windowsHide: true,
+      env: {
+        ...process.env,
+        DATABASE_URL: run.url.href,
+        NODE_ENV: nodeEnv,
+        SEED_DEMO_PASSWORD: run.password,
+      },
+    }
+  )
+  const stdout = result.stdout ?? ""
+  const stderr = result.stderr ?? ""
+  return { status: result.status, stdout, stderr, output: stdout + stderr }
 }
 
 export function runPnpm(run: TestRun, script: string) {

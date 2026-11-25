@@ -5,10 +5,30 @@ import { prisma } from "../src/lib/prisma"
 async function checkDatabase() {
   try {
     const [
-      accounts, profiles, members, seats, mandates, meetings, participants, proposals,
-      decisions, ballots, votes, results, actions, documents, versions, files, minutes,
-      notifications, auditEvents,
+      [identity],
+      accounts,
+      profiles,
+      members,
+      seats,
+      mandates,
+      meetings,
+      participants,
+      proposals,
+      decisions,
+      ballots,
+      votes,
+      results,
+      actions,
+      documents,
+      versions,
+      files,
+      minutes,
+      notifications,
+      auditEvents,
     ] = await prisma.$transaction([
+      prisma.$queryRaw<
+        { database: string }[]
+      >`SELECT current_database() AS database`,
       prisma.account.count(),
       prisma.accountProfile.count(),
       prisma.member.count(),
@@ -30,12 +50,33 @@ async function checkDatabase() {
       prisma.auditEvent.count(),
     ])
 
-    console.log("PostgreSQL connection verified.")
-    console.table({
-      accounts, profiles, members, seats, mandates, meetings, participants, proposals,
-      decisions, ballots, votes, results, actions, documents, versions, files, minutes,
-      notifications, auditEvents,
-    })
+    const counts = {
+      accounts,
+      account_profiles: profiles,
+      members,
+      seats,
+      mandates,
+      meetings,
+      meeting_participants: participants,
+      agenda_proposals: proposals,
+      decisions,
+      ballots,
+      ballot_votes: votes,
+      ballot_results: results,
+      actions,
+      documents,
+      document_versions: versions,
+      stored_files: files,
+      meeting_minutes: minutes,
+      notifications,
+      audit_events: auditEvents,
+    }
+    if (process.argv.includes("--json")) {
+      console.log(JSON.stringify({ database: identity.database, counts }))
+    } else {
+      console.log("PostgreSQL connection verified.")
+      console.table(counts)
+    }
   } catch {
     console.error("Prisma could not query the database tables.")
     process.exitCode = 1

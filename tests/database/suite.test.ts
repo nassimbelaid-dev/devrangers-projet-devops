@@ -331,11 +331,34 @@ test("Seed : exécution en production refusée", { timeout: 95_000 }, () => {
 test(
   "Prisma Client : db:check interroge les 19 modèles",
   { timeout: 95_000 },
-  () => {
-    const output = runPnpm(run, "db:check")
-    assert(/PostgreSQL connection verified/.test(output))
-    assert.equal((output.match(/│\s+\w+\s+│\s+\d+\s+│/g) ?? []).length, 19)
-  }
+  () =>
+    withConnection(run, async (db) => {
+      const { status, stdout, stderr } = pnpm(run, "db:check", "test", [
+        "--json",
+      ])
+      assert.equal(
+        status,
+        0,
+        `db:check a échoué (stderr : ${Buffer.byteLength(stderr)} octets).`
+      )
+
+      const expected = await Promise.all(
+        tables.map(async (table) => {
+          const { count } = await one(
+            db,
+            `SELECT count(*)::int AS count FROM "${table}"`
+          )
+          return [table, count] as const
+        })
+      )
+      assert.equal(expected.length, 19)
+      const { name } = await one(db, "SELECT current_database() AS name")
+      assert.equal(name, run.url.pathname.slice(1))
+      assert.deepEqual(JSON.parse(stdout), {
+        database: name,
+        counts: Object.fromEntries(expected),
+      })
+    })
 )
 
 registerDomainTests(() => run)
