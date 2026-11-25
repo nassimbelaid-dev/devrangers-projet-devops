@@ -61,6 +61,9 @@ model Account {
   draftedMinutes           MeetingMinutes[]  @relation("MinutesSecretary")
   signedMinutes            MeetingMinutes[]  @relation("MinutesSigner")
   archivedMinutes          MeetingMinutes[]  @relation("MinutesArchivist")
+  receivedNotifications    Notification[]    @relation("NotificationRecipient")
+  sentNotifications        Notification[]    @relation("NotificationSender")
+  auditEvents              AuditEvent[]
 
   @@map("accounts")
 }
@@ -452,4 +455,92 @@ model MeetingMinutes {
   archivedByAccount   Account?      @relation("MinutesArchivist", fields: [archivedByAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@map("meeting_minutes")
+}
+
+enum NotificationKind {
+  CONVOCATION              @map("convocation")
+  REUNION_MODIFIEE         @map("reunion-modifiee")
+  REUNION_ANNULEE          @map("reunion-annulee")
+  RAPPEL_REUNION           @map("rappel-reunion")
+  PROPOSITION_AGENDA       @map("proposition-agenda")
+  REVUE_AGENDA             @map("revue-agenda")
+  ECHEANCE_ACTION          @map("echeance-action")
+  ACTION_ATTRIBUEE         @map("action-attribuee")
+  ACTION_REATTRIBUEE       @map("action-reattribuee")
+  ACTION_ECHEANCE_MODIFIEE @map("action-echeance-modifiee")
+  RAPPEL_ACTION            @map("rappel-action")
+  ACTION_EN_RETARD         @map("action-en-retard")
+  AVIS_DECISION            @map("avis-decision")
+  PV_SIGNATURE             @map("pv-signature")
+  PV_CORRECTION            @map("pv-correction")
+  PV_SIGNE                 @map("pv-signe")
+  PV_ARCHIVES              @map("pv-archives")
+}
+
+enum NotificationCategory {
+  MEETINGS  @map("meetings")
+  AGENDA    @map("agenda")
+  DECISIONS @map("decisions")
+  ACTIONS   @map("actions")
+  MINUTES   @map("minutes")
+}
+
+enum NotificationPriority {
+  NORMALE    @map("normale")
+  IMPORTANTE @map("importante")
+}
+
+enum NotificationTargetType {
+  MEETING  @map("meeting")
+  AGENDA   @map("agenda")
+  DECISION @map("decision")
+  ACTION   @map("action")
+  BALLOT   @map("ballot")
+  MINUTES  @map("minutes")
+}
+
+model Notification {
+  id                 String                  @id @default(uuid()) @db.Uuid
+  recipientAccountId String                  @map("recipient_account_id") @db.Uuid
+  senderAccountId    String?                 @map("sender_account_id") @db.Uuid
+  senderName         String?                 @map("sender_name") @db.Text
+  kind               NotificationKind
+  category           NotificationCategory
+  priority           NotificationPriority    @default(NORMALE)
+  title              String                  @db.Text
+  preview            String                  @db.Text
+  detail             String                  @db.Text
+  context            String                  @db.Text
+  createdAt          DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+  readAt             DateTime?               @map("read_at") @db.Timestamptz(3)
+  archivedAt         DateTime?               @map("archived_at") @db.Timestamptz(3)
+  deletedAt          DateTime?               @map("deleted_at") @db.Timestamptz(3)
+  titleKey           String?                 @map("title_key") @db.Text
+  messageKey         String?                 @map("message_key") @db.Text
+  templateValues     Json?                   @map("template_values") @db.JsonB
+  dedupeKey          String?                 @map("dedupe_key") @db.Text
+  targetType         NotificationTargetType? @map("target_type")
+  targetId           String?                 @map("target_id") @db.Uuid
+  recipient          Account                 @relation("NotificationRecipient", fields: [recipientAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sender             Account?                @relation("NotificationSender", fields: [senderAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([recipientAccountId, dedupeKey])
+  @@index([recipientAccountId, createdAt])
+  @@index([recipientAccountId, archivedAt, readAt])
+  @@map("notifications")
+}
+
+model AuditEvent {
+  id             String   @id @default(uuid()) @db.Uuid
+  actorAccountId String?  @map("actor_account_id") @db.Uuid
+  operation      String   @db.Text
+  occurredAt     DateTime @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  entityType     String   @map("entity_type") @db.Text
+  entityId       String   @map("entity_id") @db.Uuid
+  details        Json?    @db.JsonB
+  actor          Account? @relation(fields: [actorAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([entityType, entityId, occurredAt])
+  @@index([actorAccountId, occurredAt])
+  @@map("audit_events")
 }

@@ -7,6 +7,7 @@ async function checkDatabase() {
     const [
       accounts, profiles, members, seats, mandates, meetings, participants, proposals,
       decisions, ballots, votes, results, actions, documents, versions, files, minutes,
+      notifications, auditEvents,
     ] = await prisma.$transaction([
       prisma.account.count(),
       prisma.accountProfile.count(),
@@ -25,12 +26,15 @@ async function checkDatabase() {
       prisma.documentVersion.count(),
       prisma.storedFile.count(),
       prisma.meetingMinutes.count(),
+      prisma.notification.count(),
+      prisma.auditEvent.count(),
     ])
 
     console.log("PostgreSQL connection verified.")
     console.table({
       accounts, profiles, members, seats, mandates, meetings, participants, proposals,
       decisions, ballots, votes, results, actions, documents, versions, files, minutes,
+      notifications, auditEvents,
     })
   } catch {
     console.error("Prisma could not query the database tables.")
