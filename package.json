@@ -22,7 +22,8 @@
     "db:studio": "prisma studio --config prisma.config.ts",
     "db:format": "prisma format --config prisma.config.ts",
     "db:check": "tsx scripts/db-check.ts",
-    "db:seed": "prisma db seed --config prisma.config.ts"
+    "db:seed": "prisma db seed --config prisma.config.ts",
+    "db:test": "tsx --test tests/database/suite.test.ts"
   },
   "engines": {
     "node": ">=22",

@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": { "incremental": false },
+  "include": [
+    "./*.ts",
+    "../../prisma.config.ts",
+    "../../prisma/seed.ts",
+    "../../scripts/db-check.ts"
+  ]
+}

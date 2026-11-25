@@ -1,6 +1,7 @@
 import "dotenv/config"
 
 import { randomBytes, scryptSync } from "node:crypto"
+
 import { config } from "dotenv"
 
 import { buildSeedData } from "./seed/data"
@@ -22,11 +23,13 @@ function developmentPassword() {
     !["postgres:", "postgresql:"].includes(database.protocol) ||
     !["localhost", "127.0.0.1", "[::1]"].includes(database.hostname) ||
     database.port !== "5433" ||
-    !["/comite_scientifique", "/comite_scientifique_test"].includes(database.pathname) ||
+    !/^\/comite_scientifique(?:_test(?:_[0-9a-f]{16})?)?$/.test(
+      database.pathname
+    ) ||
     database.username !== "comite_dev"
   ) {
     throw new SeedError(
-      "Seed réservé aux bases locales comite_scientifique et comite_scientifique_test sur le port 5433."
+      "Seed réservé à comite_scientifique et aux bases de test locales dédiées sur le port 5433."
     )
   }
 

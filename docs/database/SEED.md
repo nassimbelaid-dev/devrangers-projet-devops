@@ -1,6 +1,6 @@
 # Seed PostgreSQL de développement
 
-Le seed initialise le scénario fictif du comité dans la base Docker locale. Il importe les fixtures du frontend sans les modifier. Il s’exécute uniquement avec le compte local `comite_dev` sur le port 5433 et refuse `NODE_ENV=production`. La base `comite_scientifique_test` est également admise sur cette même instance pour les tests de rejeu.
+Le seed initialise le scénario fictif du comité dans la base Docker locale. Il importe les fixtures du frontend sans les modifier. Il s’exécute uniquement avec le compte local `comite_dev` sur le port 5433 et refuse `NODE_ENV=production`. La base `comite_scientifique_test` et les bases de rejeu `comite_scientifique_test_<16 chiffres hexadécimaux>` sont également admises sur cette instance.
 
 ## Exécution
 
