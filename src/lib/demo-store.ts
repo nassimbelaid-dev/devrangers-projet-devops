@@ -387,13 +387,9 @@ function authorizeDemoWrite<K extends keyof DemoState>(
         JSON.stringify({ ...value, attendance: undefined })
       const attendanceChanged = beforeAttendance !== afterAttendance
       const attendanceOnly =
-        attendanceChanged &&
-        withoutAttendance(old) === withoutAttendance(item)
+        attendanceChanged && withoutAttendance(old) === withoutAttendance(item)
       if (attendanceChanged) {
-        if (
-          !allowed("meetings", "managePresence") ||
-          old.status !== "En cours"
-        )
+        if (!allowed("meetings", "managePresence") || old.status !== "En cours")
           return "Seuls le président et le secrétaire peuvent gérer les présences d'une réunion en cours."
       }
       if (attendanceOnly) {

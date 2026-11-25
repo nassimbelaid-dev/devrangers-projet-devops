@@ -14,7 +14,6 @@ import {
 
 import type { CommitteeDocument, DocumentType, MeetingMinutes } from "./types"
 import { DOCUMENT_TYPES } from "./types"
-import { canViewDocument } from "./access"
 
 import {
   runMeetingWorkflow,
@@ -43,6 +42,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { canViewDocument } from "./access"
 import { DocumentDetails } from "./document-details"
 import { DocumentForm } from "./document-form"
 import { MinutesEditor } from "./minutes-editor"
@@ -184,8 +184,7 @@ export function DocumentsClient() {
   const archiveItems = [
     ...documents
       .filter(
-        (item) =>
-          item.status === "Archivé" && canViewDocument(user, item)
+        (item) => item.status === "Archivé" && canViewDocument(user, item)
       )
       .map((item) => ({
         id: item.id,

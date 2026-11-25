@@ -6,7 +6,11 @@
 
 .committee-ui {
   --committee-accent: #4f46e5;
-  --committee-accent-weak: color-mix(in srgb, var(--committee-accent) 8%, transparent);
+  --committee-accent-weak: color-mix(
+    in srgb,
+    var(--committee-accent) 8%,
+    transparent
+  );
   --committee-section-space: clamp(1.85rem, 2.6vw, 2.65rem);
   position: relative;
   width: 100%;
@@ -19,14 +23,30 @@
 }
 
 /* Chaque module a un accent identifiable, sans transformer les cartes en mosaïque. */
-.committee-ui[data-module="dashboard"] { --committee-accent: #6366f1; }
-.committee-ui[data-module="meetings"] { --committee-accent: #2563eb; }
-.committee-ui[data-module="members"] { --committee-accent: #0d9488; }
-.committee-ui[data-module="actions"] { --committee-accent: #d97706; }
-.committee-ui[data-module="votes"] { --committee-accent: #7c3aed; }
-.committee-ui[data-module="documents"] { --committee-accent: #0891b2; }
-.committee-ui[data-module="agenda"] { --committee-accent: #4f46e5; }
-.committee-ui[data-module="notifications"] { --committee-accent: #db2777; }
+.committee-ui[data-module="dashboard"] {
+  --committee-accent: #6366f1;
+}
+.committee-ui[data-module="meetings"] {
+  --committee-accent: #2563eb;
+}
+.committee-ui[data-module="members"] {
+  --committee-accent: #0d9488;
+}
+.committee-ui[data-module="actions"] {
+  --committee-accent: #d97706;
+}
+.committee-ui[data-module="votes"] {
+  --committee-accent: #7c3aed;
+}
+.committee-ui[data-module="documents"] {
+  --committee-accent: #0891b2;
+}
+.committee-ui[data-module="agenda"] {
+  --committee-accent: #4f46e5;
+}
+.committee-ui[data-module="notifications"] {
+  --committee-accent: #db2777;
+}
 
 /* Repère visuel discret au début de chaque page. */
 .committee-ui::before {
@@ -37,7 +57,11 @@
   width: 3.25rem;
   height: 0.25rem;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--committee-accent), color-mix(in srgb, var(--committee-accent) 35%, white));
+  background: linear-gradient(
+    90deg,
+    var(--committee-accent),
+    color-mix(in srgb, var(--committee-accent) 35%, white)
+  );
 }
 
 .committee-ui__content {
@@ -64,8 +88,12 @@
   margin-block: 0 !important;
   min-width: 0;
 }
-.committee-ui[data-module="votes"] { --committee-section-space: clamp(2rem, 3.5vw, 3rem); }
-.committee-ui[data-module="documents"] { --committee-section-space: clamp(2rem, 3vw, 2.75rem); }
+.committee-ui[data-module="votes"] {
+  --committee-section-space: clamp(2rem, 3.5vw, 3rem);
+}
+.committee-ui[data-module="documents"] {
+  --committee-section-space: clamp(2rem, 3vw, 2.75rem);
+}
 
 /* Typographie et rythme : titres lisibles, sous-titres plus souples. */
 .committee-ui h1 {
@@ -79,54 +107,103 @@
   letter-spacing: -0.023em;
   text-wrap: pretty;
 }
-.committee-ui p { line-height: 1.65; }
-.committee-ui :is(h1, h2, h3, p) { overflow-wrap: break-word; }
+.committee-ui p {
+  line-height: 1.65;
+}
+.committee-ui :is(h1, h2, h3, p) {
+  overflow-wrap: break-word;
+}
 
 /* Panneaux : arrondis doux, bordures légères, ombres quasiment imperceptibles. */
-.committee-ui :is(
-  [data-slot="card"],
-  .rounded-xl.border.bg-card,
-  .rounded-2xl.border.bg-card,
-  .overflow-hidden.rounded-xl.border.bg-card
-) {
+.committee-ui
+  :is(
+    [data-slot="card"],
+    .rounded-xl.border.bg-card,
+    .rounded-2xl.border.bg-card,
+    .overflow-hidden.rounded-xl.border.bg-card
+  ) {
   border-color: rgba(100, 116, 139, 0.16);
   border-radius: 1.125rem;
   box-shadow: 0 6px 30px rgba(15, 23, 42, 0.035);
 }
-.committee-ui [data-slot="card-header"] { padding: clamp(1.15rem, 2vw, 1.6rem); }
-.committee-ui [data-slot="card-content"] { padding: clamp(1.15rem, 2vw, 1.6rem); }
-.committee-ui [data-slot="card-footer"] { padding-inline: clamp(1.15rem, 2vw, 1.6rem); }
+.committee-ui [data-slot="card-header"] {
+  padding: clamp(1.15rem, 2vw, 1.6rem);
+}
+.committee-ui [data-slot="card-content"] {
+  padding: clamp(1.15rem, 2vw, 1.6rem);
+}
+.committee-ui [data-slot="card-footer"] {
+  padding-inline: clamp(1.15rem, 2vw, 1.6rem);
+}
 
 /* Accents des cartes d'indicateurs des modules originellement très neutres. */
-.committee-ui:is([data-module="meetings"], [data-module="members"], [data-module="actions"])
-  .committee-ui__content > div > .grid > :is([data-slot="card"], .bg-card.border):nth-child(4n + 1) {
+.committee-ui:is(
+    [data-module="meetings"],
+    [data-module="members"],
+    [data-module="actions"]
+  )
+  .committee-ui__content
+  > div
+  > .grid
+  > :is([data-slot="card"], .bg-card.border):nth-child(4n + 1) {
   border-top: 3px solid #3b82f6;
 }
-.committee-ui:is([data-module="meetings"], [data-module="members"], [data-module="actions"])
-  .committee-ui__content > div > .grid > :is([data-slot="card"], .bg-card.border):nth-child(4n + 2) {
+.committee-ui:is(
+    [data-module="meetings"],
+    [data-module="members"],
+    [data-module="actions"]
+  )
+  .committee-ui__content
+  > div
+  > .grid
+  > :is([data-slot="card"], .bg-card.border):nth-child(4n + 2) {
   border-top: 3px solid #14b8a6;
 }
-.committee-ui:is([data-module="meetings"], [data-module="members"], [data-module="actions"])
-  .committee-ui__content > div > .grid > :is([data-slot="card"], .bg-card.border):nth-child(4n + 3) {
+.committee-ui:is(
+    [data-module="meetings"],
+    [data-module="members"],
+    [data-module="actions"]
+  )
+  .committee-ui__content
+  > div
+  > .grid
+  > :is([data-slot="card"], .bg-card.border):nth-child(4n + 3) {
   border-top: 3px solid #a78bfa;
 }
-.committee-ui:is([data-module="meetings"], [data-module="members"], [data-module="actions"])
-  .committee-ui__content > div > .grid > :is([data-slot="card"], .bg-card.border):nth-child(4n + 4) {
+.committee-ui:is(
+    [data-module="meetings"],
+    [data-module="members"],
+    [data-module="actions"]
+  )
+  .committee-ui__content
+  > div
+  > .grid
+  > :is([data-slot="card"], .bg-card.border):nth-child(4n + 4) {
   border-top: 3px solid #f59e0b;
 }
 
 /* Synthèses des modules 04, 05 et 07 : fonds légers plutôt que noir/blanc brut. */
 .committee-ui[data-module="votes"] section[aria-label="Aperçu des scrutins"],
-.committee-ui[data-module="notifications"] section[aria-label="Résumé des notifications"],
+.committee-ui[data-module="notifications"]
+  section[aria-label="Résumé des notifications"],
 .committee-ui[data-module="documents"] .grid.grid-cols-3.divide-x {
   border: 1px solid rgba(100, 116, 139, 0.14);
   border-radius: 1.125rem;
-  background: color-mix(in srgb, var(--committee-accent) 4%, var(--card, white));
+  background: color-mix(
+    in srgb,
+    var(--committee-accent) 4%,
+    var(--card, white)
+  );
   padding-inline: 0.4rem;
 }
-.committee-ui[data-module="agenda"] section[aria-label="Résumé de l'ordre du jour"] {
+.committee-ui[data-module="agenda"]
+  section[aria-label="Résumé de l'ordre du jour"] {
   border: 1px solid color-mix(in srgb, var(--committee-accent) 18%, transparent);
-  background: color-mix(in srgb, var(--committee-accent) 6%, var(--card, white));
+  background: color-mix(
+    in srgb,
+    var(--committee-accent) 6%,
+    var(--card, white)
+  );
   border-radius: 1.125rem;
 }
 
@@ -140,10 +217,20 @@
 }
 
 /* Tableaux : respiration sans sacrifier la densité nécessaire aux données. */
-.committee-ui table { width: 100%; border-collapse: separate; border-spacing: 0; }
-.committee-ui table :is(th, td) { vertical-align: middle; }
+.committee-ui table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.committee-ui table :is(th, td) {
+  vertical-align: middle;
+}
 .committee-ui table thead tr {
-  background: color-mix(in srgb, var(--committee-accent) 4%, var(--card, white));
+  background: color-mix(
+    in srgb,
+    var(--committee-accent) 4%,
+    var(--card, white)
+  );
 }
 .committee-ui table thead th {
   padding-block: 0.9rem;
@@ -151,19 +238,34 @@
   font-weight: 650;
   letter-spacing: 0.025em;
 }
-.committee-ui table tbody td { padding-block: 0.95rem; }
-.committee-ui table tbody tr { transition: background-color 160ms ease; }
+.committee-ui table tbody td {
+  padding-block: 0.95rem;
+}
+.committee-ui table tbody tr {
+  transition: background-color 160ms ease;
+}
 .committee-ui table tbody tr:hover {
   background-color: color-mix(in srgb, var(--committee-accent) 3%, transparent);
 }
-.committee-ui .overflow-x-auto { scrollbar-width: thin; }
+.committee-ui .overflow-x-auto {
+  scrollbar-width: thin;
+}
 
 /* Contrôles : hauteurs cohérentes, focus visible et lisibilité des formulaires. */
-.committee-ui :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select),
+.committee-ui
+  :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select),
 .committee-ui [role="combobox"] {
   border-radius: 0.75rem;
 }
-.committee-ui :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select, button, a, [role="combobox"]):focus-visible {
+.committee-ui
+  :is(
+    input:not([type="checkbox"]):not([type="radio"]),
+    textarea,
+    select,
+    button,
+    a,
+    [role="combobox"]
+  ):focus-visible {
   outline: 2px solid var(--committee-accent);
   outline-offset: 3px;
 }
@@ -171,14 +273,20 @@
 .committee-ui a.bg-primary {
   background-color: var(--committee-accent);
   border-radius: 0.7rem;
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--committee-accent) 17%, transparent);
+  box-shadow: 0 4px 14px
+    color-mix(in srgb, var(--committee-accent) 17%, transparent);
 }
 .committee-ui button.bg-primary:hover,
 .committee-ui a.bg-primary:hover {
   background-color: color-mix(in srgb, var(--committee-accent) 85%, black);
 }
-.committee-ui [data-slot="badge"] { border-radius: 999px; padding: 0.25rem 0.65rem; }
-.committee-ui [role="tabpanel"] { min-width: 0; }
+.committee-ui [data-slot="badge"] {
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+}
+.committee-ui [role="tabpanel"] {
+  min-width: 0;
+}
 
 /* Dialogs (portails Radix) hors du DOM des pages : portés seulement lorsque
    le navigateur affiche une page comité, sans modifier les autres pages. */
@@ -189,7 +297,13 @@ body:has(.committee-ui) [role="dialog"] {
   border-radius: 1.25rem;
   box-shadow: 0 24px 70px rgba(15, 23, 42, 0.16);
 }
-body:has(.committee-ui) [role="dialog"] :is(input:not([type="checkbox"]):not([type="radio"]), textarea, [role="combobox"]) {
+body:has(.committee-ui)
+  [role="dialog"]
+  :is(
+    input:not([type="checkbox"]):not([type="radio"]),
+    textarea,
+    [role="combobox"]
+  ) {
   border-radius: 0.75rem;
 }
 
@@ -201,43 +315,68 @@ body:has(.committee-ui) [role="dialog"] :is(input:not([type="checkbox"]):not([ty
     transparent 75%
   );
 }
-.dark .committee-ui :is(
-  [data-slot="card"],
-  .rounded-xl.border.bg-card,
-  .rounded-2xl.border.bg-card,
-  .overflow-hidden.rounded-xl.border.bg-card
-) {
+.dark
+  .committee-ui
+  :is(
+    [data-slot="card"],
+    .rounded-xl.border.bg-card,
+    .rounded-2xl.border.bg-card,
+    .overflow-hidden.rounded-xl.border.bg-card
+  ) {
   border-color: rgba(148, 163, 184, 0.19);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
 }
-.dark .committee-ui[data-module="votes"] section[aria-label="Aperçu des scrutins"],
-.dark .committee-ui[data-module="notifications"] section[aria-label="Résumé des notifications"],
+.dark
+  .committee-ui[data-module="votes"]
+  section[aria-label="Aperçu des scrutins"],
+.dark
+  .committee-ui[data-module="notifications"]
+  section[aria-label="Résumé des notifications"],
 .dark .committee-ui[data-module="documents"] .grid.grid-cols-3.divide-x {
   border-color: rgba(148, 163, 184, 0.2);
 }
 
 /* Mobile : marges sans entassement, actions flexibles et statistiques qui respirent. */
 @media (max-width: 767px) {
-  .committee-ui__content { padding: 1.55rem 1rem 2.25rem; }
-  .committee-ui::before { left: 1rem; }
-  .committee-ui { --committee-section-space: 1.75rem; }
-  .committee-ui :is([data-slot="card-header"], [data-slot="card-content"]) { padding: 1.1rem; }
+  .committee-ui__content {
+    padding: 1.55rem 1rem 2.25rem;
+  }
+  .committee-ui::before {
+    left: 1rem;
+  }
+  .committee-ui {
+    --committee-section-space: 1.75rem;
+  }
+  .committee-ui :is([data-slot="card-header"], [data-slot="card-content"]) {
+    padding: 1.1rem;
+  }
   .committee-ui table thead th,
-  .committee-ui table tbody td { padding-block: 0.85rem; }
+  .committee-ui table tbody td {
+    padding-block: 0.85rem;
+  }
 }
 @media (max-width: 479px) {
-  .committee-ui h1 { font-size: 1.55rem; }
+  .committee-ui h1 {
+    font-size: 1.55rem;
+  }
   .committee-ui[data-module="votes"] section[aria-label="Aperçu des scrutins"],
-  .committee-ui[data-module="notifications"] section[aria-label="Résumé des notifications"],
+  .committee-ui[data-module="notifications"]
+    section[aria-label="Résumé des notifications"],
   .committee-ui[data-module="documents"] .grid.grid-cols-3.divide-x {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     font-size: 0.85rem;
   }
-  .committee-ui table { min-width: 580px; }
+  .committee-ui table {
+    min-width: 580px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .committee-ui table tbody tr { transition: none; }
+  .committee-ui table tbody tr {
+    transition: none;
+  }
 }
 
 /* Profil — accent indigo cohérent avec le dashboard. */
-.committee-ui[data-module="profile"] { --committee-accent: #6366f1; }
+.committee-ui[data-module="profile"] {
+  --committee-accent: #6366f1;
+}

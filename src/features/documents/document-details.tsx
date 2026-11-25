@@ -27,8 +27,8 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { formatDate, meetingLabel } from "./utils"
 import { canViewDocument } from "./access"
+import { formatDate, meetingLabel } from "./utils"
 
 interface Props {
   document: CommitteeDocument | null

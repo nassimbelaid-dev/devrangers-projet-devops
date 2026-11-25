@@ -510,7 +510,8 @@ const translations: Record<string, Record<string, string>> = {
       "Each seat has one vote. Manage attendance only when necessary.",
     "Chaque siège dispose d'une seule voix. Les présences proviennent de la réunion associée.":
       "Each seat has one vote. Attendance comes from the associated meeting.",
-    "Présences enregistrées dans la réunion": "Attendance recorded in the meeting",
+    "Présences enregistrées dans la réunion":
+      "Attendance recorded in the meeting",
     "Le scrutin est clôturé. Les présences et les votes de ce scrutin sont figés.":
       "The ballot is closed. Its attendance and votes are frozen.",
     "Les présences se modifient dans les détails de la réunion. Le quorum et les représentants sont actualisés automatiquement.":
