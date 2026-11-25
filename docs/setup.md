@@ -1,300 +1,153 @@
-# Guide d'installation — Gestion du comité scientifique
+# Installer le projet Gestion du comité scientifique
 
-**Équipe : Dev Rangers** | **Plateformes : Windows 10/11 et Linux (Ubuntu/Debian)**
+Ce guide prépare Next.js et la base PostgreSQL de Dev Rangers. Le frontend et sa connexion statique utilisent encore les fixtures du navigateur. L’intégration serveur est décrite dans le [guide backend](database/GUIDE_INTEGRATION_BACKEND.md).
 
-Ce guide distingue le frontend statique actuellement disponible et l'environnement full-stack à préparer. Les versions proposées doivent être confirmées dans `package.json`, `pnpm-lock.yaml` et les futurs fichiers Docker du dépôt. Ne pas mettre à niveau les dépendances existantes pour suivre ce guide.
+## 1. Installer les prérequis
 
-## 1. Prérequis
+| Outil | Version vérifiée ou attendue |
+|---|---|
+| Git | Version stable |
+| Node.js | 22 LTS, vérifié avec 22.23.2 |
+| pnpm | 10.8.1, fixé dans `package.json` |
+| Docker | Docker Desktop sous Windows, Docker Engine et plugin Compose sous Linux |
+| Dépendances du projet | Next.js 15.2.8, React 19.1.3, TypeScript 5.9.3 et Prisma ORM 7.10.1 |
+| PostgreSQL | 18.7, fourni par le conteneur |
 
-| Outil                                 | Version / choix proposé                            | Usage                                      |
-| ------------------------------------- | -------------------------------------------------- | ------------------------------------------ |
-| Git                                   | Version stable                                     | Obligatoire                                |
-| Node.js                               | 22 LTS, dernier correctif de la branche 22         | Obligatoire                                |
-| pnpm                                  | Version exacte du champ `packageManager` du projet | Obligatoire                                |
-| Next.js, React, TypeScript, shadcn/ui | Versions du dépôt                                  | Installés par pnpm                         |
-| PostgreSQL                            | **18.7**                                           | Backend à venir                            |
-| pgAdmin 4                             | **9.18**                                           | Facultatif, recommandé pour la gestion SQL |
-| Docker + Compose v2                   | Versions compatibles avec le système               | DevOps                                     |
-| VS Code                               | Version stable                                     | Facultatif                                 |
-| Playwright                            | Version du dépôt                                   | Tests, si configurés                       |
-
-Un seul environnement Node.js suffit pour le frontend et le backend Next.js (architecture proposée : Route Handlers et logique serveur). Aucun serveur Express, Apache ou XAMPP n'est nécessaire.
-
-## 2. Windows — installation des outils
-
-Dans PowerShell :
+Démarrer Docker Desktop ou le moteur Docker. Activer WSL2 si le moteur Windows l’exige. Sous WSL, garder un checkout distinct de celui de Windows pour éviter de partager `node_modules`. Si PowerShell bloque `pnpm.ps1`, utiliser `pnpm.cmd`. VS Code et pgAdmin sont facultatifs. [Node.js](https://nodejs.org/en/download) · [pnpm](https://pnpm.io/installation) · [Docker Desktop](https://docs.docker.com/desktop/) · [Docker Engine](https://docs.docker.com/engine/install/)
 
 ```powershell
-winget install --id Git.Git -e
-winget install --id Microsoft.VisualStudioCode -e
-```
-
-Installer Node.js 22 depuis https://nodejs.org/en/download (sélectionner la branche 22 et l'installateur Windows adapté). Fermer puis rouvrir PowerShell.
-
-```powershell
-node --version
-npm --version
 git --version
-```
-
-Si winget est indisponible, utiliser https://git-scm.com/downloads et https://code.visualstudio.com/download. Si PowerShell bloque un script npm/pnpm, utiliser `npm.cmd` et `pnpm.cmd` ou un terminal CMD plutôt que de désactiver globalement la politique de sécurité.
-
-## 3. Linux — installation des outils
-
-Exemples pour Ubuntu/Debian ; sur Fedora/Arch, utiliser le gestionnaire de paquets adapté.
-
-```bash
-sudo apt update
-sudo apt install -y git curl ca-certificates build-essential
-```
-
-Installer nvm en suivant https://github.com/nvm-sh/nvm#installing-and-updating puis rouvrir le terminal (ou charger nvm selon sa documentation).
-
-```bash
-nvm install 22
-nvm use 22
-nvm alias default 22
 node --version
-npm --version
-git --version
-```
-
-VS Code (facultatif) : https://code.visualstudio.com/docs/setup/linux.
-
-Sous Windows avec WSL2, appliquer les instructions Linux dans WSL et conserver le dépôt dans le système de fichiers Linux, par exemple `~/projects`. Ne pas partager `node_modules` entre Windows natif et WSL.
-
-## 4. Récupérer le projet et installer ses dépendances
-
-Les commandes suivantes s'appliquent aux deux systèmes. Remplacer l'URL illustrative par l'URL réelle du dépôt GitHub de l'équipe.
-
-```bash
-git clone https://github.com/ORGANISATION/devrangers-projet-devops.git
-cd devrangers-projet-devops
-git branch -a
-```
-
-Si le travail se poursuit sur la branche de refactoring et que celle-ci est publiée :
-
-```bash
-git switch refactoring/nettoyage-shadboard
-```
-
-Lire les versions déclarées :
-
-```bash
-node -p "require('./package.json').packageManager"
-node -p "JSON.stringify(require('./package.json').engines)"
-```
-
-Installer pnpm à la version exacte indiquée dans `packageManager` (remplacer X.Y.Z ; ne pas inclure un éventuel suffixe d'intégrité) :
-
-```bash
-npm install -g pnpm@X.Y.Z
 pnpm --version
+docker compose version
+```
+
+## 2. Cloner le dépôt
+
+Remplacer le marqueur par l’URL du dépôt de l’équipe. Avant fusion, utiliser la branche de livraison. Une fois la base intégrée à `main`, cloner la branche convenue.
+
+```powershell
+git clone --branch feat/integration-bdd "<URL_DU_DEPOT>"
+Set-Location devrangers-projet-devops
+```
+
+## 3. Installer les dépendances
+
+```powershell
 pnpm install --frozen-lockfile
 ```
 
-Si le champ `packageManager` est absent, l'équipe doit convenir d'une version compatible avec le lockfile puis la déclarer avant de généraliser le setup. Ne pas régénérer le lockfile pour contourner une erreur sans accord de l'équipe.
+Lancer les commandes suivantes à la racine du dépôt.
 
-Ne pas lancer `create-next-app`, ni installer Next.js ou React globalement : ils font déjà partie du projet.
+## 4. Configurer les fichiers d’environnement
 
-## 5. Lancer le frontend actuel
-
-```bash
-pnpm dev
+```powershell
+if (-not (Test-Path -LiteralPath .env)) {
+  Copy-Item -LiteralPath .env.example -Destination .env
+}
 ```
 
-Ouvrir http://localhost:3000 (ou le port indiqué par le terminal). Utiliser les comptes de démonstration documentés dans le README ou affichés sur la page de connexion. Le frontend statique n'a pas besoin de PostgreSQL tant qu'il utilise le magasin de démonstration local.
+- `.env.example` est le modèle versionné sans secret réel.
+- `.env` est privé et ignoré par Git. Compose, Prisma CLI et les tests le chargent depuis la racine.
+- `.env.local` est privé. Next.js l’utilise pour ses surcharges et le seed peut y chercher `SEED_DEMO_PASSWORD` en dernier recours. Les tests BDD lisent `TEST_DATABASE_URL` dans le processus ou `.env`.
+- Les variables du processus priment. Garder les identifiants côté serveur et hors des variables `NEXT_PUBLIC_*`.
 
-Pour arrêter : Ctrl+C. Si le port 3000 est occupé, identifier le processus ou utiliser `pnpm exec next dev -p 3001` si le projet utilise le serveur Next.js standard. Utiliser un seul serveur par environnement pour éviter les conflits.
+## 5. Configurer PostgreSQL
 
-## 6. PostgreSQL 18.7 — environnement backend à préparer
-
-Version de référence recommandée pour toute l’équipe : **18.7** (Windows, Linux, Docker et CI). Vérifier la version du serveur avec `SELECT version();`.
-
-Choisir **une seule** des deux méthodes : Docker (recommandé) ou installation native. Ne pas lancer deux serveurs sur le même port. pgAdmin est un client graphique, pas le serveur de base de données.
-
-### Option A — Docker (recommandée pour l'équipe DevOps)
-
-Windows : installer WSL2 si nécessaire (`wsl --install` dans PowerShell administrateur, sous réserve de compatibilité du système), puis Docker Desktop : https://docs.docker.com/desktop/setup/install/windows-install/. Activer le moteur WSL2, démarrer Docker Desktop et, si nécessaire, l'intégration avec la distribution WSL.
-
-Linux : installer Docker Engine et le plugin Compose v2 via https://docs.docker.com/engine/install/ (choisir la distribution). Suivre les instructions officielles concernant les permissions ; l'appartenance au groupe docker confère des privilèges élevés. Éviter d'exécuter les outils Node.js en root.
-
-```bash
-docker --version
-docker compose version
-docker info
-```
-
-Si aucun fichier Compose n'existe encore, voici une proposition à intégrer dans un futur `compose.yaml` à la racine (ne pas écraser un fichier existant) :
-
-```yaml
-services:
-  db:
-    image: postgres:18.7
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:?required}
-      POSTGRES_USER: ${POSTGRES_USER:?required}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
-    ports:
-      - "127.0.0.1:5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-volumes:
-  postgres_data:
-```
-
-Avec l’image officielle PostgreSQL 18, le volume se monte sur `/var/lib/postgresql` (et non sur `/var/lib/postgresql/data`). Si une base PostgreSQL 17 existe déjà, sauvegarder et planifier une migration de version majeure avant de réutiliser ses données ; ne pas simplement remplacer l’image sur un ancien volume. Référence : https://hub.docker.com/_/postgres.
-
-Créer un fichier `.env` local non versionné pour Compose (valeurs de développement uniquement) :
+Compléter le bloc PostgreSQL dans `.env` en gardant les autres paramètres locaux.
 
 ```dotenv
 POSTGRES_DB=comite_scientifique
 POSTGRES_USER=comite_dev
-POSTGRES_PASSWORD=REMPLACER_PAR_UN_MOT_DE_PASSE_LOCAL
+POSTGRES_PASSWORD=REMPLACER_PAR_UN_SECRET_LOCAL
+POSTGRES_PORT=5433
+DATABASE_URL=postgresql://comite_dev:MOT_DE_PASSE_POSTGRES_ENCODE@localhost:5433/comite_scientifique
+TEST_DATABASE_URL=postgresql://comite_dev:MOT_DE_PASSE_POSTGRES_ENCODE@localhost:5433/comite_scientifique_test
+SEED_DEMO_PASSWORD=
 ```
 
-Le compte créé par l'image est un compte d'administration du cluster de développement. Prévoir un compte applicatif à privilèges limités avant tout déploiement réel.
+Encoder les caractères spéciaux du mot de passe PostgreSQL dans les deux URL. Avant le seed, renseigner un mot de passe de démonstration privé et distinct, d’au moins **8 caractères après trim** et d’au plus 1 024 octets.
 
-```bash
-docker compose up -d db
-docker compose ps
-docker compose logs db
-docker compose exec db psql -U comite_dev -d comite_scientifique -c "SELECT version();"
+Le service `db` publie `127.0.0.1:5433` vers le port interne 5432. Le fuseau est `Africa/Algiers`. Le volume `postgres_data` est monté sur `/var/lib/postgresql`. Les données persistent après `docker compose stop db`. Un volume déjà initialisé conserve ses identifiants. Éviter `docker compose down -v`, qui supprime le volume.
+
+## 6. Démarrer Docker Compose
+
+```powershell
+docker compose config --quiet
+docker compose up -d --wait db
+docker compose ps db
 ```
 
-Arrêter sans perdre les données : `docker compose stop db`. Ne pas utiliser `docker compose down -v` sauf si la suppression définitive de la base locale est souhaitée. Les variables d'initialisation ne recréent pas les comptes d'un volume déjà initialisé.
+Pour pgAdmin ou `psql` sur l’hôte, se connecter à `localhost:5433` avec la base et l’utilisateur de `.env`. Dans le réseau Compose, utiliser `db:5432`.
 
-### Option B — PostgreSQL natif
+## 7. Appliquer les migrations
 
-**Windows :** https://www.postgresql.org/download/windows/ — sélectionner PostgreSQL 18.7, installer le serveur et les outils de ligne de commande ; pgAdmin est facultatif. Choisir un mot de passe pour le compte `postgres` et conserver le port 5432 si disponible. Si `psql` n'est pas reconnu, ajouter le dossier `bin` de PostgreSQL au PATH ou utiliser SQL Shell (psql).
-
-**Ubuntu/Debian :** suivre https://www.postgresql.org/download/linux/ubuntu/ ou https://www.postgresql.org/download/linux/debian/ pour activer le dépôt PGDG si nécessaire, puis :
-
-```bash
-sudo apt update
-sudo apt install -y postgresql-18 postgresql-client-18
-sudo systemctl enable --now postgresql
-sudo -u postgres psql
+```powershell
+pnpm db:migrate:deploy
+pnpm db:migrate:status
 ```
 
-Les paquets ci-dessus sélectionnent la branche 18, pas nécessairement le correctif 18.7. Vérifier les versions disponibles avec `apt-cache policy postgresql-18 postgresql-client-18` et sélectionner les paquets 18.7 adaptés à la distribution si disponibles. À défaut, utiliser Docker avec l’image `postgres:18.7` pour respecter la version commune.
+`deploy` applique les migrations versionnées. Pour créer une migration ou traiter une dérive, suivre le [guide BDD](database/GUIDE_BDD.md).
 
-Si systemd est indisponible (certains environnements WSL), utiliser la méthode de démarrage adaptée à la distribution, par exemple `sudo service postgresql start`.
+## 8. Générer Prisma Client
 
-Sous Windows, ouvrir SQL Shell ou lancer `psql -U postgres -h localhost`. Dans psql, créer le compte et la base une seule fois :
-
-```sql
-CREATE ROLE comite_dev LOGIN;
-\password comite_dev
-CREATE DATABASE comite_scientifique OWNER comite_dev;
-\q
+```powershell
+pnpm db:generate
 ```
 
-Tester depuis le terminal :
+Le client généré dans `src/generated/prisma` est ignoré par Git. Régénérer le client après une évolution du schéma.
 
-```bash
-psql -h localhost -p 5432 -U comite_dev -d comite_scientifique -c "SELECT version();"
+## 9. Initialiser les données de démonstration
+
+```powershell
+pnpm db:seed
 ```
 
-## 7. Client graphique — pgAdmin 4 v9.18 (facultatif, recommandé)
+Sur une base vierge migrée, le seed charge 84 lignes, dont sept comptes PostgreSQL. Un second passage préserve les lignes et les empreintes déjà importées. Voir [SEED.md](database/SEED.md).
 
-Installer de préférence **pgAdmin 4 v9.18**. Téléchargements officiels de cette version : https://www.postgresql.org/ftp/pgadmin/pgadmin4/v9.18/ (Windows notamment : https://www.postgresql.org/ftp/pgadmin/pgadmin4/v9.18/windows/). Sous Linux, suivre https://www.pgadmin.org/download/ et vérifier la disponibilité du paquet 9.18 pour la distribution avant installation. Vérifier la version installée dans Help > About. Si l’installateur PostgreSQL fournit une autre version de pgAdmin, utiliser le téléchargement séparé. DBeaver Community (https://dbeaver.io/download/) est une alternative ; un seul client graphique suffit.
+## 10. Vérifier la connexion
 
-Dans pgAdmin : Register > Server. Renseigner les paramètres suivants :
-
-| Paramètre            | Valeur locale               |
-| -------------------- | --------------------------- |
-| Name                 | Comité scientifique — Local |
-| Host                 | localhost                   |
-| Port                 | 5432                        |
-| Maintenance database | comite_scientifique         |
-| Username             | comite_dev                  |
-| Password             | Mot de passe choisi         |
-
-Ces paramètres supposent que pgAdmin tourne sur la machine hôte. Si pgAdmin est lui-même dans le même réseau Compose, utiliser `db` comme hôte. Ne pas exposer PostgreSQL publiquement.
-
-## 8. Variables d'environnement et backend (à venir)
-
-Lorsque l'équipe aura intégré la couche de données, créer `.env.local` à la racine à partir du futur `.env.example`. Sous PowerShell : `Copy-Item .env.example .env.local` ; sous Linux : `cp .env.example .env.local` (si le modèle existe).
-
-Exemple de configuration cible, non requise pour le frontend statique :
-
-```dotenv
-DATABASE_URL=postgresql://comite_dev:MOT_DE_PASSE_ENCODE@localhost:5432/comite_scientifique
+```powershell
+pnpm db:validate
+pnpm db:check
+pnpm db:check --json
 ```
 
-Encoder les caractères spéciaux du mot de passe dans l'URL. Si Next.js tourne lui aussi dans Compose, remplacer `localhost` par `db`. `DATABASE_URL` et les secrets d'authentification restent exclusivement côté serveur : jamais de préfixe `NEXT_PUBLIC_` pour ces valeurs.
+Le tableau présente les 19 compteurs. Le JSON inclut le nom de la base lu dans PostgreSQL. Pour recevoir uniquement le JSON, utiliser `pnpm --silent db:check --json`.
 
-Vérifier que `.env` et `.env.local` sont ignorés par Git, et que `.env.example` ne contient que des valeurs fictives. Ne pas écraser les configurations locales existantes.
+## 11. Démarrer l’application
 
-Le choix du pilote SQL/ORM, des migrations, du système d'authentification et du stockage des pièces jointes n'est pas confirmé. Ne pas installer Prisma ou une autre bibliothèque individuellement avant la décision de l'équipe. Les commandes de migration, seed et lancement backend devront être ajoutées à ce document dès leur implémentation. Si l'architecture Next.js full-stack est retenue, `pnpm dev` lancera à la fois le frontend et les routes serveur ; il n'y aura pas de deuxième serveur à démarrer.
-
-## 9. Vérifications et tests
-
-Lister les scripts réellement disponibles :
-
-```bash
-pnpm run
+```powershell
+pnpm dev
 ```
 
-Selon les scripts déclarés dans le projet :
+Ouvrir [localhost:3000/fr/sign-in](http://localhost:3000/fr/sign-in). La page indique comment accéder à la démonstration statique. Les comptes seedés dans PostgreSQL seront utilisés après l’intégration de l’authentification serveur.
 
-```bash
-pnpm exec tsc --noEmit
-pnpm lint
-pnpm build
-pnpm test
+## 12. Configurer et exécuter les tests BDD
+
+Après avoir renseigné `TEST_DATABASE_URL`, préparer une fois la base de contrôle. Cette commande PowerShell est réexécutable.
+
+```powershell
+@'
+SELECT 'CREATE DATABASE comite_scientifique_test'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'comite_scientifique_test')
+\gexec
+'@ | docker compose exec -T db psql -X -v ON_ERROR_STOP=1 -U comite_dev -d postgres
+pnpm db:test
 ```
 
-Ne lancer `pnpm test` ou `pnpm lint` que si le script correspondant existe. Le build de production peut nécessiter les variables d'environnement lorsque le backend sera intégré.
+Chaque passage crée une base de test vierge, rejoue les six migrations, insère les fixtures de test et exécute les 24 tests. Les bases de rejeu sont conservées. La suite refuse une URL absente ou incompatible et ne se replie jamais sur `DATABASE_URL`. Voir [TESTS_BDD.md](database/TESTS_BDD.md).
 
-Si Playwright est déjà installé et configuré :
+### Dépannage
 
-```bash
-pnpm exec playwright install
-pnpm exec playwright test
-```
+| Symptôme | Vérification |
+|---|---|
+| Docker inaccessible | Démarrer le moteur et vérifier `docker compose ps db`. |
+| Port 5433 occupé | Identifier le service qui utilise le port. Les garde-fous du seed et des tests attendent 5433. |
+| Authentification PostgreSQL refusée | Vérifier l’encodage URL et les identifiants du volume existant. Changer `.env` ne change pas le mot de passe de PostgreSQL dans ce volume. |
+| `Configurez TEST_DATABASE_URL` | Vérifier `.env` à la racine. Pour enlever une ancienne surcharge du terminal, utiliser `Remove-Item Env:TEST_DATABASE_URL -ErrorAction SilentlyContinue`. |
+| Base de contrôle absente | Reprendre la préparation de l’étape 12. |
+| Client Prisma absent | Lancer `pnpm db:generate`. |
+| Contrôle TypeScript global bloqué | Utiliser `pnpm exec tsc -p tests/database/tsconfig.json --noEmit` pour la BDD. Le contrôle global signale des erreurs frontend préexistantes et un conflit de typage de `NODE_ENV` dans le lanceur de tests avec les types Next.js. |
 
-Sous Ubuntu/Debian, installer les dépendances système des navigateurs si nécessaire : `pnpm exec playwright install --with-deps`. Utiliser la configuration réelle du dépôt si elle est située hors de la racine. L'audit statique connu du projet peut être exécuté avec `node qa/audit-statique.cjs` si le fichier existe.
-
-## 10. Règles communes DevOps
-
-- Utiliser les mêmes versions Node.js, pnpm et PostgreSQL 18.7 sur tous les postes et dans la CI ; privilégier pgAdmin 4 v9.18 pour les postes utilisant ce client graphique.
-- Conserver et versionner `pnpm-lock.yaml` ; utiliser `pnpm install --frozen-lockfile` en CI.
-- Ne pas versionner les secrets, `node_modules`, `.next` ou les fichiers de données locaux.
-- Utiliser les branches de travail et les pull requests avec revue.
-- Prévoir un `.node-version` ou `.nvmrc`, un champ `packageManager` et un `.env.example` communs.
-- Compléter ce guide après validation du backend : migrations, seed, démarrage Compose complet, stockage des documents, tests d'intégration et déploiement.
-
-## 11. Checklist d'installation
-
-- [ ] Git installé et accès au dépôt confirmé.
-- [ ] Node.js et pnpm aux versions communes.
-- [ ] Dépendances installées sans modifier le lockfile.
-- [ ] Frontend accessible et connexion de démonstration testée.
-- [ ] Docker et Compose opérationnels (ou PostgreSQL natif pour le développement local).
-- [ ] PostgreSQL 18.7 accessible et requête SQL de test réussie.
-- [ ] pgAdmin 4 v9.18 installé et connexion à PostgreSQL testée (si client graphique utilisé).
-- [ ] Variables locales configurées lorsque le backend sera disponible.
-- [ ] Tests et build exécutés selon les scripts existants.
-
-## Documentation officielle
-
-- Node.js : https://nodejs.org/en/download
-- pnpm : https://pnpm.io/installation
-- Next.js : https://nextjs.org/docs
-- PostgreSQL : https://www.postgresql.org/download/
-- Notes de version PostgreSQL 18.7 : https://www.postgresql.org/docs/18/release-18-7.html
-- pgAdmin : https://www.pgadmin.org/download/
-- Notes de version pgAdmin 4 v9.18 : https://www.pgadmin.org/docs/pgadmin4/9.18/release_notes_9_18.html
-- Docker : https://docs.docker.com/engine/install/
-- Docker Compose : https://docs.docker.com/compose/
-- Playwright : https://playwright.dev/docs/intro
-
-> Statut : guide préparatoire. Les commandes propres au dépôt et les versions exactes doivent être vérifiées par l'équipe sur le code source réel avant validation définitive sous Windows et Linux.
+[Guide BDD](database/GUIDE_BDD.md) · [Intégration backend](database/GUIDE_INTEGRATION_BACKEND.md) · [Protections SQL](database/PROTECTIONS_SQL.md)

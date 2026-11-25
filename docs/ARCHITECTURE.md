@@ -1,10 +1,10 @@
 # Architecture technique — Gestion du comité scientifique
 
-Documentation d’accueil à destination de l’équipe projet. Elle décrit l’état du code observé dans le dépôt et distingue cet état des propositions de migration backend. Pour l’historique chronologique des changements Codex, voir [`RAPPORT_CODEX_ET_ARCHITECTURE.md`](./RAPPORT_CODEX_ET_ARCHITECTURE.md).
+Cette documentation décrit le frontend et ses données de démonstration. La couche de persistance est décrite dans le [guide BDD](./database/GUIDE_BDD.md).
 
-> **Branche observée :** `refactoring/nettoyage-shadboard`  
+> **Branche observée :** `feat/integration-bdd`
 > **Application actuelle :** frontend Next.js et données fictives dans le navigateur  
-> **État full-stack PostgreSQL :** cible future; aucune base ni API métier n’est intégrée actuellement.
+> **Couche de données** — PostgreSQL et Prisma sont opérationnels. L’interface utilise encore les fixtures du navigateur.
 
 ## 1. Présentation générale
 
@@ -12,7 +12,7 @@ Le dépôt est une application Next.js utilisant l’App Router, React et TypeSc
 
 Les données actuelles sont de démonstration. Les fichiers `mock-data.ts` initialisent les collections; `src/lib/demo-store.ts` tient l’état courant en mémoire et le sauvegarde dans `localStorage`. Les changements passent par des contrôles d’accès puis par `src/lib/demo-business.ts`, qui applique les règles de cohérence et les effets métier locaux.
 
-Il n’y a pas de serveur d’application métier, de route API, de ORM ou de schéma PostgreSQL dans le dépôt actuel. `src/setup.md` décrit des préparatifs possibles pour l’équipe et PostgreSQL; il s’agit d’un guide, pas d’une intégration déjà en place.
+Le dépôt contient le schéma PostgreSQL, les migrations et le client Prisma. Le raccordement des routes métier reste à développer. Le [guide d’installation](./setup.md) couvre la configuration locale.
 
 ### Pile observée
 
@@ -26,7 +26,7 @@ Il n’y a pas de serveur d’application métier, de route API, de ORM ou de sc
 | Règles métier actuelles | Fonctions synchrones dans `src/lib/demo-business.ts`; algorithmes spécialisés dans les `utils.ts` des modules. |
 | Langues | Français, anglais, arabe avec direction RTL. |
 | Tests/QA | `qa/audit-statique.cjs`, Playwright dans `qa/e2e/committee.spec.ts`, configuration `qa/playwright.config.ts`. |
-| Dépendances de données serveur | Aucune intégration PostgreSQL/Prisma détectée dans `package.json` et les fichiers source analysés. |
+| Dépendances de données serveur | PostgreSQL 18.7 et Prisma ORM 7.10.1. Le singleton Prisma est disponible côté serveur. |
 
 ## 2. Schéma des couches actuelles
 
@@ -120,8 +120,8 @@ flowchart TD
 │   ├── playwright.config.ts                   # Configuration des tests navigateur
 │   ├── e2e/committee.spec.ts                   # Scénarios Playwright
 │   └── CHECKLIST.md                            # Checklist QA
-├── RAPPORT_CODEX_ET_ARCHITECTURE.md            # Historique détaillé des changements Codex
-├── src/setup.md                                # Guide d’installation et cible PostgreSQL proposée
+├── prisma/                                    # Schéma Prisma, migrations et seed
+├── docs/setup.md                              # Guide d’installation
 └── package.json                                # Scripts et dépendances frontend
 ```
 
@@ -592,7 +592,7 @@ Avant de créer un nouveau composant, chercher une primitive existante dans `src
 
 ### Schéma cible illustrative
 
-Ce diagramme est une proposition de séparation, pas une structure actuellement présente dans le dépôt. `src/setup.md` suggère PostgreSQL 17 et des Route Handlers/Server Actions Next.js comme pistes; aucune de ces pièces backend n’est encore implémentée.
+Le diagramme illustre la séparation des responsabilités. PostgreSQL et Prisma sont en place. Les Route Handlers et Server Actions métier relèvent de la future [intégration backend](./database/GUIDE_INTEGRATION_BACKEND.md).
 
 ```mermaid
 flowchart LR
@@ -635,9 +635,9 @@ Les noms sont indicatifs. La modélisation doit être validée par l’équipe a
 2. `src/lib/demo-business.ts` — références, règles de transitions, suppression et synchronisations.
 3. `src/features/votes/utils.ts` — règles précises de quorum, sièges représentés et validité des votes.
 4. `src/features/members/types.ts`, `meetings/types.ts`, `agenda/types.ts`, `decisions/types.ts`, `documents/types.ts`, `notifications/types.ts` — champs et relations actuels.
-5. `src/setup.md` — préparation environnement, à distinguer d’un schéma SQL déjà existant.
+5. [Guide d’installation](./setup.md) — démarrage PostgreSQL, migrations, seed et tests.
 
-**Livrable attendu pour la suite :** modèle relationnel, contraintes, migrations, stratégie d’identifiants, auditabilité et stratégie de migration des fixtures.
+Le modèle relationnel, ses contraintes et les migrations sont livrés. La transition des fixtures de l’interface vers les services backend reste à organiser.
 
 ### Responsable backend
 
@@ -678,6 +678,5 @@ Limites structurelles actuelles à garder en tête :
 - `localStorage` ne synchronise pas plusieurs navigateurs ou appareils;
 - les pièces jointes binaires ne survivent pas à la sérialisation;
 - les signatures sont simulées;
-- aucune API backend ou base PostgreSQL n’est intégrée;
-- les fonctionnalités du guide `src/setup.md` sont des instructions/propositions tant qu’elles ne sont pas matérialisées par du code, des migrations et des tests.
-
+- l’interface fonctionne avec les données du navigateur ;
+- le [guide d’intégration backend](./database/GUIDE_INTEGRATION_BACKEND.md) détaille les services restant à réaliser.

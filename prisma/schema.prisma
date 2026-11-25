@@ -1,0 +1,546 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AccountRole {
+  ADMIN
+  PRESIDENT
+  SECRETARY
+  ARCHIVIST
+  MEMBER
+}
+
+enum MandateFunction {
+  PRESIDENT
+  SECRETARY
+  MEMBER
+  ARCHIVIST
+  ADMIN
+}
+
+enum MandateKind {
+  TITULAR
+  SUBSTITUTE
+}
+
+enum MeetingStatus {
+  PLANNED
+  IN_PROGRESS
+  CLOSED
+  MINUTES_SIGNED
+  CANCELLED
+}
+
+enum AgendaStatus {
+  PROPOSED
+  APPROVED
+  REJECTED
+}
+
+model Account {
+  id                       String            @id @default(uuid()) @db.Uuid
+  firstName                String            @map("first_name") @db.Text
+  lastName                 String            @map("last_name") @db.Text
+  email                    String            @unique @db.Text
+  passwordHash             String            @map("password_hash") @db.Text
+  role                     AccountRole
+  isActive                 Boolean           @default(true) @map("is_active")
+  memberId                 String?           @unique @map("member_id") @db.Uuid
+  createdAt                DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  member                   Member?           @relation(fields: [memberId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  profile                  AccountProfile?
+  archivedDecisions        Decision[]
+  archivedDocuments        Document[]
+  authoredDocumentVersions DocumentVersion[]
+  draftedMinutes           MeetingMinutes[]  @relation("MinutesSecretary")
+  signedMinutes            MeetingMinutes[]  @relation("MinutesSigner")
+  archivedMinutes          MeetingMinutes[]  @relation("MinutesArchivist")
+  receivedNotifications    Notification[]    @relation("NotificationRecipient")
+  sentNotifications        Notification[]    @relation("NotificationSender")
+  auditEvents              AuditEvent[]
+
+  @@map("accounts")
+}
+
+model AccountProfile {
+  id           String  @id @default(uuid()) @db.Uuid
+  accountId    String  @unique @map("account_id") @db.Uuid
+  firstName    String? @map("first_name") @db.Text
+  lastName     String? @map("last_name") @db.Text
+  contactEmail String? @map("contact_email") @db.Text
+  phone        String? @db.Text
+  position     String? @db.Text
+  department   String? @db.Text
+  bio          String? @db.Text
+  account      Account @relation(fields: [accountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("account_profiles")
+}
+
+model Member {
+  id                    String               @id @default(uuid()) @db.Uuid
+  fullName              String               @map("full_name") @db.Text
+  email                 String               @unique @db.Text
+  phone                 String?              @db.Text
+  notes                 String?              @db.Text
+  account               Account?
+  mandates              Mandate[]
+  meetingParticipations MeetingParticipant[]
+  authoredProposals     AgendaProposal[]     @relation("AgendaAuthor")
+  reviewedProposals     AgendaProposal[]     @relation("AgendaReviewer")
+  assignedActions       CommitteeAction[]
+
+  @@map("members")
+}
+
+model Seat {
+  id       String    @id @default(uuid()) @db.Uuid
+  label    String    @unique @db.Text
+  mandates Mandate[]
+
+  @@map("seats")
+}
+
+model Mandate {
+  id                    String               @id @default(uuid()) @db.Uuid
+  memberId              String               @map("member_id") @db.Uuid
+  seatId                String               @map("seat_id") @db.Uuid
+  function              MandateFunction
+  kind                  MandateKind
+  startDate             DateTime             @map("start_date") @db.Date
+  endDate               DateTime             @map("end_date") @db.Date
+  member                Member               @relation(fields: [memberId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  seat                  Seat                 @relation(fields: [seatId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  meetingParticipations MeetingParticipant[]
+  ballotVotes           BallotVote[]
+
+  @@unique([id, memberId])
+  @@unique([id, seatId])
+  @@index([seatId, startDate])
+  @@index([memberId, startDate])
+  @@map("mandates")
+}
+
+model Meeting {
+  id                String               @id @default(uuid()) @db.Uuid
+  title             String               @db.Text
+  meetingDate       DateTime             @map("meeting_date") @db.Date
+  startTime         DateTime             @map("start_time") @db.Time(0)
+  endTime           DateTime             @map("end_time") @db.Time(0)
+  location          String               @db.Text
+  description       String               @default("") @db.Text
+  status            MeetingStatus        @default(PLANNED)
+  invitationsSentAt DateTime?            @map("invitations_sent_at") @db.Timestamptz(3)
+  startedAt         DateTime?            @map("started_at") @db.Timestamptz(3)
+  closedAt          DateTime?            @map("closed_at") @db.Timestamptz(3)
+  participants      MeetingParticipant[]
+  agendaProposals   AgendaProposal[]
+  decisions         Decision[]
+  documents         Document[]
+  minutes           MeetingMinutes?
+
+  @@index([status, meetingDate])
+  @@map("meetings")
+}
+
+model MeetingParticipant {
+  id                   String       @id @default(uuid()) @db.Uuid
+  meetingId            String       @map("meeting_id") @db.Uuid
+  memberId             String       @map("member_id") @db.Uuid
+  mandateId            String       @map("mandate_id") @db.Uuid
+  attendance           Boolean?
+  attendanceRecordedAt DateTime?    @map("attendance_recorded_at") @db.Timestamptz(3)
+  meeting              Meeting      @relation(fields: [meetingId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  member               Member       @relation(fields: [memberId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  mandate              Mandate      @relation(fields: [mandateId, memberId], references: [id, memberId], onDelete: Restrict, onUpdate: Restrict)
+  ballotVotes          BallotVote[]
+
+  @@unique([meetingId, memberId])
+  @@unique([id, meetingId, mandateId])
+  @@index([memberId])
+  @@index([mandateId])
+  @@map("meeting_participants")
+}
+
+model AgendaProposal {
+  id               String       @id @default(uuid()) @db.Uuid
+  meetingId        String       @map("meeting_id") @db.Uuid
+  authorMemberId   String       @map("author_member_id") @db.Uuid
+  reviewerMemberId String?      @map("reviewer_member_id") @db.Uuid
+  title            String       @db.Text
+  description      String       @default("") @db.Text
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  status           AgendaStatus @default(PROPOSED)
+  sortOrder        Int?         @map("sort_order")
+  reviewNote       String?      @map("review_note") @db.Text
+  reviewedAt       DateTime?    @map("reviewed_at") @db.Timestamptz(3)
+  meeting          Meeting      @relation(fields: [meetingId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  author           Member       @relation("AgendaAuthor", fields: [authorMemberId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  reviewer         Member?      @relation("AgendaReviewer", fields: [reviewerMemberId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  decisions        Decision[]
+  attachments      StoredFile[]
+
+  @@unique([id, meetingId])
+  @@index([meetingId, status, sortOrder])
+  @@index([authorMemberId])
+  @@map("agenda_proposals")
+}
+
+enum DecisionStatus {
+  PENDING
+  ADOPTED
+  REJECTED
+}
+
+enum DecisionFinalSource {
+  BALLOT
+  HISTORICAL_IMPORT
+}
+
+enum BallotState {
+  OPEN
+  CLOSED
+}
+
+enum VoteChoice {
+  FOR
+  AGAINST
+  ABSTAIN
+}
+
+enum BallotOutcome {
+  ADOPTED
+  REJECTED
+  QUORUM_NOT_REACHED
+}
+
+enum ActionStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum ActionPriority {
+  LOW
+  NORMAL
+  HIGH
+}
+
+model Decision {
+  id                  String               @id @default(uuid()) @db.Uuid
+  meetingId           String               @map("meeting_id") @db.Uuid
+  agendaProposalId    String?              @map("agenda_proposal_id") @db.Uuid
+  reference           String               @unique @db.Text
+  title               String               @db.Text
+  description         String               @default("") @db.Text
+  decisionDate        DateTime             @map("decision_date") @db.Date
+  status              DecisionStatus       @default(PENDING)
+  finalSource         DecisionFinalSource? @map("final_source")
+  archivedAt          DateTime?            @map("archived_at") @db.Timestamptz(3)
+  archivedByAccountId String?              @map("archived_by_account_id") @db.Uuid
+  archivedByName      String?              @map("archived_by_name") @db.Text
+  meeting             Meeting              @relation(fields: [meetingId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  agendaProposal      AgendaProposal?      @relation(fields: [agendaProposalId, meetingId], references: [id, meetingId], onDelete: Restrict, onUpdate: Restrict)
+  archivedByAccount   Account?             @relation(fields: [archivedByAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  // The database limits this list to one row via Ballot.decisionId.
+  // Prisma requires a list here because the relation uses a composite FK.
+  ballots             Ballot[]
+  actions             CommitteeAction[]
+
+  @@unique([id, meetingId])
+  @@index([meetingId, status])
+  @@index([agendaProposalId])
+  @@map("decisions")
+}
+
+model Ballot {
+  id              String        @id @default(uuid()) @db.Uuid
+  decisionId      String        @unique @map("decision_id") @db.Uuid
+  meetingId       String        @map("meeting_id") @db.Uuid
+  state           BallotState   @default(OPEN)
+  quorumPercent   Decimal       @default(60.00) @map("quorum_percent") @db.Decimal(5, 2)
+  majorityPercent Decimal       @default(50.00) @map("majority_percent") @db.Decimal(5, 2)
+  openedAt        DateTime?     @map("opened_at") @db.Timestamptz(3)
+  closedAt        DateTime?     @map("closed_at") @db.Timestamptz(3)
+  decision        Decision      @relation(fields: [decisionId, meetingId], references: [id, meetingId], onDelete: Restrict, onUpdate: Restrict)
+  votes           BallotVote[]
+  result          BallotResult?
+
+  @@unique([id, meetingId])
+  @@map("ballots")
+}
+
+model BallotVote {
+  id              String             @id @default(uuid()) @db.Uuid
+  ballotId        String             @map("ballot_id") @db.Uuid
+  meetingId       String             @map("meeting_id") @db.Uuid
+  participationId String             @map("participation_id") @db.Uuid
+  mandateId       String             @map("mandate_id") @db.Uuid
+  seatId          String             @map("seat_id") @db.Uuid
+  choice          VoteChoice
+  votedAt         DateTime?          @map("voted_at") @db.Timestamptz(3)
+  ballot          Ballot             @relation(fields: [ballotId, meetingId], references: [id, meetingId], onDelete: Restrict, onUpdate: Restrict)
+  participation   MeetingParticipant @relation(fields: [participationId, meetingId, mandateId], references: [id, meetingId, mandateId], onDelete: Restrict, onUpdate: Restrict)
+  mandate         Mandate            @relation(fields: [mandateId, seatId], references: [id, seatId], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([ballotId, seatId])
+  @@unique([ballotId, participationId])
+  @@index([participationId])
+  @@index([mandateId, seatId])
+  @@map("ballot_votes")
+}
+
+model BallotResult {
+  id                     String        @id @default(uuid()) @db.Uuid
+  ballotId               String        @unique @map("ballot_id") @db.Uuid
+  capturedAt             DateTime?     @map("captured_at") @db.Timestamptz(3)
+  quorumPercent          Decimal       @map("quorum_percent") @db.Decimal(5, 2)
+  majorityPercent        Decimal       @map("majority_percent") @db.Decimal(5, 2)
+  ruleVersion            String        @map("rule_version") @db.Text
+  activeSeatCount        Int           @map("active_seat_count")
+  representedSeatCount   Int           @map("represented_seat_count")
+  quorumMinSeats         Int           @map("quorum_min_seats")
+  participationPercent   Int           @map("participation_percent")
+  forCount               Int           @map("for_count")
+  againstCount           Int           @map("against_count")
+  abstainCount           Int           @map("abstain_count")
+  votesCast              Int           @map("votes_cast")
+  uncastCount            Int           @map("uncast_count")
+  expressedCount         Int           @map("expressed_count")
+  snapshotVersion        Int           @map("snapshot_version")
+  quorumReached          Boolean       @map("quorum_reached")
+  outcome                BallotOutcome
+  representationSnapshot Json          @map("representation_snapshot") @db.JsonB
+  presenceSnapshot       Json          @map("presence_snapshot") @db.JsonB
+  ballot                 Ballot        @relation(fields: [ballotId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("ballot_results")
+}
+
+model CommitteeAction {
+  id               String         @id @default(uuid()) @db.Uuid
+  decisionId       String?        @map("decision_id") @db.Uuid
+  assigneeMemberId String         @map("assignee_member_id") @db.Uuid
+  title            String         @db.Text
+  description      String         @default("") @db.Text
+  dueDate          DateTime       @map("due_date") @db.Date
+  priority         ActionPriority @default(NORMAL)
+  status           ActionStatus   @default(TODO)
+  sortOrder        Int            @map("sort_order")
+  decision         Decision?      @relation(fields: [decisionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  assignee         Member         @relation(fields: [assigneeMemberId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([assigneeMemberId, status, dueDate])
+  @@index([decisionId])
+  @@index([status, sortOrder])
+  @@map("actions")
+}
+
+enum DocumentType {
+  AGENDA
+  MINUTES
+  REPORT
+  INVITATION
+  OTHER
+}
+
+enum DocumentStatus {
+  DRAFT
+  APPROVED
+  ARCHIVED
+}
+
+enum DocumentVisibility {
+  COMMITTEE
+  PRESIDENCY
+  ARCHIVES
+}
+
+enum MinutesStatus {
+  DRAFT
+  TO_SIGN
+  SIGNED
+  ARCHIVED
+}
+
+model Document {
+  id                  String             @id @default(uuid()) @db.Uuid
+  meetingId           String?            @map("meeting_id") @db.Uuid
+  reference           String             @unique @db.Text
+  title               String             @db.Text
+  description         String             @default("") @db.Text
+  type                DocumentType       @default(REPORT)
+  status              DocumentStatus     @default(DRAFT)
+  visibility          DocumentVisibility @default(COMMITTEE)
+  updatedAt           DateTime?          @map("updated_at") @db.Timestamptz(3)
+  archivedAt          DateTime?          @map("archived_at") @db.Timestamptz(3)
+  archivedByAccountId String?            @map("archived_by_account_id") @db.Uuid
+  archivedByName      String?            @map("archived_by_name") @db.Text
+  meeting             Meeting?           @relation(fields: [meetingId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  archivedByAccount   Account?           @relation(fields: [archivedByAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versions            DocumentVersion[]
+
+  @@index([meetingId])
+  @@index([status, visibility])
+  @@map("documents")
+}
+
+model DocumentVersion {
+  id              String      @id @default(uuid()) @db.Uuid
+  documentId      String      @map("document_id") @db.Uuid
+  number          Int
+  filename        String      @db.Text
+  note            String      @default("") @db.Text
+  versionDate     DateTime?   @map("version_date") @db.Date
+  authorAccountId String?     @map("author_account_id") @db.Uuid
+  authorName      String?     @map("author_name") @db.Text
+  isHistorical    Boolean     @default(false) @map("is_historical")
+  document        Document    @relation(fields: [documentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  authorAccount   Account?    @relation(fields: [authorAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  file            StoredFile?
+
+  @@unique([documentId, number])
+  @@map("document_versions")
+}
+
+model StoredFile {
+  id                String           @id @default(uuid()) @db.Uuid
+  agendaProposalId  String?          @map("agenda_proposal_id") @db.Uuid
+  documentVersionId String?          @unique @map("document_version_id") @db.Uuid
+  originalName      String           @map("original_name") @db.Text
+  sizeBytes         Int              @map("size_bytes")
+  mimeType          String           @map("mime_type") @db.Text
+  storageKey        String           @unique @map("storage_key") @db.Text
+  checksum          String?          @db.Text
+  uploadedAt        DateTime         @default(now()) @map("uploaded_at") @db.Timestamptz(3)
+  agendaProposal    AgendaProposal?  @relation(fields: [agendaProposalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  documentVersion   DocumentVersion? @relation(fields: [documentVersionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([agendaProposalId])
+  @@map("stored_files")
+}
+
+model MeetingMinutes {
+  id                  String        @id @default(uuid()) @db.Uuid
+  meetingId           String        @unique @map("meeting_id") @db.Uuid
+  reference           String        @unique @db.Text
+  summary             String        @default("") @db.Text
+  nextSteps           String        @default("") @map("next_steps") @db.Text
+  status              MinutesStatus @default(DRAFT)
+  version             Int           @default(1)
+  updatedAt           DateTime?     @map("updated_at") @db.Timestamptz(3)
+  submittedAt         DateTime?     @map("submitted_at") @db.Timestamptz(3)
+  returnedAt          DateTime?     @map("returned_at") @db.Timestamptz(3)
+  signedAt            DateTime?     @map("signed_at") @db.Timestamptz(3)
+  archivedAt          DateTime?     @map("archived_at") @db.Timestamptz(3)
+  correctionNote      String?       @map("correction_note") @db.Text
+  secretaryAccountId  String?       @map("secretary_account_id") @db.Uuid
+  signedByAccountId   String?       @map("signed_by_account_id") @db.Uuid
+  archivedByAccountId String?       @map("archived_by_account_id") @db.Uuid
+  secretaryName       String?       @map("secretary_name") @db.Text
+  presidentName       String?       @map("president_name") @db.Text
+  signedByName        String?       @map("signed_by_name") @db.Text
+  archivedByName      String?       @map("archived_by_name") @db.Text
+  snapshotVersion     Int?          @map("snapshot_version")
+  officialSnapshot    Json?         @map("official_snapshot") @db.JsonB
+  meeting             Meeting       @relation(fields: [meetingId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  secretaryAccount    Account?      @relation("MinutesSecretary", fields: [secretaryAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  signedByAccount     Account?      @relation("MinutesSigner", fields: [signedByAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  archivedByAccount   Account?      @relation("MinutesArchivist", fields: [archivedByAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("meeting_minutes")
+}
+
+enum NotificationKind {
+  CONVOCATION              @map("convocation")
+  REUNION_MODIFIEE         @map("reunion-modifiee")
+  REUNION_ANNULEE          @map("reunion-annulee")
+  RAPPEL_REUNION           @map("rappel-reunion")
+  PROPOSITION_AGENDA       @map("proposition-agenda")
+  REVUE_AGENDA             @map("revue-agenda")
+  ECHEANCE_ACTION          @map("echeance-action")
+  ACTION_ATTRIBUEE         @map("action-attribuee")
+  ACTION_REATTRIBUEE       @map("action-reattribuee")
+  ACTION_ECHEANCE_MODIFIEE @map("action-echeance-modifiee")
+  RAPPEL_ACTION            @map("rappel-action")
+  ACTION_EN_RETARD         @map("action-en-retard")
+  AVIS_DECISION            @map("avis-decision")
+  PV_SIGNATURE             @map("pv-signature")
+  PV_CORRECTION            @map("pv-correction")
+  PV_SIGNE                 @map("pv-signe")
+  PV_ARCHIVES              @map("pv-archives")
+}
+
+enum NotificationCategory {
+  MEETINGS  @map("meetings")
+  AGENDA    @map("agenda")
+  DECISIONS @map("decisions")
+  ACTIONS   @map("actions")
+  MINUTES   @map("minutes")
+}
+
+enum NotificationPriority {
+  NORMALE    @map("normale")
+  IMPORTANTE @map("importante")
+}
+
+enum NotificationTargetType {
+  MEETING  @map("meeting")
+  AGENDA   @map("agenda")
+  DECISION @map("decision")
+  ACTION   @map("action")
+  BALLOT   @map("ballot")
+  MINUTES  @map("minutes")
+}
+
+model Notification {
+  id                 String                  @id @default(uuid()) @db.Uuid
+  recipientAccountId String                  @map("recipient_account_id") @db.Uuid
+  senderAccountId    String?                 @map("sender_account_id") @db.Uuid
+  senderName         String?                 @map("sender_name") @db.Text
+  kind               NotificationKind
+  category           NotificationCategory
+  priority           NotificationPriority    @default(NORMALE)
+  title              String                  @db.Text
+  preview            String                  @db.Text
+  detail             String                  @db.Text
+  context            String                  @db.Text
+  createdAt          DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+  readAt             DateTime?               @map("read_at") @db.Timestamptz(3)
+  archivedAt         DateTime?               @map("archived_at") @db.Timestamptz(3)
+  deletedAt          DateTime?               @map("deleted_at") @db.Timestamptz(3)
+  titleKey           String?                 @map("title_key") @db.Text
+  messageKey         String?                 @map("message_key") @db.Text
+  templateValues     Json?                   @map("template_values") @db.JsonB
+  dedupeKey          String?                 @map("dedupe_key") @db.Text
+  targetType         NotificationTargetType? @map("target_type")
+  targetId           String?                 @map("target_id") @db.Uuid
+  recipient          Account                 @relation("NotificationRecipient", fields: [recipientAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sender             Account?                @relation("NotificationSender", fields: [senderAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([recipientAccountId, dedupeKey])
+  @@index([recipientAccountId, createdAt])
+  @@index([recipientAccountId, archivedAt, readAt])
+  @@map("notifications")
+}
+
+model AuditEvent {
+  id             String   @id @default(uuid()) @db.Uuid
+  actorAccountId String?  @map("actor_account_id") @db.Uuid
+  operation      String   @db.Text
+  occurredAt     DateTime @default(now()) @map("occurred_at") @db.Timestamptz(3)
+  entityType     String   @map("entity_type") @db.Text
+  entityId       String   @map("entity_id") @db.Uuid
+  details        Json?    @db.JsonB
+  actor          Account? @relation(fields: [actorAccountId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([entityType, entityId, occurredAt])
+  @@index([actorAccountId, occurredAt])
+  @@map("audit_events")
+}
