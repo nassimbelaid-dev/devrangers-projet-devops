@@ -4,10 +4,26 @@
 
 ## Préparation et exécution
 
-1. Démarrer PostgreSQL avec `docker compose up -d db`.
-2. Créer une fois la base de contrôle dédiée si elle n’existe pas. Avec les outils PostgreSQL locaux, `createdb -h 127.0.0.1 -p 5433 -U comite_dev comite_scientifique_test` demande le mot de passe au besoin. Si cette base existe déjà, la conserver.
-3. Définir `TEST_DATABASE_URL` dans l’environnement du processus ou dans le fichier privé `.env`. Utiliser la même connexion locale que pour Docker avec la base `comite_scientifique_test`. Le modèle à remplir figure dans `.env.example`.
-4. Générer Prisma Client puis lancer les tests.
+Depuis la racine du dépôt, créer le fichier privé `.env` à partir de `.env.example` au premier clonage, puis renseigner les paramètres Compose. Ajouter ou compléter cette ligne dans `.env` avec le mot de passe PostgreSQL local encodé pour une URL.
+
+```dotenv
+TEST_DATABASE_URL=postgresql://comite_dev:MOT_DE_PASSE_ENCODE@localhost:5433/comite_scientifique_test
+```
+
+La suite charge `.env` automatiquement au démarrage. `.env.local` est utilisé par le frontend et ne suffit pas pour ce script. Une variable PowerShell déjà définie prime sur le fichier. Si une ancienne valeur est présente dans le terminal, la retirer avec `Remove-Item Env:TEST_DATABASE_URL -ErrorAction SilentlyContinue` pour utiliser `.env`. Git ignore ce fichier et `.env.example` contient une valeur vide.
+
+Démarrer le conteneur et préparer une seule fois la base de contrôle. Cette commande PowerShell fonctionne également si la base existe déjà.
+
+```powershell
+docker compose up -d --wait db
+@'
+SELECT 'CREATE DATABASE comite_scientifique_test'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'comite_scientifique_test')
+\gexec
+'@ | docker compose exec -T db psql -X -v ON_ERROR_STOP=1 -U comite_dev -d postgres
+```
+
+Après `pnpm install --frozen-lockfile`, générer Prisma Client puis lancer les tests. Les exécutions suivantes se résument à `pnpm db:test` tant que Docker est démarré.
 
 ```bash
 pnpm db:generate
