@@ -22,11 +22,11 @@ function developmentPassword() {
     !["postgres:", "postgresql:"].includes(database.protocol) ||
     !["localhost", "127.0.0.1", "[::1]"].includes(database.hostname) ||
     database.port !== "5433" ||
-    database.pathname !== "/comite_scientifique" ||
+    !["/comite_scientifique", "/comite_scientifique_test"].includes(database.pathname) ||
     database.username !== "comite_dev"
   ) {
     throw new SeedError(
-      "Seed réservé à la base de développement locale comite_scientifique sur le port 5433."
+      "Seed réservé aux bases locales comite_scientifique et comite_scientifique_test sur le port 5433."
     )
   }
 
@@ -147,7 +147,10 @@ async function seed() {
             "ballots",
             data.ballots,
             (ids) => tx.ballot.count({ where: { id: { in: ids } } }),
-            (rows) => tx.ballot.createMany({ data: rows })
+            (rows) =>
+              tx.ballot.createMany({
+                data: rows.map((row) => ({ ...row, state: "OPEN" })),
+              })
           ),
           batch(
             "ballot_votes",
@@ -211,6 +214,13 @@ async function seed() {
               `Insertion impossible dans ${item.table} (${code}). La transaction est annulée.`
             )
           }
+        }
+        const closedBallots = await tx.ballot.updateMany({
+          where: { id: { in: data.ballots.map((ballot) => ballot.id) } },
+          data: { state: "CLOSED" },
+        })
+        if (closedBallots.count !== data.ballots.length) {
+          throw new SeedError("Clôture incomplète des scrutins historiques.")
         }
         return batches.reduce((total, item) => total + item.size, 0)
       },

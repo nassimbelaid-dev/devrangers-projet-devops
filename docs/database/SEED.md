@@ -1,6 +1,6 @@
 # Seed PostgreSQL de développement
 
-Le seed initialise le scénario fictif du comité dans la base Docker locale. Il importe les fixtures du frontend sans les modifier. Il s’exécute uniquement avec le compte local `comite_dev` sur le port 5433 et refuse `NODE_ENV=production`.
+Le seed initialise le scénario fictif du comité dans la base Docker locale. Il importe les fixtures du frontend sans les modifier. Il s’exécute uniquement avec le compte local `comite_dev` sur le port 5433 et refuse `NODE_ENV=production`. La base `comite_scientifique_test` est également admise sur cette même instance pour les tests de rejeu.
 
 ## Exécution
 
@@ -57,4 +57,4 @@ Les caractères et accents des noms sont conservés. Le profil utilise les donn�
 
 Le format stocké est `scrypt$ln=17,r=8,p=1$<sel-base64url>$<empreinte-base64url>`. Pour vérifier un mot de passe, décoder le sel de 16 octets et l’empreinte de 64 octets à partir de Base64URL sans remplissage. Dériver 64 octets à partir du mot de passe UTF-8 avec `N=2^17=131072`, `r=8` et `p=1`, puis comparer les deux empreintes binaires avec `timingSafeEqual`. Le seed utilise `maxmem=256 * 1024 * 1024` et un sel aléatoire distinct par compte. Les mots de passe du frontend sont ignorés.
 
-Les UUIDv5 identifient chaque ligne selon son type et sa clé source. L’import s’effectue dans une transaction PostgreSQL sérialisable. Si toutes les lignes sont déjà présentes, l’exécution ne fait aucune écriture. Elle conserve les modifications métier et les empreintes existantes. Une empreinte partielle du seed ou une collision sur une clé naturelle arrête l’import avec un diagnostic et annule les insertions. Le seed ne restaure pas des lignes supprimées et ne sert pas à faire tourner les mots de passe. Les horodatages de création des comptes et des audits indiquent l’instant réel de l’import.
+Les UUIDv5 identifient chaque ligne selon son type et sa clé source. L’import s’effectue dans une transaction PostgreSQL sérialisable. Les scrutins sont insérés ouverts, leurs votes et résultats sont ajoutés, puis ils sont clôturés avant validation de la transaction. Si toutes les lignes sont déjà présentes, l’exécution ne fait aucune écriture. Elle conserve les modifications métier et les empreintes existantes. Une empreinte partielle du seed ou une collision sur une clé naturelle arrête l’import avec un diagnostic et annule les insertions. Le seed ne restaure pas des lignes supprimées et ne sert pas à faire tourner les mots de passe. Les horodatages de création des comptes et des audits indiquent l’instant réel de l’import.
