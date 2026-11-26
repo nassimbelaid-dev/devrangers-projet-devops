@@ -146,11 +146,13 @@ export function DecisionForm({
                 <SelectValue placeholder={t("Sélectionner une réunion")} />
               </SelectTrigger>
               <SelectContent>
-                {meetings.map((meeting) => (
+                {meetings
+                  .filter((meeting) => meeting.status === "En cours")
+                  .map((meeting) => (
                   <SelectItem key={meeting.id} value={meeting.id}>
                     {meeting.title} ({meeting.date})
                   </SelectItem>
-                ))}
+                  ))}
               </SelectContent>
             </Select>
           </div>
@@ -166,7 +168,7 @@ export function DecisionForm({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {DECISION_STATUSES.map((status) => (
+                {(initial ? DECISION_STATUSES : ["En attente"] as const).map((status) => (
                   <SelectItem key={status} value={status}>
                     {t(status)}
                   </SelectItem>

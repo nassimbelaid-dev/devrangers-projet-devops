@@ -524,6 +524,21 @@ function sameAgenda(a: AgendaItem[], b: AgendaItem[]): boolean {
   return JSON.stringify(a) === JSON.stringify(b)
 }
 
+/** Compare proposal content while ignoring fields editable only by reviewers. */
+export function isAgendaReviewOnly(
+  previous: AgendaProposal,
+  next: AgendaProposal
+): boolean {
+  const content = (proposal: AgendaProposal) =>
+    JSON.stringify(
+      Object.entries(proposal).filter(
+        ([key]) =>
+          !["status", "order", "reviewedById", "reviewNote"].includes(key)
+      )
+    )
+  return content(previous) === content(next)
+}
+
 /** Le module collaboratif est la source de vérité des points, statuts et ordres. */
 function attachAgenda(
   meetings: Meeting[],
@@ -1066,6 +1081,31 @@ export function applyDemoChange<K extends CollectionKey>(
       const meetingForDecision = next.meetings.find(
         (m) => m.id === decision.meetingId
       )
+      if (!old) {
+        if (
+          !decision.id ||
+          next.decisions.filter((item) => item.id === decision.id).length !==
+            1 ||
+          !decision.reference.trim() ||
+          !decision.title.trim() ||
+          !isIsoDate(decision.date) ||
+          next.decisions.some(
+            (item) =>
+              item.id !== decision.id &&
+              item.reference.trim().toLocaleLowerCase() ===
+                decision.reference.trim().toLocaleLowerCase()
+          ) ||
+          decision.status !== "En attente" ||
+          !meetingForDecision ||
+          meetingForDecision.status !== "En cours"
+        )
+          return {
+            state,
+            error:
+              "Une nouvelle décision doit avoir une référence unique, rester en attente et être liée à une réunion en cours.",
+          }
+        continue
+      }
       const archiveOnly =
         old !== undefined &&
         (old.status === "Adoptée" || old.status === "Rejetée") &&

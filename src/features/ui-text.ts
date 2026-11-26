@@ -389,6 +389,12 @@ const translations: Record<string, Record<string, string>> = {
     "Le titre, la réunion et la date sont obligatoires.":
       "Title, meeting, and date are required.",
     "Créer la décision": "Create decision",
+    "Votre rôle ne permet pas de créer une décision.":
+      "Your role does not allow you to create a decision.",
+    "Une décision doit être liée à une réunion en cours et rester en attente.":
+      "A decision must be linked to an ongoing meeting and remain pending.",
+    "Cette référence de décision existe déjà.":
+      "This decision reference already exists.",
     "Attribuez une responsabilité, une échéance et un statut. Les changements sont locaux à cette page.":
       "Assign an owner, deadline, and status. Changes are local to this page.",
     "Intitulé de l'action *": "Action title *",
@@ -1241,6 +1247,12 @@ const translations: Record<string, Record<string, string>> = {
     "Le titre, la réunion et la date sont obligatoires.":
       "العنوان والاجتماع والتاريخ مطلوبة.",
     "Créer la décision": "إنشاء القرار",
+    "Votre rôle ne permet pas de créer une décision.":
+      "لا يسمح دورك بإنشاء قرار.",
+    "Une décision doit être liée à une réunion en cours et rester en attente.":
+      "يجب ربط القرار باجتماع جارٍ وأن يبقى قيد الانتظار.",
+    "Cette référence de décision existe déjà.":
+      "مرجع هذا القرار موجود بالفعل.",
     "Attribuez une responsabilité, une échéance et un statut. Les changements sont locaux à cette page.":
       "حدد المسؤولية والموعد النهائي والحالة. التغييرات محلية لهذه الصفحة.",
     "Intitulé de l'action *": "عنوان الإجراء *",

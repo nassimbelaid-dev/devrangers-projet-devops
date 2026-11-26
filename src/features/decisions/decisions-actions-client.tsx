@@ -22,6 +22,7 @@ import type {
   ActionRecord,
   ActionStatus,
   BoardView,
+  DecisionRecord,
   DecisionStatus,
 } from "./types"
 import { ACTION_PRIORITIES, ACTION_STATUSES, DECISION_STATUSES } from "./types"
@@ -58,11 +59,13 @@ import {
 } from "@/components/ui/table"
 import { ActionForm } from "./action-form"
 import { ActionsKanban } from "./actions-kanban"
+import { DecisionForm } from "./decision-form"
 import {
   dateToday,
   formatDate,
   isOverdue,
   moveAction,
+  nextDecisionReference,
   normalizedOrder,
 } from "./utils"
 
@@ -136,6 +139,9 @@ export function DecisionsActionsClient() {
     hasPermission(user, "actions", "delete")
   const isAssignedMember = user?.role === "member" && Boolean(user.memberId)
   const { meetings: linkedMeetings, members: linkedMembers } = useDemoData()
+  const canCreateDecision =
+    hasPermission(user, "decisions", "create") &&
+    linkedMeetings.some((meeting) => meeting.status === "En cours")
   const memberLabel = useCallback(
     (id: string) =>
       linkedMembers.find((member) => member.id === id)?.name ??
@@ -159,6 +165,8 @@ export function DecisionsActionsClient() {
     (typeof decisionFilters)[number]
   >("Toutes les décisions")
   const [actionFormOpen, setActionFormOpen] = useState(false)
+  const [decisionFormOpen, setDecisionFormOpen] = useState(false)
+  const [decisionFormVersion, setDecisionFormVersion] = useState(0)
   const [editingAction, setEditingAction] = useState<ActionRecord | null>(null)
   const [actionFormVersion, setActionFormVersion] = useState(0)
   const [defaultActionStatus, setDefaultActionStatus] =
@@ -269,6 +277,34 @@ export function DecisionsActionsClient() {
     setActionFormOpen(true)
   }
 
+  function openDecisionForm() {
+    if (!canCreateDecision) return
+    setDecisionFormVersion((version) => version + 1)
+    setDecisionFormOpen(true)
+  }
+
+  function saveDecision(item: DecisionRecord): string | null {
+    if (!canCreateDecision) return t("Votre rôle ne permet pas de créer une décision.")
+    if (
+      item.status !== "En attente" ||
+      !linkedMeetings.some(
+        (meeting) =>
+          meeting.id === item.meetingId && meeting.status === "En cours"
+      )
+    )
+      return t("Une décision doit être liée à une réunion en cours et rester en attente.")
+    if (
+      decisions.some(
+        (decision) =>
+          decision.reference.trim().toLocaleLowerCase() ===
+          item.reference.trim().toLocaleLowerCase()
+      )
+    )
+      return t("Cette référence de décision existe déjà.")
+    setDecisions((current) => [...current, item])
+    return null
+  }
+
   function saveAction(item: ActionRecord) {
     if (!canManageActions) return
     setActions((current) => {
@@ -336,6 +372,11 @@ export function DecisionsActionsClient() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {canCreateDecision && (
+            <Button variant="outline" onClick={openDecisionForm}>
+              <Plus className="mr-2 size-4" /> {t("Nouvelle décision")}
+            </Button>
+          )}
           {canManageActions && (
             <Button onClick={() => openActionForm()}>
               <Plus className="mr-2 size-4" /> {t("Nouvelle action")}
@@ -689,6 +730,17 @@ export function DecisionsActionsClient() {
           defaultDecisionId={defaultDecisionId}
           onOpenChange={setActionFormOpen}
           onSave={saveAction}
+        />
+      )}
+
+      {decisionFormOpen && (
+        <DecisionForm
+          key={decisionFormVersion}
+          open={decisionFormOpen}
+          initial={null}
+          reference={nextDecisionReference(decisions)}
+          onOpenChange={setDecisionFormOpen}
+          onSave={saveDecision}
         />
       )}
 

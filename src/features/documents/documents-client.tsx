@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
@@ -49,6 +49,15 @@ import { MinutesEditor } from "./minutes-editor"
 import { formatDate, makeId, meetingLabel, today } from "./utils"
 
 type View = "library" | "minutes" | "archives"
+
+function normalizeArchiveSearch(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim()
+}
 
 export function DocumentsClient() {
   const t = useUiText()
@@ -194,6 +203,13 @@ export function DocumentsClient() {
         date: item.archivedAt,
         by: item.archivedBy,
         type: item.type,
+        searchText: [
+          item.title,
+          item.reference,
+          item.description,
+          item.type,
+          meetingLabel(item.meetingId, meetings),
+        ].join(" "),
         action: () => {
           setSelectedDocId(item.id)
           setView("library")
@@ -209,6 +225,24 @@ export function DocumentsClient() {
         date: item.archivedAt,
         by: item.archivedBy,
         type: "PV",
+        searchText: [
+          item.reference,
+          item.summary,
+          item.nextSteps,
+          item.secretary,
+          item.president,
+          meetingLabel(item.meetingId, meetings),
+          ...meetings
+            .find((meeting) => meeting.id === item.meetingId)
+            ?.agenda.map((agendaItem) => agendaItem.title),
+          ...decisions
+            .filter((decision) => decision.meetingId === item.meetingId)
+            .flatMap((decision) => [
+              decision.reference,
+              decision.title,
+              decision.description,
+            ]),
+        ].join(" "),
         action: () => {
           setSelectedMinutesId(item.id)
           setView("minutes")
@@ -238,11 +272,14 @@ export function DocumentsClient() {
           archiveMeeting === "all" ||
           item.meetingId === archiveMeeting) &&
         (!archiveDate || item.date?.slice(0, 10) === archiveDate) &&
-        (archiveType === "all" || item.type === archiveType) &&
-        (!search.trim() ||
-          `${item.title} ${item.kind} ${meetingLabel(item.meetingId, meetings)}`
-            .toLocaleLowerCase()
-            .includes(search.trim().toLocaleLowerCase()))
+        (archiveType === "all" ||
+          item.type === archiveType ||
+          (normalizeArchiveSearch(archiveType) === "proces verbal" &&
+            item.type === "PV")) &&
+        (!normalizeArchiveSearch(search) ||
+          normalizeArchiveSearch(
+            `${item.searchText} ${item.title} ${item.kind} ${item.type} ${item.by ?? ""} ${item.date ?? ""}`
+          ).includes(normalizeArchiveSearch(search)))
     )
     .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""))
 
@@ -456,11 +493,15 @@ export function DocumentsClient() {
             <Metric label={t("Documents")} value={documents.length} />
             <Metric
               label={t("Validés")}
-              value={documents.filter((doc) => doc.status === "Validé").length}
+              value={
+                documents.filter((doc) => doc.status === "Validé").length
+              }
             />
             <Metric
               label={t("Archivés")}
-              value={documents.filter((doc) => doc.status === "Archivé").length}
+              value={
+                documents.filter((doc) => doc.status === "Archivé").length
+              }
             />
           </div>
           <section className="space-y-6">
@@ -567,7 +608,9 @@ export function DocumentsClient() {
                         <td className="px-5 py-5">
                           <Badge
                             variant={
-                              doc.status === "Validé" ? "secondary" : "outline"
+                              doc.status === "Validé"
+                                ? "secondary"
+                                : "outline"
                             }
                           >
                             {t(doc.status)}
@@ -735,7 +778,9 @@ export function DocumentsClient() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t("Toutes les réunions")}</SelectItem>
+                <SelectItem value="all">
+                  {t("Toutes les réunions")}
+                </SelectItem>
                 {meetings.map((item) => (
                   <SelectItem key={item.id} value={item.id}>
                     {item.title}
@@ -761,7 +806,9 @@ export function DocumentsClient() {
                   </SelectItem>
                 ))}
                 <SelectItem value="PV">{t("Procès-verbal")}</SelectItem>
-                <SelectItem value={t("Décision")}>{t("Décision")}</SelectItem>
+                <SelectItem value={t("Décision")}>
+                  {t("Décision")}
+                </SelectItem>
               </SelectContent>
             </Select>
             <div className="relative">

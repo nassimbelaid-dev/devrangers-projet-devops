@@ -36,6 +36,7 @@ import {
   applyDemoChange,
   applyMeetingWorkflow,
   createReminderNotifications,
+  isAgendaReviewOnly,
   sendMeetingInvitations,
 } from "./demo-business"
 
@@ -462,13 +463,7 @@ function authorizeDemoWrite<K extends keyof DemoState>(
         const reviewOnly =
           actor.role === "president" &&
           allowed("agenda", "approve") &&
-          JSON.stringify({
-            ...old,
-            status: item.status,
-            reviewNote: item.reviewNote,
-            reviewedById: item.reviewedById,
-            order: item.order,
-          }) === JSON.stringify(item)
+          isAgendaReviewOnly(old, item)
         if (reviewOnly) continue
         if (
           !allowed("agenda", "edit") ||
@@ -580,7 +575,12 @@ function authorizeDemoWrite<K extends keyof DemoState>(
     const newItems = after as DemoState["decisions"]
     for (const item of newItems) {
       const old = oldItems.find((entry) => entry.id === item.id)
-      if (!old || JSON.stringify(old) === JSON.stringify(item)) continue
+      if (!old) {
+        if (!allowed("decisions", "create"))
+          return "Seul le président peut créer une décision."
+        continue
+      }
+      if (JSON.stringify(old) === JSON.stringify(item)) continue
       const archiveOnly =
         allowed("documents", "archive") &&
         (old.status === "Adoptée" || old.status === "Rejetée") &&
@@ -621,6 +621,10 @@ function authorizeDemoWrite<K extends keyof DemoState>(
       }
       if (JSON.stringify(old) === JSON.stringify(item)) continue
       if (actor.role === "secretary" && allowed("actions", "edit")) continue
+      const presidentMoveOnly =
+        actor.role === "president" &&
+        JSON.stringify({ ...old, status: undefined, order: undefined }) ===
+          JSON.stringify({ ...item, status: undefined, order: undefined })
       const ownStatusOnly =
         actor.role === "member" &&
         item.assigneeId === actor.memberId &&
@@ -628,7 +632,7 @@ function authorizeDemoWrite<K extends keyof DemoState>(
         old.status !== item.status &&
         JSON.stringify({ ...old, status: undefined }) ===
           JSON.stringify({ ...item, status: undefined })
-      if (!ownStatusOnly)
+      if (!presidentMoveOnly && !ownStatusOnly)
         return "Vous ne pouvez modifier que l'état des actions qui vous sont attribuées."
     }
     if (
