@@ -9,7 +9,7 @@
 
 ## 1. Objet et sources
 
-Le MCD décrit les objets métier, leurs propriétés et leurs associations, indépendamment de PostgreSQL et de Prisma. Les identifiants sont conceptuels ; les clés étrangères, types SQL, index et choix d'implémentation des instantanés seront définis dans le MLD et le schéma Prisma. Les 19 entités ci-dessous constituent une proposition de conception, et non une affirmation que 19 tables seront nécessaires.
+Le MCD décrit les objets métier, leurs propriétés et leurs associations, indépendamment de PostgreSQL et de Prisma. Les identifiants sont conceptuels ; les clés étrangères, types SQL, index et choix d'implémentation des instantanés sont détaillés dans le MLD et le schéma Prisma. Les 19 entités correspondent aux 19 tables métier. La table technique des sessions d’authentification est décrite dans le [MLD](MLD.md#26-sessions-dauthentification-1-table-technique).
 
 Références : `ANALYSE_DES_DONNEES.md` (§2 à §8), `../ARCHITECTURE.md` (§7, §13), `../ROLES_ET_PERMISSIONS.md` (§4, §8), guide de simulation du workflow (étapes 1 à 15). Les constats du rapport Codex n'ont pas été revérifiés directement dans le dépôt. Les divergences et les choix V1 sont explicités en section 6. La revue Codex a confirmé les 19 entités et les 33 associations, et demandé de compléter les invariants du vote, de la décision et plusieurs règles conditionnelles. Ces corrections documentaires ne constituent pas des tests exécutés ni une nouvelle revue du dépôt.
 
@@ -241,7 +241,7 @@ Les événements identiques mais correspondant à deux mutations réelles distin
 | Présences du scrutin ouvert et du PV brouillon | Dérivées de PARTICIPATION ; les états historiques sont figés à leur étape respective. |
 | Rôle du suppléant | Qualité du mandat, non rôle d'accès supplémentaire. |
 | Référentiel de permissions | Cinq rôles fixes en V1, règles backend ; pas de RBAC dynamique. |
-| Sessions | Choix du système d'authentification à coordonner avec le backend ; tables techniques éventuelles au MLD. |
+| Sessions | Persistance technique de l’authentification opaque dans `account_sessions`. Un compte peut avoir zéro à plusieurs sessions, chacune attachée à un seul compte. La révocation supprime la session. |
 | Révisions complètes du PV et outbox | Non retenues comme entités V1 ; événements d'audit et instantané officiel suffisent au périmètre proposé. Outbox éventuelle si traitement asynchrone. |
 | Préférences d'interface, traductions, filtres, thèmes | État de présentation, hors données métier. |
 | Comité / département | Périmètre mono-comité ; une extension multi-comité demanderait une évolution du modèle. |

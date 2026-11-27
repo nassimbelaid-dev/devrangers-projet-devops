@@ -4,7 +4,7 @@
 
 **Références :** `MCD.md` V1.1 §6, `MLD.md` V1.1 §2 et §5–10, `ANALYSE_DES_DONNEES.md` §4 et §7, `DICTIONNAIRE_DONNEES.md`.
 
-**Statut :** spécification de la cible, non encore implémentée ni testée. Les arbitrages métier V1 restent à entériner. Les expressions SQL ci-dessous servent de contrat pour les migrations ; elles ne constituent pas un script autonome exécutable. Les règles d’autorisation restent obligatoires côté serveur même si une protection SQL existe.
+**Statut** — Les règles ci-dessous décrivent le contrat d’intégrité. Les migrations et les tests BDD attestent des contraintes SQL installées. Les règles d’autorisation restent obligatoires côté serveur.
 
 ## 1. Répartition des responsabilités
 
@@ -19,7 +19,7 @@ Ne pas présenter une règle seulement documentée ou contrôlée par le service
 
 ## 2. Clés, références et unicités — contraintes SQL obligatoires
 
-Les 19 tables ont `id uuid PRIMARY KEY`. Nullabilité conforme au dictionnaire et au MLD. Les références métier sont uniques dans chaque domaine. Les UUID sont immuables ; actions référentielles `ON DELETE RESTRICT ON UPDATE RESTRICT` par défaut, ou `NO ACTION` si explicitement justifié. Pas de cascade destructrice. Les FK facultatives sont détachées par une mutation métier autorisée. Les contraintes SQL suivantes doivent être effectivement créées, y compris celles non représentables dans le DSL Prisma.
+Les 19 tables métier ont `id uuid PRIMARY KEY`, de même que la table technique des sessions décrite en §2.3. Nullabilité conforme au dictionnaire et au MLD. Les références métier sont uniques dans chaque domaine. Les UUID sont immuables ; actions référentielles `ON DELETE RESTRICT ON UPDATE RESTRICT` par défaut, ou `NO ACTION` si explicitement justifié. Pas de cascade destructrice. Les FK facultatives sont détachées par une mutation métier autorisée. Les contraintes SQL suivantes doivent être effectivement créées, y compris celles non représentables dans le DSL Prisma.
 
 | Table | Clés et contraintes du MLD |
 |---|---|
@@ -64,6 +64,10 @@ La FK `decisions(agenda_proposal_id, meeting_id)` → `agenda_proposals(id, meet
 ### 2.2. Unicités avec NULL
 
 PostgreSQL accepte plusieurs NULL dans une contrainte UNIQUE ordinaire : `accounts.member_id`, `stored_files.document_version_id` et `notifications(recipient_account_id, dedupe_key)` utilisent ce comportement. Ne pas utiliser `NULLS NOT DISTINCT` sur ces contraintes. L'unicité de déduplication couvre toutes les notifications, y compris les lignes retirées logiquement.
+
+### 2.3. Sessions d’authentification (table technique)
+
+`account_sessions` impose une FK obligatoire vers `accounts.id` avec `RESTRICT` à la suppression et à la mise à jour, une empreinte unique et cinq colonnes `NOT NULL`. Le format de l’empreinte et l’ordre des horodatages sont contrôlés par deux `CHECK` dédiés. Le backend valide la session en vérifiant à la fois l’expiration et l’état actif du compte. Il révoque la session en supprimant sa ligne. [Protections SQL](PROTECTIONS_SQL.md#contraintes-des-sessions-dauthentification)
 
 ## 3. Contraintes CHECK et EXCLUDE (contrat SQL)
 
@@ -269,6 +273,8 @@ Les événements identiques mais correspondant à deux mutations réelles distin
 | 3 | decisions, ballots, ballot_votes, ballot_results, actions | FK composites de provenance, uniques, SQL-06–09, arithmétique résultat |
 | 4 | documents, document_versions, stored_files, meeting_minutes | FK/UQ, SQL-10–13, rattachement exclusif fichier |
 | 5 | notifications, audit_events | FK/UQ, SQL-14, index de consultation, conservation de la déduplication |
+| 6 | Protections historiques | Triggers, contrôles différés et protection contre TRUNCATE |
+| 7 | account_sessions (technique) | FK restrictive, UQ, index du compte et de l’expiration, deux CHECK techniques |
 
 Utiliser `relationMode = "foreignKeys"` (ou son comportement par défaut vérifié) ; valider le mapping des FK composites qui partagent des colonnes avec la version Prisma choisie. Inspecter et compléter chaque SQL avant application. Les CHECK/EXCLUDE personnalisés restent versionnés dans les migrations ; vérifier leur conservation lors d'une migration ultérieure. Activer `btree_gist` dans la migration, pas uniquement manuellement ; vérifier droits/disponibilité sur base locale, CI, staging et shadow database. Le seed s'exécute après tous les lots pour disposer de l'audit ; ne pas modifier les migrations déjà partagées.
 
@@ -321,5 +327,5 @@ Les tests ci-dessous sont des cas attendus, pas des résultats d'exécution. Pr�
 - Les choix V1 du MCD/MLD restant à approuver comprennent le mono-comité, le non-cumul des mandats, la représentation sans titulaire actif, le scrutin obligatoire pour les nouvelles décisions définitives, le blocage sans quorum, l’absence de réouverture ou de second tour, l’archivage métier définitif, le stockage privé et le format applicatif des instantanés. Les permissions confirmées sont récapitulées dans la [revue de cohérence](../REVUE_COHERENCE_FRONTEND_BDD.md).
 - Le retrait logique terminal et la conservation de la clé de déduplication sont protégés par PostgreSQL. Le filtrage de `deleted_at` dans les requêtes utilisateur reste au backend.
 - Les versions d’instantanés positives sont contrôlées dans les migrations. La structure des données JSONB reste à valider dans les services.
-- Les sessions, la politique de hachage des comptes réels, les codes d’audit et l’attribution des références métier restent à coordonner. Le [seed](SEED.md) documente le hachage des seuls comptes de démonstration.
+- La durée de session, la politique de hachage des comptes réels, les codes d’audit et l’attribution des références métier restent à coordonner. Le [seed](SEED.md) documente le hachage des seuls comptes de démonstration.
 - La sixième migration fournit les [protections historiques](PROTECTIONS_SQL.md). Les [tests BDD](TESTS_BDD.md) couvrent les contraintes SQL, le rejeu et les courses vote–clôture. Le [guide backend](GUIDE_INTEGRATION_BACKEND.md) détaille les règles encore applicatives.

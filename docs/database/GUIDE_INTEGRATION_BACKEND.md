@@ -69,6 +69,22 @@ Le format exact du seed est `scrypt$ln=17,r=8,p=1$<sel-base64url>$<empreinte-bas
 
 Sérialiser toutes les mutations qui peuvent retirer un administrateur actif, y compris désactivation et changement de rôle, avec un verrou commun ou une transaction `SERIALIZABLE` et une reprise bornée. Vérifier au sein de la transaction qu’il reste au moins un administrateur actif. L’invariant dépend du backend.
 
+### Persistance des sessions dans `auth.repository.ts`
+
+Le délégué `prisma.accountSession` expose la table technique `account_sessions`, qui complète les 19 tables métier. Chaque session référence un compte via `account`. Un compte possède zéro à plusieurs sessions via `Account.sessions`.
+
+`session.ts` génère un jeton opaque à partir de 32 octets aléatoires cryptographiques, par exemple `randomBytes(32).toString("base64url")`. Il calcule ensuite `createHash("sha256").update(token, "utf8").digest("hex")` sur la valeur exacte transportée par le cookie. Réutiliser cette convention à la lecture. Le jeton brut circule uniquement via le cookie HttpOnly et le traitement serveur transitoire. Exclure le jeton et son empreinte des DTO, logs et événements d’audit.
+
+| Opération | Requête et conditions |
+|---|---|
+| Créer | `tx.accountSession.create({ data: { accountId, tokenHash, expiresAt }, select: { id: true, expiresAt: true } })`. Prisma génère l’UUID et PostgreSQL renseigne `createdAt`. Le service calcule une expiration absolue et la fournit explicitement. Les 12 h proposées dans l’architecture restent à valider. |
+| Lire pour authentifier | `db.accountSession.findUnique` avec `where: { tokenHash, expiresAt: { gt: now }, account: { isActive: true } }`. Projeter uniquement l’identifiant de session et les champs du compte nécessaires à l’acteur, par exemple `id`, `role` et `memberId`. Traiter un résultat `null` comme une session invalide. |
+| Révoquer une session | `tx.accountSession.deleteMany({ where: { tokenHash } })`. La déconnexion reste idempotente si la session a déjà été supprimée. |
+| Révoquer les sessions d’un compte | `tx.accountSession.deleteMany({ where: { accountId } })` dans la transaction qui désactive le compte ou change son mot de passe, son rôle ou son membre lié. |
+| Purger les sessions expirées | `tx.accountSession.deleteMany({ where: { expiresAt: { lte: now } } })` depuis la tâche de maintenance. Une lecture d’authentification applique le contrôle d’expiration même avant la purge. |
+
+Le repository reçoit le client ou le `Prisma.TransactionClient` du service. Le service vérifie le mot de passe hors transaction longue, puis relit le compte actif et son empreinte sous le verrou transactionnel prévu avant de créer la session. Il revérifie la validité de l’acteur et de la session dans les transactions d’écriture. [Protections SQL](PROTECTIONS_SQL.md#contraintes-des-sessions-dauthentification) · [Architecture backend, §4.1](../ARCHITECTURE_BACKEND.md#41-session-réelle)
+
 ## Contrat par domaine
 
 | Domaine et modèles | Garanties PostgreSQL | Travail backend et précautions API |

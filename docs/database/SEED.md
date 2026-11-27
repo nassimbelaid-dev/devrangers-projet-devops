@@ -40,7 +40,7 @@ pnpm db:check
 | `yanis@comite.test` | MEMBER titulaire |
 | `sara@comite.test` | MEMBER suppléante |
 
-Les caractères et accents des noms sont conservés. Le profil utilise les données du compte par défaut. Aucune surcharge de profil ni notification initiale n’existe dans les fixtures. Les exemples du simulateur de notifications ne sont pas des messages déjà émis.
+Les caractères et accents des noms sont conservés. Le profil utilise les données du compte par défaut. Aucune surcharge de profil ni notification initiale n’existe dans les fixtures. Les exemples du simulateur de notifications ne sont pas des messages déjà émis. La table technique `account_sessions` est alimentée à la connexion par le backend et reste vide après le seed d’une base vierge.
 
 ## Adaptations des fixtures
 
