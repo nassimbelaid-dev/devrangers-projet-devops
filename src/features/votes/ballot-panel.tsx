@@ -62,6 +62,7 @@ export function BallotPanel({
             : undefined
           const currentVote = ballot.votes[seat.seatId]
           const selected =
+            currentVote?.memberId === votingMemberId &&
             currentVote?.memberId === seat.representativeId
               ? currentVote.choice
               : null
@@ -92,56 +93,60 @@ export function BallotPanel({
                         )}
                   </p>
                 </div>
-                <div className="shrink-0 space-y-2">
-                  <p className="text-xs text-muted-foreground lg:text-right">
-                    {t("Choix du vote")}
-                  </p>
-                  <div
-                    className="inline-flex max-w-full flex-wrap items-center gap-1 rounded-xl border bg-muted/30 p-1"
-                    role="group"
-                    aria-label={t("Vote du siège {seat}", {
-                      seat: seat.seatLabel,
-                    })}
-                  >
-                    {voteChoices.map(({ value, label }) => (
-                      <button
-                        key={value}
-                        type="button"
-                        disabled={
-                          locked ||
-                          !seat.representativeId ||
-                          seat.representativeId !== votingMemberId
-                        }
-                        aria-pressed={selected === value}
-                        onClick={() => {
-                          if (!seat.representativeId) return
-                          onVote(
-                            seat.seatId,
-                            seat.representativeId,
-                            selected === value ? null : value
-                          )
-                        }}
-                        className={`min-w-[78px] rounded-lg px-3 py-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-[92px] sm:text-sm ${
-                          selected === value
-                            ? "bg-foreground text-background shadow-sm"
-                            : "text-muted-foreground hover:bg-background hover:text-foreground"
-                        }`}
+                {seat.representativeId &&
+                  seat.representativeId === votingMemberId && (
+                    <div className="shrink-0 space-y-2">
+                      <p className="text-xs text-muted-foreground lg:text-right">
+                        {t("Choix du vote")}
+                      </p>
+                      <div
+                        className="inline-flex max-w-full flex-wrap items-center gap-1 rounded-xl border bg-muted/30 p-1"
+                        role="group"
+                        aria-label={t("Vote du siège {seat}", {
+                          seat: seat.seatLabel,
+                        })}
                       >
-                        {t(label)}
-                      </button>
-                    ))}
-                  </div>
-                  {selected && (
-                    <p className="text-xs text-muted-foreground lg:text-right">
-                      {t("Vote enregistré : {vote}", {
-                        vote: t(
-                          voteChoices.find((item) => item.value === selected)
-                            ?.label ?? ""
-                        ),
-                      })}
-                    </p>
+                        {voteChoices.map(({ value, label }) => (
+                          <button
+                            key={value}
+                            type="button"
+                            disabled={
+                              locked ||
+                              !seat.representativeId ||
+                              seat.representativeId !== votingMemberId
+                            }
+                            aria-pressed={selected === value}
+                            onClick={() => {
+                              if (!seat.representativeId) return
+                              onVote(
+                                seat.seatId,
+                                seat.representativeId,
+                                selected === value ? null : value
+                              )
+                            }}
+                            className={`min-w-[78px] rounded-lg px-3 py-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-[92px] sm:text-sm ${
+                              selected === value
+                                ? "bg-foreground text-background shadow-sm"
+                                : "text-muted-foreground hover:bg-background hover:text-foreground"
+                            }`}
+                          >
+                            {t(label)}
+                          </button>
+                        ))}
+                      </div>
+                      {selected && (
+                        <p className="text-xs text-muted-foreground lg:text-right">
+                          {t("Vote enregistré : {vote}", {
+                            vote: t(
+                              voteChoices.find(
+                                (item) => item.value === selected
+                              )?.label ?? ""
+                            ),
+                          })}
+                        </p>
+                      )}
+                    </div>
                   )}
-                </div>
               </div>
 
               <details className="group border-t border-border/50 bg-muted/10 px-5 py-4 sm:px-7">

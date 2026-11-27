@@ -21,6 +21,8 @@ export interface BallotSession {
   votes: Record<string, SeatVote>
   /** Résultat figé à la clôture pour préserver l'historique si les mandats changent ensuite. */
   closedResult?: BallotSummary
+  /** Résultat calculé avant de limiter la projection au vote propre. */
+  displaySummary?: BallotSummary
 }
 
 export type BallotOutcome =

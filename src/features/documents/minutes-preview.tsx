@@ -1,28 +1,49 @@
 "use client"
 
-import { committeeSeats } from "@/features/members/mock-data"
 import { useUiText } from "@/features/ui-text"
-import { calculateBallot, outcomeLabel } from "@/features/votes/utils"
+import { outcomeLabel } from "@/features/votes/utils"
 
 import type { MeetingMinutes } from "./types"
 
 import { useDemoData } from "@/lib/demo-store"
 
-import { formatDate } from "./utils"
+import { formatDate, resolveMinutesContent } from "./utils"
 
 export function MinutesPreview({ minutes: pv }: { minutes: MeetingMinutes }) {
   const t = useUiText()
-  const { meetings, members, decisions, actions, ballots } = useDemoData()
-  const meeting = meetings.find((item) => item.id === pv.meetingId)
-  if (!meeting)
-    return (
-      <p className="text-sm text-muted-foreground">
-        {t("Réunion introuvable.")}
-      </p>
-    )
-  const relatedDecisions = decisions.filter(
-    (item) => item.meetingId === meeting.id
+  const state = useDemoData()
+  const content = resolveMinutesContent(
+    pv,
+    state.meetings,
+    state.decisions,
+    state.members,
+    state.actions,
+    state.ballots
   )
+  if (!content)
+    return (
+      <article className="space-y-3 rounded-lg border p-5 text-sm">
+        <p className="font-medium">
+          {pv.reference} · {t(pv.status)}
+        </p>
+        <p className="text-muted-foreground">
+          {t("Instantané historique indisponible.")}
+        </p>
+        {pv.signedBy && (
+          <p>
+            {pv.signedBy} · {formatDate(pv.signedAt ?? "")}
+          </p>
+        )}
+        <p className="whitespace-pre-wrap">{pv.summary}</p>
+      </article>
+    )
+  const {
+    meeting,
+    members,
+    decisions: relatedDecisions,
+    actions,
+    results,
+  } = content
   const attendeeIds = meeting.attendance
     ? Object.entries(meeting.attendance)
         .filter(([, present]) => present)
@@ -34,10 +55,6 @@ export function MinutesPreview({ minutes: pv }: { minutes: MeetingMinutes }) {
   const unreported = meeting.participantIds.filter(
     (id) => meeting.attendance?.[id] === undefined
   )
-  const meetingDecisions = relatedDecisions.map((decision) => ({
-    decision,
-    ballot: ballots.find((entry) => entry.decisionId === decision.id),
-  }))
   return (
     <article className="space-y-7 rounded-xl border bg-card px-6 py-8 text-sm leading-7 sm:px-8 sm:py-10">
       <div className="space-y-3 border-b pb-6">
@@ -124,10 +141,8 @@ export function MinutesPreview({ minutes: pv }: { minutes: MeetingMinutes }) {
         <h4 className="font-semibold">{t("Décisions")}</h4>
         {relatedDecisions.length ? (
           <ul className="space-y-3 text-muted-foreground">
-            {meetingDecisions.map(({ decision, ballot }) => {
-              const result = ballot
-                ? calculateBallot(ballot, members, committeeSeats, meeting.date)
-                : null
+            {relatedDecisions.map((decision) => {
+              const result = results[decision.id]
               return (
                 <li key={decision.id}>
                   <span className="font-medium text-foreground">

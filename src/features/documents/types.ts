@@ -1,3 +1,8 @@
+import type { ActionRecord, DecisionRecord } from "@/features/decisions/types"
+import type { Meeting } from "@/features/meetings/types"
+import type { CommitteeMemberRecord } from "@/features/members/types"
+import type { BallotSummary } from "@/features/votes/types"
+
 /** Modèles purement UI : aucune donnée n'est transmise à un serveur. */
 export const DOCUMENT_TYPES = [
   "Ordre du jour",
@@ -38,6 +43,14 @@ export interface CommitteeDocument {
   versions: DocumentVersion[]
 }
 
+export interface MinutesSnapshot {
+  meeting: Meeting
+  members: Pick<CommitteeMemberRecord, "id" | "name" | "kind" | "role">[]
+  decisions: DecisionRecord[]
+  actions: ActionRecord[]
+  results: Record<string, Omit<BallotSummary, "seats">>
+}
+
 export type MinutesStatus = "Brouillon" | "À signer" | "Signé" | "Archivé"
 export interface MeetingMinutes {
   id: string
@@ -57,4 +70,6 @@ export interface MeetingMinutes {
   archivedBy?: string
   submittedAt?: string
   returnedAt?: string
+  snapshotVersion?: 1
+  officialSnapshot?: MinutesSnapshot
 }

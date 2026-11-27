@@ -16,6 +16,8 @@ import type { CommitteeDocument, DocumentType, MeetingMinutes } from "./types"
 import { DOCUMENT_TYPES } from "./types"
 
 import {
+  archiveDemoRecord,
+  createMeetingMinutes,
   runMeetingWorkflow,
   useDemoCollection,
   useDemoData,
@@ -64,14 +66,13 @@ export function DocumentsClient() {
   const router = useRouter()
   const pathname = usePathname()
   const { decisions } = useDemoData()
-  const [, setDecisions] = useDemoCollection("decisions")
   const { user } = useStaticAuth()
   const canEditDocuments =
     hasPermission(user, "documents", "create") ||
     hasPermission(user, "documents", "edit")
-  const canDeleteDocuments = hasPermission(user, "documents", "delete")
   const canArchiveDocuments = hasPermission(user, "documents", "archive")
-  const canArchiveMinutes = hasPermission(user, "minutes", "archive")
+  const canApproveDocuments = hasPermission(user, "documents", "approve")
+  const [operationNotice, setOperationNotice] = useState("")
   const [meetings] = useDemoCollection("meetings")
   const [view, setView] = useState<View>("library")
   const [documents, setDocuments] = useDemoCollection("documents")
@@ -151,36 +152,47 @@ export function DocumentsClient() {
       )
     })
   }, [documents, search, filterStatus, filterType, meetings, user])
-  const visibleMinutes = useMemo(() => {
-    const query = search.trim().toLocaleLowerCase("fr")
-    return minutes.filter((pv) => {
-      const meeting = meetings.find((item) => item.id === pv.meetingId)
-      const linkedDecisions = decisions.filter(
-        (item) => item.meetingId === pv.meetingId
-      )
-      const haystack = [
+  const minutesSearch = useCallback(
+    (pv: MeetingMinutes) => {
+      const historical = pv.status !== "Brouillon"
+      const meeting = historical
+        ? pv.officialSnapshot?.meeting
+        : meetings.find((item) => item.id === pv.meetingId)
+      const related = historical
+        ? (pv.officialSnapshot?.decisions ?? [])
+        : decisions.filter((item) => item.meetingId === pv.meetingId)
+      return [
         pv.reference,
         pv.summary,
         pv.nextSteps,
         pv.secretary,
         pv.president,
+        pv.signedBy,
         meeting?.title,
-        ...linkedDecisions.flatMap((item) => [
+        ...(meeting?.agenda ?? []).map((item) => item.title),
+        ...related.flatMap((item) => [
           item.reference,
           item.title,
           item.description,
           item.status,
         ]),
-      ]
-        .join(" ")
-        .toLocaleLowerCase("fr")
+        ...(pv.officialSnapshot?.actions ?? []).map((item) => item.title),
+        ...(pv.officialSnapshot?.members ?? []).map((item) => item.name),
+      ].join(" ")
+    },
+    [meetings, decisions]
+  )
+  const visibleMinutes = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase("fr")
+    return minutes.filter((pv) => {
+      const haystack = minutesSearch(pv).toLocaleLowerCase("fr")
       return (
         pv.status !== "Archivé" &&
         canSeeMinutes(pv) &&
         (!query || haystack.includes(query))
       )
     })
-  }, [minutes, meetings, decisions, search, canSeeMinutes])
+  }, [minutes, minutesSearch, search, canSeeMinutes])
   const visibleDecisions = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("fr")
     if (!query) return []
@@ -225,24 +237,7 @@ export function DocumentsClient() {
         date: item.archivedAt,
         by: item.archivedBy,
         type: "PV",
-        searchText: [
-          item.reference,
-          item.summary,
-          item.nextSteps,
-          item.secretary,
-          item.president,
-          meetingLabel(item.meetingId, meetings),
-          ...meetings
-            .find((meeting) => meeting.id === item.meetingId)
-            ?.agenda.map((agendaItem) => agendaItem.title),
-          ...decisions
-            .filter((decision) => decision.meetingId === item.meetingId)
-            .flatMap((decision) => [
-              decision.reference,
-              decision.title,
-              decision.description,
-            ]),
-        ].join(" "),
+        searchText: minutesSearch(item),
         action: () => {
           setSelectedMinutesId(item.id)
           setView("minutes")
@@ -258,6 +253,7 @@ export function DocumentsClient() {
         date: item.archivedAt,
         by: item.archivedBy,
         type: t("Décision"),
+        searchText: [item.reference, item.title, item.description].join(" "),
         action: () => {
           const locale = pathname.split("/")[1] || "fr"
           router.push(
@@ -284,20 +280,22 @@ export function DocumentsClient() {
     .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""))
 
   function saveDocument(next: CommitteeDocument) {
-    if (
-      !canEditDocuments ||
-      (next.status === "Archivé" && !canArchiveDocuments)
-    )
-      return
-    setDocuments((current) =>
+    if (!canEditDocuments)
+      return "Votre rôle ne permet pas de modifier ce document."
+    return setDocuments((current) =>
       current.some((doc) => doc.id === next.id)
         ? current.map((doc) => (doc.id === next.id ? next : doc))
         : [next, ...current]
     )
   }
   function addVersion(file: File, note: string) {
-    if (!canEditDocuments || !selectedDocId) return
-    setDocuments((current) =>
+    if (
+      !canEditDocuments ||
+      !selectedDocument ||
+      selectedDocument.status === "Archivé"
+    )
+      return "Votre rôle ne permet pas de modifier ce document."
+    return setDocuments((current) =>
       current.map((doc) => {
         if (doc.id !== selectedDocId) return doc
         const number =
@@ -310,7 +308,7 @@ export function DocumentsClient() {
             {
               id: makeId(),
               number,
-              author: "Utilisateur démo",
+              author: user ? `${user.firstName} ${user.lastName}` : "",
               date: today(),
               filename: file.name,
               note,
@@ -321,65 +319,38 @@ export function DocumentsClient() {
       })
     )
   }
-  function deleteDocument() {
+  function approveDocument() {
     if (
-      !canDeleteDocuments ||
+      !canApproveDocuments ||
       !selectedDocument ||
-      !window.confirm(
-        t("Supprimer « {title} » de cette session ?", {
-          title: selectedDocument.title,
-        })
-      )
+      selectedDocument.status !== "Brouillon"
     )
       return
-    setDocuments((current) =>
-      current.filter((doc) => doc.id !== selectedDocument.id)
+    const issue = setDocuments((current) =>
+      current.map((item) =>
+        item.id === selectedDocument.id
+          ? { ...item, status: "Validé", updatedAt: today() }
+          : item
+      )
     )
-    setSelectedDocId(null)
+    setOperationNotice(t(issue ?? "Le document a été validé."))
   }
   function archiveDocument() {
     if (
       !canArchiveDocuments ||
       !selectedDocument ||
-      selectedDocument.status === "Archivé"
+      !window.confirm(t("Archiver définitivement ce document ?"))
     )
       return
-    if (!window.confirm(t("Archiver définitivement ce document ?"))) return
-    setDocuments((current) =>
-      current.map((doc) =>
-        doc.id === selectedDocument.id
-          ? {
-              ...doc,
-              status: "Archivé",
-              archivedAt: new Date().toISOString(),
-              archivedBy: user ? `${user.firstName} ${user.lastName}` : "",
-              updatedAt: today(),
-            }
-          : doc
-      )
-    )
-    setSelectedDocId(null)
+    const issue = archiveDemoRecord("documents", selectedDocument.id)
+    setOperationNotice(t(issue ?? "Le document a été archivé."))
+    if (!issue) setSelectedDocId(null)
   }
   function archiveDecision(id: string) {
-    if (!canArchiveDocuments) return
-    const decision = decisions.find((item) => item.id === id)
-    if (
-      !decision ||
-      decision.archivedAt ||
-      !window.confirm(t("Archiver cette décision ?"))
-    )
+    if (!canArchiveDocuments || !window.confirm(t("Archiver cette décision ?")))
       return
-    setDecisions((current) =>
-      current.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              archivedAt: new Date().toISOString(),
-              archivedBy: user ? `${user.firstName} ${user.lastName}` : "",
-            }
-          : item
-      )
-    )
+    const issue = archiveDemoRecord("decisions", id)
+    setOperationNotice(t(issue ?? "La décision a été archivée."))
   }
   function createMinutes() {
     if (!canDraftMinutes) return
@@ -388,37 +359,18 @@ export function DocumentsClient() {
       !eligibleMeetings.some((meeting) => meeting.id === newMeetingId)
     )
       return
-    const meeting = meetings.find((item) => item.id === newMeetingId)
-    if (!meeting) return
-    const id = `pv-${makeId()}`
-    const next: MeetingMinutes = {
-      id,
-      reference: `PV-2026-${String(minutes.length + 1).padStart(3, "0")}`,
-      meetingId: newMeetingId,
-      status: "Brouillon",
-      presentMemberIds: Object.entries(meeting.attendance ?? {})
-        .filter(([, present]) => present)
-        .map(([memberId]) => memberId),
-      summary: "",
-      nextSteps: "",
-      secretary: "Lina Amrane",
-      president: "Karim Haddad",
-      version: 1,
-      updatedAt: today(),
+    if (!user) return
+    const result = createMeetingMinutes(newMeetingId, user)
+    if (result.error || !result.id) {
+      setOperationNotice(result.error ? t(result.error) : "")
+      return
     }
-    setMinutes((current) => [next, ...current])
-    setSelectedMinutesId(id)
+    setSelectedMinutesId(result.id)
     setNewMeetingId("")
     setNewMinutesOpen(false)
     setView("minutes")
   }
   function saveMinutes(next: MeetingMinutes) {
-    if (canArchiveMinutes && next.status === "Archivé") {
-      setMinutes((current) =>
-        current.map((item) => (item.id === next.id ? next : item))
-      )
-      return
-    }
     if (
       !canDraftMinutes ||
       next.status !== "Brouillon" ||
@@ -426,14 +378,14 @@ export function DocumentsClient() {
         meetings.find((meeting) => meeting.id === next.meetingId)?.status ?? ""
       )
     )
-      return
+      return "Votre rôle ne permet pas de modifier ce procès-verbal."
     const meeting = meetings.find((item) => item.id === next.meetingId)
     const sharedAttendance = meeting?.attendance
       ? Object.entries(meeting.attendance)
           .filter(([, present]) => present)
           .map(([memberId]) => memberId)
       : next.presentMemberIds
-    setMinutes((current) =>
+    return setMinutes((current) =>
       current.map((item) =>
         item.id === next.id
           ? { ...next, presentMemberIds: sharedAttendance }
@@ -446,6 +398,10 @@ export function DocumentsClient() {
     pv: MeetingMinutes
   ) {
     if (!user) return t("Utilisateur non connecté.")
+    if (action === "submit-minutes") {
+      const issue = saveMinutes(pv)
+      if (issue) return issue
+    }
     const result = runMeetingWorkflow(action, pv.meetingId, user, pv.id)
     return result.error ?? null
   }
@@ -493,15 +449,11 @@ export function DocumentsClient() {
             <Metric label={t("Documents")} value={documents.length} />
             <Metric
               label={t("Validés")}
-              value={
-                documents.filter((doc) => doc.status === "Validé").length
-              }
+              value={documents.filter((doc) => doc.status === "Validé").length}
             />
             <Metric
               label={t("Archivés")}
-              value={
-                documents.filter((doc) => doc.status === "Archivé").length
-              }
+              value={documents.filter((doc) => doc.status === "Archivé").length}
             />
           </div>
           <section className="space-y-6">
@@ -608,9 +560,7 @@ export function DocumentsClient() {
                         <td className="px-5 py-5">
                           <Badge
                             variant={
-                              doc.status === "Validé"
-                                ? "secondary"
-                                : "outline"
+                              doc.status === "Validé" ? "secondary" : "outline"
                             }
                           >
                             {t(doc.status)}
@@ -753,6 +703,7 @@ export function DocumentsClient() {
                 key={selectedMinutes.id}
                 minutes={selectedMinutes}
                 onSave={saveMinutes}
+                onArchive={(id) => archiveDemoRecord("minutes", id)}
                 onWorkflow={runMinutesWorkflow}
               />
             </section>
@@ -778,9 +729,7 @@ export function DocumentsClient() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">
-                  {t("Toutes les réunions")}
-                </SelectItem>
+                <SelectItem value="all">{t("Toutes les réunions")}</SelectItem>
                 {meetings.map((item) => (
                   <SelectItem key={item.id} value={item.id}>
                     {item.title}
@@ -806,9 +755,7 @@ export function DocumentsClient() {
                   </SelectItem>
                 ))}
                 <SelectItem value="PV">{t("Procès-verbal")}</SelectItem>
-                <SelectItem value={t("Décision")}>
-                  {t("Décision")}
-                </SelectItem>
+                <SelectItem value={t("Décision")}>{t("Décision")}</SelectItem>
               </SelectContent>
             </Select>
             <div className="relative">
@@ -887,6 +834,11 @@ export function DocumentsClient() {
         </TabsContent>
       </Tabs>
 
+      {operationNotice && (
+        <p role="status" className="rounded-lg border px-4 py-3 text-sm">
+          {operationNotice}
+        </p>
+      )}
       {formOpen && (
         <DocumentForm
           key={editing?.id ?? "new"}
@@ -911,10 +863,12 @@ export function DocumentsClient() {
           setSelectedDocId(null)
           setFormOpen(true)
         }}
-        onDelete={deleteDocument}
+        onApprove={approveDocument}
         canEdit={canEditDocuments}
-        canDelete={canDeleteDocuments}
-        canAddVersion={canEditDocuments}
+        canApprove={canApproveDocuments}
+        canAddVersion={
+          canEditDocuments && selectedDocument?.status !== "Archivé"
+        }
         canArchive={canArchiveDocuments}
       />
 

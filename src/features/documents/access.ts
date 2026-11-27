@@ -22,8 +22,9 @@ export function canViewDocument(
   if (document.visibility === "Présidence") return user.role !== "member"
 
   return (
-    user.role === "admin" ||
-    user.role === "president" ||
-    user.role === "archivist"
+    document.visibility === "Archives" &&
+    (user.role === "admin" ||
+      user.role === "president" ||
+      user.role === "archivist")
   )
 }

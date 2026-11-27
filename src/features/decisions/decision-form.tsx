@@ -63,6 +63,8 @@ export function DecisionForm({
     initial ? { ...initial } : blankDecision(reference)
   )
   const [error, setError] = useState("")
+  const approvedAgenda =
+    meetings.find((item) => item.id === form.meetingId)?.agenda ?? []
 
   function change<K extends keyof DecisionRecord>(
     key: K,
@@ -140,7 +142,14 @@ export function DecisionForm({
             <Label htmlFor="decision-meeting">{t("Réunion concernée *")}</Label>
             <Select
               value={form.meetingId}
-              onValueChange={(value) => change("meetingId", value)}
+              onValueChange={(meetingId) => {
+                setForm((current) => ({
+                  ...current,
+                  meetingId,
+                  agendaProposalId: undefined,
+                }))
+                setError("")
+              }}
             >
               <SelectTrigger id="decision-meeting">
                 <SelectValue placeholder={t("Sélectionner une réunion")} />
@@ -149,13 +158,43 @@ export function DecisionForm({
                 {meetings
                   .filter((meeting) => meeting.status === "En cours")
                   .map((meeting) => (
-                  <SelectItem key={meeting.id} value={meeting.id}>
-                    {meeting.title} ({meeting.date})
-                  </SelectItem>
+                    <SelectItem key={meeting.id} value={meeting.id}>
+                      {meeting.title} ({meeting.date})
+                    </SelectItem>
                   ))}
               </SelectContent>
             </Select>
           </div>
+          {approvedAgenda.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="decision-agenda">
+                {t("Point validé (facultatif)")}
+              </Label>
+              <Select
+                value={form.agendaProposalId ?? "none"}
+                onValueChange={(value) =>
+                  change(
+                    "agendaProposalId",
+                    value === "none" ? undefined : value
+                  )
+                }
+              >
+                <SelectTrigger id="decision-agenda">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">
+                    {t("Aucun point associé")}
+                  </SelectItem>
+                  {approvedAgenda.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="decision-status">{t("Statut *")}</Label>
             <Select
@@ -168,11 +207,13 @@ export function DecisionForm({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {(initial ? DECISION_STATUSES : ["En attente"] as const).map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {t(status)}
-                  </SelectItem>
-                ))}
+                {(initial ? DECISION_STATUSES : (["En attente"] as const)).map(
+                  (status) => (
+                    <SelectItem key={status} value={status}>
+                      {t(status)}
+                    </SelectItem>
+                  )
+                )}
               </SelectContent>
             </Select>
           </div>

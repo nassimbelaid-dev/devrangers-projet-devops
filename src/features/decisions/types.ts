@@ -13,6 +13,7 @@ export interface DecisionRecord {
   title: string
   description: string
   meetingId: string
+  agendaProposalId?: string
   date: string // YYYY-MM-DD
   status: DecisionStatus
   archivedAt?: string

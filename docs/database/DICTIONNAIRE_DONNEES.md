@@ -129,7 +129,7 @@
 | `created_at` | `timestamptz(3)` | Non | now() | Instant de proposition. |
 | `status` | `AgendaStatus` | Non | PROPOSED | État de validation. |
 | `sort_order` | `integer` | Oui | NULL | Ordre officiel non négatif ou NULL. |
-| `review_note` | `text` | Oui | NULL | Note du relecteur, si fournie. |
+| `review_note` | `text` | Oui | NULL | Note du relecteur. Pour chaque rejet, le service exige un motif non vide après retrait des espaces en début et en fin (MET-08). |
 | `reviewed_at` | `timestamptz(3)` | Oui | NULL | Instant de revue connu. |
 
 ### 2.9 `decisions` — Decision

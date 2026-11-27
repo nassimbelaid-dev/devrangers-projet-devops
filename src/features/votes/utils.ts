@@ -69,6 +69,7 @@ export function calculateBallot(
   seats: readonly SeatForVote[],
   meetingDate: string
 ): BallotSummary {
+  if (ballot.displaySummary) return ballot.displaySummary
   if (ballot.state === "Clôturé" && ballot.closedResult)
     return ballot.closedResult
   const activeSeats = seatRepresentations(

@@ -85,7 +85,10 @@ export function VotesClient() {
     : null
 
   const availableDecisions = decisions.filter(
-    (item) => !ballots.some((ballot) => ballot.decisionId === item.id)
+    (item) =>
+      item.status === "En attente" &&
+      meetingById(item.meetingId)?.status === "En cours" &&
+      !ballots.some((ballot) => ballot.decisionId === item.id)
   )
   const visible = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("fr")
@@ -176,7 +179,8 @@ export function VotesClient() {
       presentMemberIds: recordedPresence,
       votes: {},
     }
-    setBallots((current) => [newBallot, ...current])
+    const issue = setBallots((current) => [newBallot, ...current])
+    if (issue) return
     setSelectedId(id)
     setSearch("")
     setFilter("all")

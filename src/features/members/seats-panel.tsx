@@ -12,25 +12,50 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { committeeSeats, initialMembers } from "./mock-data"
 import { mandateStatus, todayIso } from "./utils"
 
-export function SeatsPanel({ members }: { members: CommitteeMemberRecord[] }) {
-  const t = useUiText()
-  const [presentIds, setPresentIds] = useState<Set<string>>(
-    () =>
-      new Set(
-        initialMembers
-          .filter((member) => member.id !== "m3")
-          .map((member) => member.id)
+const initialPresentIds = initialMembers
+  .filter((member) => member.id !== "m3")
+  .map((member) => member.id)
+
+function readPresence(storageKey: string) {
+  try {
+    const stored: unknown = JSON.parse(
+      window.localStorage.getItem(storageKey) ?? "null"
+    )
+    if (Array.isArray(stored)) {
+      return new Set(
+        stored.filter((id): id is string => typeof id === "string")
       )
-  )
+    }
+  } catch {
+    // A local storage failure leaves the default simulation available.
+  }
+  return new Set(initialPresentIds)
+}
+
+export function SeatsPanel({
+  members,
+  accountId,
+}: {
+  members: CommitteeMemberRecord[]
+  accountId: string
+}) {
+  const t = useUiText()
+  const storageKey = `comite-scientifique:seat-simulation:v1:${accountId}`
+  const [presentIds, setPresentIds] = useState(() => readPresence(storageKey))
+  const [storageFailed, setStorageFailed] = useState(false)
   const today = todayIso()
 
   function togglePresence(id: string, present: boolean) {
-    setPresentIds((previous) => {
-      const next = new Set(previous)
-      if (present) next.add(id)
-      else next.delete(id)
-      return next
-    })
+    const next = new Set(presentIds)
+    if (present) next.add(id)
+    else next.delete(id)
+    setPresentIds(next)
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify([...next]))
+      setStorageFailed(false)
+    } catch {
+      setStorageFailed(true)
+    }
   }
 
   const seatRows = committeeSeats.map((seat) => {
@@ -85,9 +110,14 @@ export function SeatsPanel({ members }: { members: CommitteeMemberRecord[] }) {
           {t("Simulation uniquement :")}
         </strong>{" "}
         {t(
-          "coche ou décoche la présence de chaque membre. Le titulaire représente son siège lorsqu'il est présent ; sinon, le suppléant présent prend sa place. Un même siège ne peut jamais compter deux représentants éligibles. Aucun vote n'est réellement enregistré ou autorisé ici."
+          "Les présences simulées sont enregistrées sur ce navigateur. Le titulaire présent est prioritaire sur le suppléant. Pour une réunion, utilisez sa feuille de présence."
         )}
       </div>
+      {storageFailed && (
+        <p role="status" className="text-sm text-destructive">
+          {t("Impossible d’enregistrer les présences simulées.")}
+        </p>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         {seatRows.map(({ seat, titular, substitute, eligible }) => (
@@ -129,8 +159,10 @@ export function SeatsPanel({ members }: { members: CommitteeMemberRecord[] }) {
                       {t("Représentant éligible :")}{" "}
                       <strong>{eligible.name}</strong> ({t(eligible.kind)})
                     </>
-                  ) : (
+                  ) : titular || substitute ? (
                     t("Aucun représentant éligible pour ce siège")
+                  ) : (
+                    t("Aucun mandat en cours pour ce siège.")
                   )}
                 </span>
               </div>

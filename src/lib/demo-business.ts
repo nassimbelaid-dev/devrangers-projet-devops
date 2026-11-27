@@ -2,6 +2,7 @@
  * Règles métier du prototype local. Fonctions pures : aucun appel réseau,
  * aucune manipulation de l'authentification ni écriture sur disque.
  */
+import { captureMinutes } from "@/features/documents/utils"
 import { committeeSeats } from "@/features/members/mock-data"
 import { validateMemberSeat } from "@/features/members/utils"
 import {
@@ -25,6 +26,7 @@ import type {
 } from "@/features/notifications/types"
 import type { BallotSession } from "@/features/votes/types"
 import type { DemoUser } from "@/lib/static-auth"
+import { ACTION_PRIORITIES, ACTION_STATUSES } from "@/features/decisions/types"
 
 export const NOTIFICATION_REMINDER_WINDOWS = {
   meetingBeforeStartMs: 24 * 60 * 60 * 1000,
@@ -60,7 +62,7 @@ export function createReminderNotifications(
   for (const meeting of state.meetings) {
     if (meeting.status !== "Planifiée") continue
     const startsAt = new Date(
-      `${meeting.date}T${meeting.startTime}:00`
+      `${meeting.date}T${meeting.startTime}:00+01:00`
     ).getTime()
     const remaining = startsAt - now.getTime()
     if (
@@ -92,7 +94,7 @@ export function createReminderNotifications(
   }
   for (const action of state.actions) {
     if (action.status === "Terminée") continue
-    const deadline = new Date(`${action.dueDate}T23:59:59`).getTime()
+    const deadline = new Date(`${action.dueDate}T23:59:59+01:00`).getTime()
     const remaining = deadline - now.getTime()
     const kind =
       remaining < 0
@@ -143,6 +145,7 @@ export type TransitionResult = { state: DemoState; error?: string }
 export type WorkflowAction =
   | "start"
   | "close"
+  | "cancel"
   | "submit-minutes"
   | "return-minutes"
   | "sign-minutes"
@@ -220,6 +223,56 @@ export function applyMeetingWorkflow(
   const presidentId = roleRecipient("president")
   const secretaryId = roleRecipient("secretary")
   const archivistId = roleRecipient("archivist")
+  if (action === "cancel") {
+    if (actor.role !== "secretary" || meeting.status !== "Planifiée")
+      return {
+        state,
+        error: "Seul le secrétaire peut annuler une réunion planifiée.",
+      }
+
+    const invited = new Set(
+      state.notifications
+        .filter(
+          (item) => item.kind === "convocation" && item.entityId === meeting.id
+        )
+        .map((item) => item.recipientId)
+    )
+    const notices = meeting.invitationsSentAt
+      ? recipients
+          .filter((item) => item.isActive !== false && invited.has(item.id))
+          .map((recipient) => ({
+            ...notification(
+              "reunion-annulee",
+              "Réunion annulée",
+              meeting.title,
+              `Réunion ${meeting.id}`,
+              "/meetings",
+              recipient.id,
+              {
+                category: "meetings",
+                entityType: "meeting",
+                entityId: meeting.id,
+                senderId: actor.id,
+                dedupeKey: `meeting-cancel:${meeting.id}:${recipient.id}`,
+              }
+            ),
+            titleKey: "Réunion annulée",
+            messageKey: "La réunion {title} a été annulée.",
+            templateValues: { title: meeting.title },
+          }))
+      : []
+    return {
+      state: withNotifications(
+        {
+          ...state,
+          meetings: state.meetings.map((item) =>
+            item.id === meeting.id ? { ...item, status: "Annulée" } : item
+          ),
+        },
+        notices
+      ),
+    }
+  }
   if (action === "start") {
     if (actor.role !== "president")
       return { state, error: "Seul le président peut démarrer la réunion." }
@@ -297,7 +350,10 @@ export function applyMeetingWorkflow(
         error:
           "Seul le secrétaire peut soumettre un brouillon après clôture de la réunion.",
       }
-    if (!minutes.summary.trim() || !minutes.presentMemberIds.length)
+    const presentMemberIds = meeting.attendance
+      ? meeting.participantIds.filter((id) => meeting.attendance?.[id] === true)
+      : minutes.presentMemberIds
+    if (!minutes.summary.trim() || !presentMemberIds.length)
       return {
         state,
         error: "Le PV doit contenir un compte rendu et au moins une présence.",
@@ -305,6 +361,16 @@ export function applyMeetingWorkflow(
     const updated = {
       ...minutes,
       status: "À signer" as const,
+      presentMemberIds,
+      snapshotVersion: 1 as const,
+      officialSnapshot: captureMinutes(
+        minutes,
+        meeting,
+        state.decisions,
+        state.members,
+        state.actions,
+        state.ballots
+      ),
       submittedAt: now,
       updatedAt: now,
       version: minutes.version + 1,
@@ -372,6 +438,16 @@ export function applyMeetingWorkflow(
     }
   }
   if (action === "sign-minutes") {
+    if (
+      !minutes.officialSnapshot &&
+      minutes.status === "À signer" &&
+      actor.role === "president"
+    )
+      return {
+        state,
+        error:
+          "Un PV soumis doit être retourné puis soumis à nouveau pour établir son instantané.",
+      }
     if (
       actor.role !== "president" ||
       meeting.status !== "Clôturée" ||
@@ -504,7 +580,7 @@ function agendaView(
   meetingId: string
 ): AgendaItem[] {
   return proposals
-    .filter((p) => p.meetingId === meetingId && p.status !== "Rejeté")
+    .filter((p) => p.meetingId === meetingId && p.status === "Validé")
     .sort((a, b) => {
       if (a.status !== b.status) return a.status === "Validé" ? -1 : 1
       return (
@@ -540,7 +616,7 @@ export function isAgendaReviewOnly(
 }
 
 /** Le module collaboratif est la source de vérité des points, statuts et ordres. */
-function attachAgenda(
+export function attachAgenda(
   meetings: Meeting[],
   proposals: AgendaProposal[]
 ): Meeting[] {
@@ -548,45 +624,6 @@ function attachAgenda(
     const agenda = agendaView(proposals, meeting.id)
     return sameAgenda(meeting.agenda, agenda) ? meeting : { ...meeting, agenda }
   })
-}
-
-/** Fusionne les points modifiés dans le formulaire Réunions, en gardant leurs pièces jointes. */
-function mergeMeetingAgenda(
-  previous: DemoState,
-  meeting: Meeting,
-  existing?: Meeting
-): AgendaProposal[] {
-  if (existing && sameAgenda(existing.agenda, meeting.agenda))
-    return previous.agenda
-  const now = new Date().toISOString()
-  const keepOthers = previous.agenda.filter((p) => p.meetingId !== meeting.id)
-  const old = previous.agenda.filter((p) => p.meetingId === meeting.id)
-  const ordered = meeting.agenda.map((item, index) => {
-    const oldItem = old.find((p) => p.id === item.id)
-    return {
-      ...oldItem,
-      id: item.id,
-      meetingId: meeting.id,
-      title: item.title,
-      description: oldItem?.description ?? "",
-      proposedById: item.proposedById,
-      createdAt: oldItem?.createdAt ?? now,
-      status: item.status,
-      order: item.status === "Validé" ? index : null,
-      attachments: oldItem?.attachments ?? [],
-      reviewedById:
-        item.status === "Validé"
-          ? (oldItem?.reviewedById ?? "m1")
-          : oldItem?.reviewedById,
-      reviewNote: oldItem?.reviewNote,
-    } satisfies AgendaProposal
-  })
-  // Un point rejeté reste dans l'historique même s'il n'apparaît pas dans le formulaire Réunions.
-  const rejected = old.filter(
-    (p) =>
-      p.status === "Rejeté" && !meeting.agenda.some((item) => item.id === p.id)
-  )
-  return [...keepOthers, ...ordered, ...rejected]
 }
 
 /** Explique pourquoi une suppression ne peut pas être faite sans casser les liens existants. */
@@ -709,6 +746,38 @@ export function applyDemoChange<K extends CollectionKey>(
         if (issue) return { state, error: issue }
       }
     }
+    for (const member of next.members) {
+      const previous = state.members.find((item) => item.id === member.id)
+      if (
+        !previous ||
+        (previous.mandateStart === member.mandateStart &&
+          previous.mandateEnd === member.mandateEnd &&
+          previous.seatId === member.seatId &&
+          previous.kind === member.kind &&
+          previous.role === member.role)
+      )
+        continue
+      if (
+        state.meetings.some(
+          (meeting) =>
+            ["En cours", "Clôturée", "PV signé"].includes(meeting.status) &&
+            meeting.participantIds.includes(member.id)
+        )
+      )
+        return { state, error: "Un mandat utilisé en séance est protégé." }
+      const conflict = state.meetings.find(
+        (meeting) =>
+          meeting.status === "Planifiée" &&
+          meeting.participantIds.includes(member.id) &&
+          (meeting.date < member.mandateStart ||
+            meeting.date > member.mandateEnd)
+      )
+      if (conflict)
+        return {
+          state,
+          error: "Ce mandat ne couvre plus la date d’une réunion planifiée.",
+        }
+    }
     // Une modification de mandat/siège peut invalider un vote enregistré.
     next.ballots = next.ballots.map((b) => {
       if (b.state === "Clôturé") return b
@@ -738,6 +807,12 @@ export function applyDemoChange<K extends CollectionKey>(
     }
     for (const meeting of next.meetings) {
       const old = state.meetings.find((m) => m.id === meeting.id)
+      if (old && JSON.stringify(old) === JSON.stringify(meeting)) continue
+      if (old?.status === "Annulée")
+        return {
+          state,
+          error: "Une réunion annulée ne peut plus être modifiée.",
+        }
       if (
         !isIsoDate(meeting.date) ||
         new Set(meeting.participantIds).size !==
@@ -826,60 +901,10 @@ export function applyDemoChange<K extends CollectionKey>(
           error:
             "Le statut d'une réunion ne peut être modifié que par une action du workflow.",
         }
-      if (!old || !sameAgenda(old.agenda, meeting.agenda)) {
-        next.agenda = mergeMeetingAgenda(
-          { ...state, agenda: next.agenda },
-          meeting,
-          old
-        )
-        for (const proposal of next.agenda.filter(
-          (item) => item.meetingId === meeting.id
-        )) {
-          const previousProposal = state.agenda.find(
-            (item) => item.id === proposal.id
-          )
-          if (!previousProposal)
-            for (const account of recipients.filter(
-              (item) => item.role === "president" && item.isActive !== false
-            ))
-              events.push(
-                notification(
-                  "proposition-agenda",
-                  `Nouvelle proposition : ${proposal.title}`,
-                  `Une proposition a été ajoutée à l'ordre du jour de ${meeting.title}.`,
-                  `Proposition ${proposal.id}`,
-                  "/agenda",
-                  account.id,
-                  {
-                    category: "agenda",
-                    entityType: "agenda",
-                    entityId: proposal.id,
-                    dedupeKey: `agenda-proposal:${proposal.id}:${account.id}`,
-                  }
-                )
-              )
-          else if (previousProposal.status !== proposal.status)
-            for (const account of recipients.filter(
-              (item) =>
-                item.isActive !== false &&
-                item.memberId === proposal.proposedById
-            ))
-              events.push(
-                notification(
-                  "revue-agenda",
-                  `Proposition ${proposal.status.toLowerCase()} : ${proposal.title}`,
-                  `La proposition concernant ${meeting.title} a été ${proposal.status.toLowerCase()}.`,
-                  `Proposition ${proposal.id}`,
-                  "/agenda",
-                  account.id,
-                  {
-                    category: "agenda",
-                    entityType: "agenda",
-                    entityId: proposal.id,
-                    dedupeKey: `agenda-review:${proposal.id}:${proposal.status}:${account.id}`,
-                  }
-                )
-              )
+      if (!sameAgenda(old?.agenda ?? [], meeting.agenda)) {
+        return {
+          state,
+          error: "Gérez les propositions depuis le module Ordre du jour.",
         }
       }
       if (
@@ -994,11 +1019,39 @@ export function applyDemoChange<K extends CollectionKey>(
   }
 
   if (key === "agenda") {
+    if (new Set(next.agenda.map(({ id }) => id)).size !== next.agenda.length)
+      return {
+        state,
+        error: "Les identifiants des propositions doivent être uniques.",
+      }
+    for (const proposal of state.agenda) {
+      if (next.agenda.some((item) => item.id === proposal.id)) continue
+      if (
+        proposal.status === "Validé" ||
+        state.decisions.some(
+          (decision) => decision.agendaProposalId === proposal.id
+        ) ||
+        !state.meetings.some(
+          (meeting) =>
+            meeting.id === proposal.meetingId && meeting.status === "Planifiée"
+        )
+      )
+        return { state, error: "Cette proposition ne peut pas être retirée." }
+    }
     for (const proposal of next.agenda) {
       const meeting = next.meetings.find(
         (item) => item.id === proposal.meetingId
       )
       const old = state.agenda.find((item) => item.id === proposal.id)
+      if (old && JSON.stringify(old) === JSON.stringify(proposal)) continue
+      if (
+        !proposal.title.trim() ||
+        (proposal.status === "Rejeté" && !proposal.reviewNote?.trim())
+      )
+        return {
+          state,
+          error: "Indiquez un titre et un motif pour tout rejet.",
+        }
       if (!old && proposal.status !== "Proposé")
         return {
           state,
@@ -1096,6 +1149,13 @@ export function applyDemoChange<K extends CollectionKey>(
                 decision.reference.trim().toLocaleLowerCase()
           ) ||
           decision.status !== "En attente" ||
+          (decision.agendaProposalId &&
+            !next.agenda.some(
+              (item) =>
+                item.id === decision.agendaProposalId &&
+                item.meetingId === decision.meetingId &&
+                item.status === "Validé"
+            )) ||
           !meetingForDecision ||
           meetingForDecision.status !== "En cours"
         )
@@ -1177,7 +1237,7 @@ export function applyDemoChange<K extends CollectionKey>(
             return {
               state,
               error:
-                "Cette décision possède un scrutin clôturé. Rouvrez le scrutin pour modifier son résultat.",
+                "Le résultat d’un scrutin clôturé est définitif. Sans quorum, la décision reste en attente.",
             }
           }
         }
@@ -1215,8 +1275,36 @@ export function applyDemoChange<K extends CollectionKey>(
   }
 
   if (key === "actions") {
+    for (const action of state.actions) {
+      if (
+        !next.actions.some((item) => item.id === action.id) &&
+        state.minutes.some(
+          (minutes) =>
+            (minutes.status === "Signé" || minutes.status === "Archivé") &&
+            minutes.officialSnapshot?.actions.some(
+              (entry) => entry.id === action.id
+            )
+        )
+      )
+        return {
+          state,
+          error:
+            "Une action figurant dans un PV signé ne peut pas être supprimée.",
+        }
+    }
     for (const action of next.actions) {
       const old = state.actions.find((a) => a.id === action.id)
+      if (old && JSON.stringify(old) === JSON.stringify(action)) continue
+      if (
+        !action.title.trim() ||
+        !ACTION_STATUSES.includes(action.status) ||
+        !ACTION_PRIORITIES.includes(action.priority)
+      )
+        return {
+          state,
+          error:
+            "L’action doit avoir un titre, un statut et une priorité valides.",
+        }
       if (
         action.decisionId &&
         !next.decisions.some(
@@ -1345,10 +1433,20 @@ export function applyDemoChange<K extends CollectionKey>(
       const meetingForBallot = next.meetings.find(
         (m) => m.id === decisionForBallot?.meetingId
       )
-      if (!meetingForBallot)
+      if (!meetingForBallot || meetingForBallot.status !== "En cours")
         return {
           state,
           error: "Le scrutin doit être lié à une réunion existante.",
+        }
+      if (
+        !old &&
+        (ballot.state !== "Ouvert" ||
+          ballot.closedResult ||
+          Object.keys(ballot.votes).length)
+      )
+        return {
+          state,
+          error: "Un nouveau scrutin doit être ouvert et sans vote.",
         }
       if (ballot.state !== "Clôturé") {
         const meetingPresence = meetingForBallot.participantIds
@@ -1498,6 +1596,19 @@ export function applyDemoChange<K extends CollectionKey>(
   }
 
   if (key === "documents") {
+    for (const item of next.documents) {
+      const old = state.documents.find((entry) => entry.id === item.id)
+      if (
+        JSON.stringify(old) !== JSON.stringify(item) &&
+        (!["Comité", "Présidence", "Archives"].includes(item.visibility) ||
+          [old?.meetingId, item.meetingId].some((id) =>
+            state.meetings.some(
+              (meeting) => meeting.id === id && meeting.status === "Annulée"
+            )
+          ))
+      )
+        return { state, error: "Ce document ne peut pas être modifié." }
+    }
     if (
       next.documents.some(
         (d) => d.meetingId && !next.meetings.some((m) => m.id === d.meetingId)

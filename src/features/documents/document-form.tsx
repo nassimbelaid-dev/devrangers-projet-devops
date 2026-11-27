@@ -6,13 +6,13 @@ import { useUiText } from "@/features/ui-text"
 import type { FormEvent } from "react"
 import type {
   CommitteeDocument,
-  DocumentStatus,
   DocumentType,
   DocumentVisibility,
 } from "./types"
-import { DOCUMENT_STATUSES, DOCUMENT_TYPES, VISIBILITIES } from "./types"
+import { DOCUMENT_TYPES, VISIBILITIES } from "./types"
 
 import { useDemoData } from "@/lib/demo-store"
+import { useStaticAuth } from "@/lib/static-auth"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -40,7 +40,7 @@ interface Props {
   initial: CommitteeDocument | null
   reference: string
   onOpenChange: (open: boolean) => void
-  onSave: (document: CommitteeDocument) => void
+  onSave: (document: CommitteeDocument) => string | null
 }
 
 export function DocumentForm({
@@ -52,11 +52,10 @@ export function DocumentForm({
 }: Props) {
   const t = useUiText()
   const { meetings } = useDemoData()
+  const { user } = useStaticAuth()
   const [title, setTitle] = useState(initial?.title ?? "")
   const [type, setType] = useState<DocumentType>(initial?.type ?? "Rapport")
-  const [status, setStatus] = useState<DocumentStatus>(
-    initial?.status ?? "Brouillon"
-  )
+  const status = initial?.status ?? "Brouillon"
   const [visibility, setVisibility] = useState<DocumentVisibility>(
     initial?.visibility ?? "Comité"
   )
@@ -80,14 +79,14 @@ export function DocumentForm({
               id: makeId(),
               number: 1,
               date,
-              author: "Utilisateur démo",
+              author: user ? `${user.firstName} ${user.lastName}` : "",
               filename: file.name,
               note: "Version initiale",
               file,
             },
           ]
         : []
-    onSave({
+    const issue = onSave({
       id: initial?.id ?? `doc-${makeId()}`,
       reference: initial?.reference ?? reference,
       title: title.trim(),
@@ -99,6 +98,7 @@ export function DocumentForm({
       updatedAt: date,
       versions,
     })
+    if (issue) return setError(t(issue))
     onOpenChange(false)
   }
 
@@ -149,26 +149,6 @@ export function DocumentForm({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="document-status">{t("Statut")}</Label>
-              <Select
-                value={status}
-                onValueChange={(value) => setStatus(value as DocumentStatus)}
-              >
-                <SelectTrigger id="document-status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {DOCUMENT_STATUSES.filter((value) => value !== "Archivé").map(
-                    (value) => (
-                      <SelectItem value={value} key={value}>
-                        {t(value)}
-                      </SelectItem>
-                    )
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="document-visibility">
                 {t("Accès (simulation)")}
               </Label>
@@ -203,11 +183,13 @@ export function DocumentForm({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="aucune">{t("Non rattaché")}</SelectItem>
-                  {meetings.map((meeting) => (
-                    <SelectItem key={meeting.id} value={meeting.id}>
-                      {meeting.title}
-                    </SelectItem>
-                  ))}
+                  {meetings
+                    .filter((meeting) => meeting.status !== "Annulée")
+                    .map((meeting) => (
+                      <SelectItem key={meeting.id} value={meeting.id}>
+                        {meeting.title}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>

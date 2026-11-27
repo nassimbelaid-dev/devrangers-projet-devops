@@ -71,8 +71,8 @@ export function MeetingDetails({
   const [busy, setBusy] = useState(false)
   if (!meeting) return null
 
-  const currentMeeting =
-    meetings.find((item) => item.id === meeting.id) ?? meeting
+  const currentMeeting = meetings.find((item) => item.id === meeting.id)
+  if (!currentMeeting) return null
   const linkedMinutes = minutes.find((item) => item.meetingId === meeting.id)
   const linkedDecisionIds = decisions
     .filter((item) => item.meetingId === meeting.id)
@@ -88,14 +88,16 @@ export function MeetingDetails({
   const canClose = user?.role === "president" && stage === 1
   const canTakeAttendance =
     (user?.role === "president" || user?.role === "secretary") && stage === 1
-  const runAction = (action: "start" | "close") => {
+  const runAction = (action: "start" | "close" | "cancel") => {
     if (
       !user ||
       !window.confirm(
         t(
           action === "start"
             ? "Confirmer le démarrage de cette réunion ?"
-            : "Confirmer la clôture de cette réunion ?"
+            : action === "cancel"
+              ? "Confirmer l’annulation de cette réunion ?"
+              : "Confirmer la clôture de cette réunion ?"
         )
       )
     )
@@ -108,7 +110,9 @@ export function MeetingDetails({
         : t(
             action === "start"
               ? "La réunion a démarré."
-              : "La réunion est clôturée."
+              : action === "cancel"
+                ? "La réunion est annulée."
+                : "La réunion est clôturée."
           )
     )
     setBusy(false)
@@ -231,13 +235,22 @@ export function MeetingDetails({
                   : t("Non envoyées")}
               </p>
             </div>
-            <Button disabled={busy} onClick={sendInvitations}>
-              {t(
-                currentMeeting.invitationsSentAt
-                  ? "Renvoyer les convocations"
-                  : "Envoyer les convocations"
-              )}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                disabled={busy}
+                variant="outline"
+                onClick={() => runAction("cancel")}
+              >
+                {t("Annuler la réunion")}
+              </Button>
+              <Button disabled={busy} onClick={sendInvitations}>
+                {t(
+                  currentMeeting.invitationsSentAt
+                    ? "Renvoyer les convocations"
+                    : "Envoyer les convocations"
+                )}
+              </Button>
+            </div>
           </section>
         )}
         {(canStart || canClose) && (
@@ -320,7 +333,7 @@ export function MeetingDetails({
               {t("Participants")} ({participants.length})
             </TabsTrigger>
             <TabsTrigger value="agenda">
-              {t("Ordre du jour")} ({meeting.agenda.length})
+              {t("Ordre du jour")} ({currentMeeting.agenda.length})
             </TabsTrigger>
           </TabsList>
 
@@ -453,12 +466,19 @@ export function MeetingDetails({
           </TabsContent>
 
           <TabsContent value="agenda" className="space-y-2 pt-3">
-            {meeting.agenda.length === 0 ? (
+            <Button asChild size="sm" variant="outline">
+              <a
+                href={`${window.location.pathname.split("/").slice(0, 2).join("/")}/agenda?meeting=${encodeURIComponent(currentMeeting.id)}`}
+              >
+                {t("Ouvrir l’ordre du jour")}
+              </a>
+            </Button>
+            {currentMeeting.agenda.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 {t("Aucun point à l'ordre du jour.")}
               </p>
             ) : (
-              meeting.agenda.map((item, index) => (
+              currentMeeting.agenda.map((item, index) => (
                 <div
                   key={item.id}
                   className="flex items-start justify-between gap-3 rounded-lg border p-3"

@@ -10,7 +10,7 @@ import type { ActionRecord, DecisionRecord } from "@/features/decisions/types"
 import type { Meeting } from "@/features/meetings/types"
 import type { CommitteeMemberRecord } from "@/features/members/types"
 import type { BallotSession } from "@/features/votes/types"
-import type { MeetingMinutes } from "./types"
+import type { MeetingMinutes, MinutesSnapshot } from "./types"
 
 export function formatDate(date: string) {
   if (!date) return "—"
@@ -49,6 +49,68 @@ export function escapeHTML(value: string): string {
   return value.replace(/[&<>"']/g, (char) => entities[char] ?? char)
 }
 
+export function captureMinutes(
+  pv: MeetingMinutes,
+  meeting: Meeting,
+  decisions: DecisionRecord[],
+  members: CommitteeMemberRecord[],
+  actions: ActionRecord[],
+  ballots: BallotSession[]
+): MinutesSnapshot {
+  const related = decisions.filter((item) => item.meetingId === pv.meetingId)
+  const decisionIds = new Set(related.map((item) => item.id))
+  const linkedActions = actions.filter((action) =>
+    decisionIds.has(action.decisionId)
+  )
+  const memberIds = new Set([
+    ...meeting.participantIds,
+    ...linkedActions.map((action) => action.assigneeId),
+  ])
+  return {
+    meeting: {
+      ...meeting,
+      participantIds: [...meeting.participantIds],
+      attendance: meeting.attendance ? { ...meeting.attendance } : undefined,
+      agenda: meeting.agenda
+        .filter((item) => item.status === "Validé")
+        .map((item) => ({ ...item })),
+    },
+    decisions: related.map((item) => ({ ...item })),
+    actions: linkedActions.map((item) => ({ ...item })),
+    members: members
+      .filter((item) => memberIds.has(item.id))
+      .map(({ id, name, kind, role }) => ({ id, name, kind, role })),
+    results: Object.fromEntries(
+      ballots
+        .filter((ballot) => decisionIds.has(ballot.decisionId))
+        .map((ballot) => {
+          const { seats: _seats, ...summary } = calculateBallot(
+            ballot,
+            members,
+            committeeSeats,
+            meeting.date
+          )
+          return [ballot.decisionId, summary]
+        })
+    ),
+  }
+}
+
+export function resolveMinutesContent(
+  pv: MeetingMinutes,
+  meetings: Meeting[],
+  decisions: DecisionRecord[],
+  members: CommitteeMemberRecord[],
+  actions: ActionRecord[],
+  ballots: BallotSession[]
+): MinutesSnapshot | undefined {
+  if (pv.status !== "Brouillon") return pv.officialSnapshot
+  const meeting = meetings.find((item) => item.id === pv.meetingId)
+  return meeting
+    ? captureMinutes(pv, meeting, decisions, members, actions, ballots)
+    : undefined
+}
+
 export function buildPrintableMinutes(
   pv: MeetingMinutes,
   meetings: Meeting[] = initialMeetings,
@@ -57,24 +119,33 @@ export function buildPrintableMinutes(
   actionsSource: ActionRecord[] = [],
   ballotsSource: BallotSession[] = []
 ) {
-  const meeting = meetings.find((item) => item.id === pv.meetingId)
-  if (!meeting) return ""
+  const content = resolveMinutesContent(
+    pv,
+    meetings,
+    decisionsSource,
+    members,
+    actionsSource,
+    ballotsSource
+  )
   const all = (value: string) => escapeHTML(value)
+  if (!content) {
+    if (pv.status === "Brouillon") return ""
+    return `<!doctype html><html lang="fr"><meta charset="utf-8"><title>${all(pv.reference)}</title><h1>${all(pv.reference)}</h1><p>Instantané historique indisponible.</p><p>${all(pv.signedBy ?? "")} · ${all(pv.signedAt ?? "")}</p><p style="white-space:pre-wrap">${all(pv.summary)}</p></html>`
+  }
+  const {
+    meeting,
+    members: capturedMembers,
+    decisions: meetingDecisions,
+    actions: capturedActions,
+    results,
+  } = content
   const agenda = meeting.agenda
     .filter((item) => item.status === "Validé")
     .map((item) => `<li>${all(item.title)}</li>`)
     .join("")
-  const meetingDecisions = decisionsSource.filter(
-    (decision) => decision.meetingId === pv.meetingId
-  )
   const decisions = meetingDecisions
     .map((decision) => {
-      const ballot = ballotsSource.find(
-        (item) => item.decisionId === decision.id
-      )
-      const result = ballot
-        ? calculateBallot(ballot, members, committeeSeats, meeting.date)
-        : null
+      const result = results[decision.id]
       const summary = result
         ? ` · Scrutin ${result.outcome} — pour ${result.pour}, contre ${result.contre}, abstention ${result.abstention}; quorum ${result.representedSeatCount}/${result.activeSeatCount}`
         : ""
@@ -87,22 +158,20 @@ export function buildPrintableMinutes(
         .map(([id]) => id)
     : pv.presentMemberIds
   const attendees =
-    presentIds.map((id) => all(memberName(id, members))).join(", ") || "—"
+    presentIds.map((id) => all(memberName(id, capturedMembers))).join(", ") ||
+    "—"
   const absents = meeting.participantIds
     .filter((id) => meeting.attendance?.[id] === false)
-    .map((id) => all(memberName(id, members)))
+    .map((id) => all(memberName(id, capturedMembers)))
     .join(", ")
   const unknown = meeting.participantIds
     .filter((id) => meeting.attendance?.[id] === undefined)
-    .map((id) => all(memberName(id, members)))
+    .map((id) => all(memberName(id, capturedMembers)))
     .join(", ")
-  const actions = actionsSource
-    .filter((action) =>
-      meetingDecisions.some((decision) => decision.id === action.decisionId)
-    )
+  const actions = capturedActions
     .map(
       (action) =>
-        `<li>${all(action.title)} — ${all(members.find((member) => member.id === action.assigneeId)?.name ?? "—")} — ${all(action.dueDate || "—")} — ${all(action.status)}</li>`
+        `<li>${all(action.title)} — ${all(capturedMembers.find((member) => member.id === action.assigneeId)?.name ?? "—")} — ${all(action.dueDate || "—")} — ${all(action.status)}</li>`
     )
     .join("")
   return `<!doctype html><html lang="fr"><head><meta charset="utf-8"/><title>${all(pv.reference)} — Procès-verbal</title>

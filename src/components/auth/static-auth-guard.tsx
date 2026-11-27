@@ -8,7 +8,12 @@ import { useUiText } from "@/features/ui-text"
 import type { LocaleType } from "@/types"
 import type { ReactNode } from "react"
 
-import { hasPermission, moduleForPath, useStaticAuth } from "@/lib/static-auth"
+import {
+  getCurrentDemoUser,
+  hasPermission,
+  moduleForPath,
+  useStaticAuth,
+} from "@/lib/static-auth"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,7 +27,7 @@ export function StaticAuthGuard({ children }: { children: ReactNode }) {
   const locale = params.lang as LocaleType
 
   useEffect(() => {
-    if (!isAuthenticated)
+    if (!isAuthenticated && !getCurrentDemoUser())
       router.replace(`/${locale}/sign-in?next=${encodeURIComponent(pathname)}`)
   }, [isAuthenticated, locale, pathname, router])
 

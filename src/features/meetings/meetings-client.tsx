@@ -128,10 +128,8 @@ export function MeetingsClient() {
 
   function saveMeeting(meeting: Meeting) {
     if (!hasPermission(user, "meetings", editingMeeting ? "edit" : "create"))
-      return
-    const current = meetings.find((item) => item.id === meeting.id)
-    if (meeting.status === "PV signé" && current?.status !== "PV signé") return
-    setMeetings((current) => {
+      return "Votre rôle ne permet pas de modifier les informations de cette réunion."
+    return setMeetings((current) => {
       const exists = current.some((item) => item.id === meeting.id)
       return exists
         ? current.map((item) => (item.id === meeting.id ? meeting : item))
