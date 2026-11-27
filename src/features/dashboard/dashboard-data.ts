@@ -9,7 +9,7 @@ export const DEMO_REFERENCE_DATE = `${now.getFullYear()}-${String(now.getMonth()
 export function useDashboardData() {
   const { user } = useStaticAuth()
   const { meetings, members, decisions, actions, notifications } = useDemoData()
-  const dashboardMeetings = [...meetings]
+  const upcomingMeetings = [...meetings]
     .filter(
       (meeting) =>
         meeting.status === "Planifiée" && meeting.date >= DEMO_REFERENCE_DATE
@@ -17,7 +17,7 @@ export function useDashboardData() {
     .sort((a, b) =>
       `${a.date}T${a.startTime}`.localeCompare(`${b.date}T${b.startTime}`)
     )
-    .slice(0, 3)
+  const dashboardMeetings = upcomingMeetings.slice(0, 3)
 
   const dashboardMembers = members
 
@@ -71,7 +71,7 @@ export function useDashboardData() {
   const dashboardRecentNotifications = dashboardNotifications.slice(0, 3)
 
   const dashboardMetrics = {
-    scheduledMeetings: dashboardMeetings.length,
+    scheduledMeetings: upcomingMeetings.length,
     openActions: dashboardActionCounts.todo + dashboardActionCounts.inProgress,
     adoptedDecisions: dashboardDecisionCounts.adopted,
     unreadNotifications: dashboardUnreadCount,

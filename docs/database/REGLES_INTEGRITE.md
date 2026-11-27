@@ -157,8 +157,8 @@ Toutes les opérations requièrent une session valide, un compte actif, les perm
 |---|---|
 | MET-05 | Secrétaire crée PLANNED et modifie uniquement une réunion planifiée. Titre, date, heures et salle valides ; pas de séance traversant minuit. Toute modification du jour ou d'un mandat revalide les participants et leurs mandats couvrant ce jour (bornes inclusives). |
 | MET-06 | Secrétaire envoie/renvoie les convocations d'une réunion planifiée aux comptes actifs liés aux participants. Refuser si aucun destinataire. Enregistrer le dernier envoi et les notifications ensemble. Une modification significative après convocation notifie l'union des anciens et nouveaux participants actifs ; simple réordre de l'agenda exclu. |
-| MET-07 | Président démarre uniquement PLANNED avec titre/date/horaires/salle complets, au moins un participant et un point validé. Puis données de séance et agenda verrouillés. Président clôture uniquement IN_PROGRESS, sans scrutin ouvert. Inscrire started_at/closed_at aux transitions. Pas de réouverture ni d'annulation implémentée en V1 (CANCELLED réservé). |
-| MET-08 | Président, secrétaire, membre proposent sous leur propre identité membre. Auteur modifie sa proposition PROPOSED/REJECTED uniquement tant que la réunion est planifiée. Président examine, valide/rejette, identifie relecteur et ordonne les points officiels ; retrait éventuel avant démarrage, interdit si référencé. Aucun changement d'agenda après démarrage, quelle que soit la voie d'écriture. |
+| MET-07 | Président démarre uniquement PLANNED avec titre/date/horaires/salle complets, au moins un participant et un point validé. Puis données de séance et agenda verrouillés. Président clôture uniquement IN_PROGRESS, sans scrutin ouvert. Inscrire started_at/closed_at aux transitions correspondantes. Seul le secrétaire peut annuler une réunion `PLANNED` en la passant à `CANCELLED`, sans ajouter d’attribut d’annulation. Conserver la réunion et notifier en interne les comptes actifs des participants déjà convoqués. Sans convocation préalable, aucun avis. Pas de réouverture. |
+| MET-08 | Président, secrétaire et membre proposent sous leur propre identité membre. L’auteur modifie sa proposition PROPOSED/REJECTED uniquement tant que la réunion est planifiée. Le président seul valide ou rejette les propositions, y compris celles du secrétaire. Pour tout rejet, le service exige un motif non vide après retrait des espaces en début et en fin et l’enregistre dans `review_note`. Le service identifie le relecteur depuis son compte lié. Seul le président peut réordonner les points validés (`APPROVED`), uniquement tant que la réunion est planifiée (`PLANNED`). Seul l’auteur peut retirer sa propre proposition `PROPOSED` ou `REJECTED` non référencée tant que la réunion reste `PLANNED`. Verrouiller l’agenda dès la sortie de `PLANNED` sur toutes les voies d’écriture. |
 | MET-09 | Les propositions APPROVED seules composent l'ordre du jour officiel ; tri par sort_order puis critère stable. Les propositions rejetées/proposées restent séparées. Aucune copie de l'agenda dans meetings. |
 | MET-10 | Une participation par réunion/membre, mandat du même membre applicable au jour de séance. Président ou secrétaire seuls relèvent la présence pendant IN_PROGRESS. NULL signifie non renseignée. Après clôture, présence verrouillée. Toute perte de représentation invalide le vote correspondant dans tous les scrutins ouverts de cette réunion, dans la même transaction que la mise à jour. |
 
@@ -166,7 +166,7 @@ Toutes les opérations requièrent une session valide, un compte actif, les perm
 
 | ID | Contrôle obligatoire côté service |
 |---|---|
-| MET-11 | Président ou secrétaire crée une décision PENDING pendant IN_PROGRESS (extension au président proposée V1). Réunion obligatoire ; proposition facultative mais de même réunion. Référence métier unique générée atomiquement. Aucun client ne fixe un statut définitif ou une provenance d'import. |
+| MET-11 | Le président seul crée une décision PENDING pendant IN_PROGRESS. La réunion est obligatoire. La proposition facultative doit appartenir à cette réunion. La référence métier est unique et son allocation doit être atomique si elle est générée. Aucun client ne fixe un statut définitif ou une provenance d’import. |
 | MET-12 | Président seul ouvre un scrutin si réunion IN_PROGRESS, décision PENDING et aucun scrutin préalable (même clos sans quorum). Enregistrer OPEN, seuils valides, opened_at ; pas de résultat définitif. |
 | MET-13 | Siège actif si au moins un mandat couvre le jour de réunion, indépendamment des invités. Titulaire actif présent prioritaire ; sinon suppléant actif présent, y compris en l'absence de titulaire actif (choix V1). Les deux peuvent être présents sans deux votes. |
 | MET-14 | Déposer/modifier/retirer son propre vote : compte de rôle PRESIDENT, SECRETARY ou MEMBER, actif, membre lié, participation de la réunion et mandat correspondant au siège, actif à la date, membre présent représentant effectivement son siège, réunion IN_PROGRESS, scrutin OPEN. Les identifiants de provenance sont dérivés par le serveur. Seule exception au retrait par l'auteur : invalidation automatique d'un vote devenu inéligible pendant ouverture. |
@@ -178,14 +178,14 @@ Toutes les opérations requièrent une session valide, un compte actif, les perm
 
 | ID | Contrôle obligatoire côté service |
 |---|---|
-| MET-18 | Secrétaire crée, modifie, attribue et supprime les actions selon conservation. Membre responsable existant. Action autonome permise ; si décision liée, elle est ADOPTED et son jour est au plus celui de l'échéance. Réciproquement une décision liée à une action reste adoptée. |
-| MET-19 | Seul un compte MEMBER affecté peut modifier le statut de sa propre action dans le cadre de ce droit ; le secrétaire garde les droits de gestion. Réordonner les colonnes Kanban transactionnellement si nécessaire. Le retard est dérivé : action non DONE et échéance dépassée (fin de journée Africa/Algiers). L'évolution des actions ne modifie jamais un PV signé. |
+| MET-18 | Le président et le secrétaire créent, modifient, attribuent, réattribuent et suppriment les actions selon les mêmes règles de conservation. Ils peuvent modifier les champs de gestion existants, dont titre, description, priorité, échéance et décision liée. Aucun rôle ne peut supprimer une action qui figure dans l’instantané d’un PV signé, y compris après archivage du PV. Le responsable est un membre existant. Action autonome permise. Si une décision est liée, elle est ADOPTED et son jour est au plus celui de l’échéance. Une décision liée à une action reste adoptée. |
+| MET-19 | Le président et le secrétaire peuvent changer le statut et l’ordre de toute carte Kanban. Un compte MEMBER peut modifier uniquement le statut d’une action qui lui est attribuée. Le service conserve la maîtrise des rangs et réordonne les colonnes transactionnellement si nécessaire. Le retard est calculé pour les actions non DONE dont l’échéance est dépassée, à la fin du jour civil Africa/Algiers. L’évolution des actions ne modifie jamais un PV signé. |
 
 ### 4.5. Documents, fichiers, PV et archives
 
 | ID | Contrôle obligatoire côté service |
 |---|---|
-| MET-20 | Secrétaire crée/modifie les documents non archivés. Création sans version permise ; une nouvelle version exige fichier durable et auteur authentifié, numéro unique (allocation sous verrou ou retry). Version ancienne sans binaire uniquement via import is_historical. Pas de suppression documentaire ordinaire ; archive immuable. |
+| MET-20 | Seul le secrétaire peut créer un document, modifier un document non archivé et y déposer une nouvelle version. Il valide un document ordinaire par une transition `DRAFT` → `APPROVED`, sans circuit d’approbation supplémentaire. Lui seul attribue et modifie la visibilité d’un document non archivé parmi `COMMITTEE`, `PRESIDENCY` et `ARCHIVES`. La matrice de lecture reste applicable. La création sans version est permise. Une nouvelle version exige un fichier durable, un auteur authentifié et un numéro unique (allocation sous verrou ou retry). Version ancienne sans binaire uniquement via import is_historical. Aucun rôle ne peut supprimer un document par une opération ordinaire. Un document archivé est immuable. L’archivage est réservé à l’archiviste selon MET-25. |
 | MET-21 | Au plus cinq pièces d'agenda par proposition, maximum 10 Mio chacune ; extensions observées PDF, DOC, DOCX, PNG, JPG, TXT pour l'agenda. Contrôler contenu et MIME, nom/clé sans traversée de chemin, autorisation au téléchargement. Stockage privé sur volume Docker persistant ; gérer compensation entre BDD et fichiers en cas d'échec ; ne pas créer de faux binaires historiques. |
 | MET-22 | Appliquer les droits de lecture à la liste, au détail, à la recherche, aux archives, au téléchargement et à l'export (matrice §5). Les liens directs ne contournent jamais la visibilité. |
 | MET-23 | Secrétaire crée un PV unique en réunion IN_PROGRESS ou CLOSED. Modifie seulement DRAFT ; présence dérivée de la feuille. Soumission seulement après clôture, résumé non blanc et au moins un présent. Capturer le contenu officiel, versionner, passer TO_SIGN, enregistrer date et acteur, audit et notification. |
@@ -200,9 +200,11 @@ Toutes les opérations requièrent une session valide, un compte actif, les perm
 | MET-27 | Seul destinataire peut lire/modifier l'état de sa notification. Marquer lu renseigne read_at ; non lu l'efface ; archive renseigne archived_at ; restauration l'efface. Retrait renseigne deleted_at de manière terminale. Exclure ces lignes de toutes vues, détails, archives et compteurs ; pas de réactivation ordinaire. |
 | MET-28 | Clé stable d'occurrence par destinataire pour événement automatique. Relance technique identique réutilise clé et ne réactive jamais une notification retirée. Nouvelle mutation réelle ou renvoi volontaire = nouvelle occurrence. UQ non partielle et aucune purge physique de lignes dédupliquées V1. |
 | MET-29 | Planificateur serveur (à implémenter) : rappel réunion planifiée dans 24 h, action non terminée dans 48 h avant échéance, retard après échéance locale en fin de journée ; déduplication par événement, échéance/occurrence et destinataire. Aucun e-mail ni SMS. |
-| MET-30 | Audit append-only des opérations sensibles : acteur authentifié si humain, instant réel, code d'opération, type/id objet et contexte minimal sans secrets ; import historique tracé. Protéger UPDATE/DELETE ordinaires. Les références d'audit survivent à la disparition légitime d'un objet. |
+| MET-30 | Journaliser les opérations sensibles avec l’acteur authentifié si humain, l’instant, le code d’opération, l’objet et un contexte minimal sans secrets. Tracer les imports. Le service ajoute les événements et réserve leur consultation à l’administrateur technique (`ADMIN`) dans une liste chronologique en lecture seule. Aucun rôle ne peut modifier ni supprimer les événements. Les références d’audit survivent à la disparition légitime d’un objet. |
 
 ## 5. Accès et ciblage
+
+Les réunions restent consultables dans le périmètre d’invitation et des accès métier existants. Appliquer ce périmètre aux listes, au calendrier, aux détails et aux liens directs. La consultation des scrutins expose le vote propre et les résultats agrégés autorisés. Les choix nominatifs des autres membres restent réservés au calcul interne.
 
 ### 5.1. Lecture documentaire
 
@@ -224,7 +226,7 @@ Les événements sont émis à l’issue d’une opération réussie, dans la m�
 |---|---|
 | Convocation / renvoi | Comptes des participants invités. |
 | Modification d’une réunion après convocation | Union des anciens et nouveaux participants concernés. |
-| Annulation | Type conservé ; émission à prévoir si le workflow d’annulation est implémenté. |
+| Annulation (`REUNION_ANNULEE`) | Comptes actifs des participants déjà convoqués à cette réunion, dédupliqués entre envois et renvois. |
 | Rappel réunion planifiée dans les 24 h | Comptes des participants. |
 | Nouvelle proposition d’agenda | Président(s). |
 | Validation ou rejet de proposition | Compte de l’auteur. |
@@ -246,10 +248,12 @@ Les événements identiques mais correspondant à deux mutations réelles distin
 |---|---|
 | Désactivation/changement rôle | Verrou commun des mutations admin (ou SERIALIZABLE), revérifier au moins un admin actif avant commit. |
 | Membre / mandat | Création avec mandat, revalidation des participations, contraintes d'exclusion. |
+| Annulation de réunion | Verrouiller la réunion, vérifier le rôle et l’état `PLANNED`, puis enregistrer `CANCELLED`, l’audit et les avis internes dans la même transaction. |
 | Présence | Mise à jour feuille + revalidation et retrait des votes ouverts invalides. |
 | Vote / ouverture / clôture | Verrouiller réunion puis scrutin dans un ordre partagé ; empêcher dépôt concurrent après clôture ; résultat, décision, audit, notifications dans même transaction de clôture. |
 | Version documentaire | Allocation du numéro + métadonnées + vérification du fichier ; gérer compensation stockage hors transaction SQL (suppression du fichier temporaire/orphelin ou retry). |
 | Soumission / signature PV | État réunion et PV cohérents, capture, audit, notifications. Une seule signature réussit. |
+| Suppression d’action | Contrôler la présence de l’identifiant dans les instantanés de PV signés ou archivés. Sérialiser cette vérification avec la signature pour refuser une suppression dès que la capture signée référence l’action. |
 | Notifications | Insertion idempotente avec UQ destinataire/clé ; conflit traité sans réactivation ou écrasement. |
 
 **Protection historique :** service obligatoire pour toutes les mutations. Des triggers et privilèges SQL peuvent renforcer l'interdiction INSERT/UPDATE/DELETE sur votes et résultats clos, la suppression de scrutins clos ou PV signés/archivés, et les mutations du journal d'audit. Le choix des triggers doit être documenté et testé. Un trigger de fermeture doit permettre la transaction de création du résultat puis passage à CLOSED, sans accepter un résultat sur scrutin OPEN en état stable ; une simple FK/UNIQUE ne suffit pas. Pas de promesse de protection contre SQL direct si seuls les services sont implémentés. Restreindre l'accès aux identifiants de BDD, ne pas exposer un CRUD direct contournant les services. Séparer les droits de migration et les droits d'exécution si possible. La procédure d'import contrôlé ne doit pas offrir de contournement aux utilisateurs ordinaires.
@@ -281,7 +285,7 @@ Les tests ci-dessous sont des cas attendus, pas des résultats d'exécution. Pr�
 | T05 | SQL/service | Titulaire et suppléant distincts même siège, périodes simultanées ; renouvellement non chevauchant | Accepté ; historique conservé. |
 | T06 | SQL/service | Deux participations même réunion/membre ; mandat d'un autre membre ; mandat hors jour de séance | Refus UQ/FK pour les deux premiers, refus service pour le troisième. |
 | T07 | Service | Démarrage sans participant ou point validé ; clôture avec scrutin ouvert | Refus ; état inchangé. |
-| T08 | Service | Éditer une proposition d'autrui ou après démarrage ; secrétaire tente validation | Refus ; auteur peut modifier sa proposition admissible planifiée. |
+| T08 | Service | Édition ou retrait par un tiers ou hors `PLANNED`, retrait d’un point validé ou référencé, secrétaire tente validation | Refus. L’auteur peut modifier sa proposition admissible et retirer sa proposition non validée et non référencée tant que la réunion est planifiée. |
 | T09 | SQL | Décision liée à une proposition d'une autre réunion | Refus FK composite ; lien agenda NULL autorisé. |
 | T10 | SQL | Vote utilisant participation d'une autre réunion, mandat discordant ou siège différent | Refus FK composite, même si chaque identifiant existe. |
 | T11 | SQL | Deux votes pour même siège ou même participation dans un scrutin | Refus UQ. |
@@ -305,12 +309,12 @@ Les tests ci-dessous sont des cas attendus, pas des résultats d'exécution. Pr�
 | T29 | Service/SQL | Retirer notification dédupliquée, rejouer même occurrence, puis nouvelle occurrence | Aucune recréation/réactivation de l'ancienne ; nouvelle occurrence permise. |
 | T30 | Service | Archiver puis restaurer notification non retirée ; lire puis non lu ; compteur | Dates correctement nullées, lignes retirées exclues. |
 | T31 | Service | Rappels dans 24 h / 48 h, retard d'action non terminée, répétition planificateur | Bon ciblage, pas de doublon, aucun rappel d'action DONE. |
-| T32 | Service (+ SQL si renforcé) | Modifier/supprimer audit via voie ordinaire ; tentative d'inclure un secret | Refus ou exclusion du secret ; audit append-only. |
+| T32 | Service et SQL | Consulter l’audit comme admin ou autre rôle, tenter une modification ou suppression, tenter de journaliser un secret | Lecture réservée à l’admin, mutations refusées et secrets exclus. |
 | T33 | Migration/seed | Rejouer tous lots sur BDD vierge et réexécuter seed | Contraintes présentes, références cohérentes, absence d'écrasement et import historique tracé. |
 
 ## 9. Arbitrages et limites à communiquer
 
-- Les choix V1 du MCD/MLD restent à approuver : mono-comité, non-cumul des mandats, représentation sans titulaire actif, droit de création de décision au président, scrutin obligatoire pour nouvelles décisions définitives, blocage sans quorum, pas de réouverture/second tour, visibilité, archivage métier définitif, stockage privé et snapshots.
+- Les choix V1 du MCD/MLD restant à approuver comprennent le mono-comité, le non-cumul des mandats, la représentation sans titulaire actif, le scrutin obligatoire pour les nouvelles décisions définitives, le blocage sans quorum, l’absence de réouverture ou de second tour, l’archivage métier définitif, le stockage privé et les instantanés. Les permissions confirmées sont récapitulées dans la [revue de cohérence](../REVUE_COHERENCE_FRONTEND_BDD.md).
 - Le retrait logique terminal et la conservation de la clé de déduplication sont protégés par PostgreSQL. Le filtrage de `deleted_at` dans les requêtes utilisateur reste au backend.
 - Les versions d’instantanés positives sont contrôlées dans les migrations. La structure des données JSONB reste à valider dans les services.
 - Les sessions, la politique de hachage des comptes réels, les codes d’audit et l’attribution des références métier restent à coordonner. Le [seed](SEED.md) documente le hachage des seuls comptes de démonstration.

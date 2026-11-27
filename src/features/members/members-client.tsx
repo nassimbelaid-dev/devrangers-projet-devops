@@ -150,12 +150,12 @@ export function MembersClient() {
     )
     if (duplicatedEmail)
       return t("Cette adresse e-mail est déjà utilisée par un autre membre.")
-    setMembers((current) =>
+    const issue = setMembers((current) =>
       current.some((item) => item.id === member.id)
         ? current.map((item) => (item.id === member.id ? member : item))
         : [...current, member]
     )
-    return null
+    return issue ? t(issue) : null
   }
 
   function confirmDelete() {
@@ -395,7 +395,11 @@ export function MembersClient() {
           </div>
         </Card>
       ) : (
-        <SeatsPanel members={members} />
+        <SeatsPanel
+          members={members}
+          accountId={user?.id ?? "guest"}
+          key={user?.id}
+        />
       )}
 
       {canManageMembers && formOpen && (

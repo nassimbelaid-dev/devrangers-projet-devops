@@ -184,13 +184,13 @@ Convention générale :
 
 | Fichier | Responsabilité |
 |---|---|
-| `agenda-client.tsx` | Liste des propositions, choix de réunion, création, édition, validation/rejet par le président et réordonnancement. |
+| `agenda-client.tsx` | Liste des propositions, choix de réunion, création et édition. Le président valide ou rejette avec un motif non vide pour chaque rejet et peut réordonner les points validés d’une réunion planifiée. |
 | `agenda-form.tsx`, `agenda-details.tsx` | Saisie, détails, notes de revue et pièces jointes de proposition. |
 | `types.ts` | `AgendaProposal`, statut et attachements. |
 | `utils.ts` | Tri, déplacement des points validés, étiquettes et téléchargement. |
 | `mock-data.ts` | Propositions initiales. |
 
-La collection `agenda` est la source détaillée des propositions. `demo-business.ts` projette les propositions non rejetées dans `Meeting.agenda` et les resynchronise après changement.
+La collection `agenda` est la source détaillée des propositions. `demo-business.ts` projette uniquement les points validés dans `Meeting.agenda` et actualise cette projection après les écritures du module Ordre du jour.
 
 ### Votes — `src/features/votes/`
 
@@ -219,7 +219,7 @@ La collection `agenda` est la source détaillée des propositions. `demo-busines
 
 | Fichier | Responsabilité |
 |---|---|
-| `documents-client.tsx` | Bibliothèque, espace PV, Archives, filtres et liens aux réunions/décisions. |
+| `documents-client.tsx` | Bibliothèque, espace PV et archives. Recherche d’archives normalisée et filtre « Procès-verbal » appliqué aux entrées PV. Liens aux réunions et décisions. |
 | `document-form.tsx`, `document-details.tsx` | Saisie/consultation d’un document, versions et pièce jointe locale. |
 | `minutes-editor.tsx` | Notes du secrétaire, soumission, corrections, signature simulée et archivage. |
 | `minutes-preview.tsx` | Aperçu structuré, alimenté par réunion, participants, agenda, décisions, votes et actions disponibles. |
@@ -416,8 +416,8 @@ sequenceDiagram
   Biz->>Biz: attachAgenda (projection vers Meeting.agenda)
   Biz-->>Store: nouvel état
   Store-->>UI: publier mise à jour
-  P->>UI: Valide ou rejette la proposition
-  UI->>Store: mise à jour avec statut/reviewer/order
+  P->>UI: Valide la proposition ou saisit le motif du rejet
+  UI->>Store: mise à jour avec statut, relecteur, ordre et motif en cas de rejet
   Store->>Store: vérifier agenda.approve et rôle président
   Store->>Biz: appliquer la projection validée dans la réunion
   Biz-->>Store: état cohérent meeting + agenda
@@ -516,11 +516,17 @@ sequenceDiagram
 
 | Rôle de connexion | Domaine principal |
 |---|---|
-| `president` | Révision agenda, démarrage/clôture de séance, présence, gestion des scrutins, signature/correction PV; vote soumis aux règles d’éligibilité. |
-| `secretary` | Création/planification, participants, convocations, présence, documents et rédaction/soumission PV; vote soumis à l’éligibilité. |
-| `member` | Consultation, proposition de points, actions attribuées et vote lorsque mandat/présence/siège le permettent. |
+| `president` | Valide ou rejette les propositions, y compris celles du secrétaire, et crée les décisions. Démarre et clôture les séances, gère présences et scrutins, signe ou retourne les PV. Gère les actions avec les mêmes contrôles que le secrétaire. Vote soumis aux règles d’éligibilité. |
+| `secretary` | Planifie les réunions, gère participants, convocations, présences, actions et documents, puis rédige et soumet les PV. Vote soumis aux règles d’éligibilité. |
+| `member` | Consulte les objets autorisés, propose des points, modifie seulement le statut de ses actions attribuées et vote si le mandat, la présence et le siège le permettent. |
 | `archivist` | Consultation et archivage de documents et PV signés; rôle dédié, sans droits automatiques président/secrétaire. |
-| `admin` | Gestion des comptes et membres selon la matrice; n’hérite pas des droits du président ou secrétaire. |
+| `admin` | Gestion des comptes et membres selon la matrice. Consultation du journal d’audit en lecture seule. |
+
+Le [référentiel des permissions](ROLES_ET_PERMISSIONS.md) fixe les règles à appliquer sur tous les parcours. Seul le président réordonne les points validés d’une réunion planifiée et tout rejet de proposition exige un motif non vide. L’auteur peut retirer sa propre proposition non validée et non référencée tant que la réunion est planifiée. Seul le secrétaire annule une réunion planifiée en la passant à `CANCELLED` et notifie en interne les participants déjà convoqués.
+
+Seul le secrétaire crée des documents, modifie les documents non archivés et y dépose des versions. Il valide les documents ordinaires en une étape et attribue ou modifie la visibilité des documents non archivés parmi `COMMITTEE`, `PRESIDENCY` et `ARCHIVES`. Aucun rôle ne peut effectuer de suppression documentaire ordinaire. Seul l’archiviste archive les documents éligibles.
+
+Les lectures de réunion respectent les invitations et les accès métier existants. Les écrans de vote présentent le vote propre et les résultats agrégés autorisés. Le service doit refuser la suppression d’une action présente dans un PV signé, même après archivage du PV.
 
 Le type `Suppléant` se trouve dans `CommitteeMemberRecord.kind`; le compte se connecte comme `member`. `seatRepresentations()` dans `src/features/votes/utils.ts` n’accorde le siège au suppléant que si le titulaire actif de ce siège n’est pas présent.
 
@@ -587,7 +593,7 @@ Avant de créer un nouveau composant, chercher une primitive existante dans `src
 | Persistance | Une origine/navigateur, sans concurrence interutilisateur. | PostgreSQL avec migrations versionnées, contraintes FK/UNIQUE/CHECK, transactions et sauvegardes. |
 | Fichiers | `File` local temporaire, non inclus dans la sérialisation. | Stockage objet ou stockage serveur, métadonnées PostgreSQL, contrôles d’accès et politique de conservation. |
 | Notifications | Collections locales ciblées, cloche mise à jour par store. | Notifications persistées par utilisateur; génération transactionnelle/outbox ou jobs si l’envoi externe est introduit plus tard. |
-| Audit/archivage | Champs d’archive sur les objets et règles frontend. | Historique/audit serveur append-only, acteur/date, états immuables validés en base et politique de conservation définie. |
+| Audit/archivage | Champs d’archive sur les objets et règles frontend. | Journal serveur immuable avec acteur et date. Prévoir une liste chronologique en lecture seule réservée à l’administrateur technique. |
 | Tests | Script d’audit statique et scénarios Playwright. | Tests unitaires de domaine, intégration DB/migrations, tests d’autorisation serveur, E2E par rôle et pipeline CI. |
 
 ### Schéma cible illustrative

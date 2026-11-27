@@ -21,6 +21,7 @@ export const navigationsData: NavigationType[] = [
         iconName: "Bell",
       },
       { title: "Utilisateurs", href: "/users", iconName: "UserCog" },
+      { title: "Journal d’audit", href: "/audit", iconName: "ListOrdered" },
     ],
   },
   {

@@ -2,14 +2,7 @@
 
 import { useState } from "react"
 import { useUiText } from "@/features/ui-text"
-import {
-  Download,
-  FileClock,
-  FileText,
-  Pencil,
-  Plus,
-  Trash2,
-} from "lucide-react"
+import { Download, FileClock, FileText, Pencil, Plus } from "lucide-react"
 
 import type { CommitteeDocument, DocumentVersion } from "./types"
 
@@ -35,11 +28,11 @@ interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
   onEdit: () => void
-  onDelete: () => void
-  onAddVersion: (file: File, note: string) => void
+  onApprove: () => void
+  onAddVersion: (file: File, note: string) => string | null
   onArchive: () => void
   canEdit: boolean
-  canDelete: boolean
+  canApprove: boolean
   canAddVersion: boolean
   canArchive: boolean
 }
@@ -49,11 +42,11 @@ export function DocumentDetails({
   open,
   onOpenChange,
   onEdit,
-  onDelete,
+  onApprove,
   onAddVersion,
   onArchive,
   canEdit,
-  canDelete,
+  canApprove,
   canAddVersion,
   canArchive,
 }: Props) {
@@ -84,7 +77,8 @@ export function DocumentDetails({
     if (!file) return setError(t("Sélectionnez un fichier."))
     if (file.size > 10 * 1024 * 1024)
       return setError(t("Fichier supérieur à 10 Mo."))
-    onAddVersion(file, note.trim() || "Nouvelle version")
+    const issue = onAddVersion(file, note.trim() || "Nouvelle version")
+    if (issue) return setError(t(issue))
     setFile(null)
     setNote("")
     setError("")
@@ -256,13 +250,12 @@ export function DocumentDetails({
               </p>
             )}
           </section>
-          {(canDelete || canEdit || canArchive) &&
+          {(canApprove || canEdit || canArchive) &&
             item.status !== "Archivé" && (
               <div className="flex flex-wrap justify-between gap-3 border-t pt-5">
-                {canDelete && (
-                  <Button variant="destructive" size="sm" onClick={onDelete}>
-                    <Trash2 className="mr-2 size-4" />
-                    {t("Supprimer")}
+                {canApprove && item.status === "Brouillon" && (
+                  <Button size="sm" onClick={onApprove}>
+                    {t("Valider le document")}
                   </Button>
                 )}
                 {canArchive && (

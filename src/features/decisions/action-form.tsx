@@ -41,7 +41,7 @@ interface ActionFormProps {
   defaultStatus: ActionStatus
   defaultDecisionId: string
   onOpenChange: (open: boolean) => void
-  onSave: (action: ActionRecord) => void
+  onSave: (action: ActionRecord) => string | null
 }
 
 function blankAction(
@@ -91,11 +91,12 @@ export function ActionForm({
       setError(t("Le titre, le responsable et l'échéance sont obligatoires."))
       return
     }
-    onSave({
+    const issue = onSave({
       ...form,
       title: form.title.trim(),
       description: form.description.trim(),
     })
+    if (issue) return setError(t(issue))
     onOpenChange(false)
   }
 

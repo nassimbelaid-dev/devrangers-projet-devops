@@ -813,8 +813,11 @@ const translations: Record<string, Record<string, string>> = {
     "Représentants éligibles (simulation)":
       "Eligible representatives (simulation)",
     "Simulation uniquement :": "Simulation only:",
-    "coche ou décoche la présence de chaque membre. Le titulaire représente son siège lorsqu'il est présent ; sinon, le suppléant présent prend sa place. Un même siège ne peut jamais compter deux représentants éligibles. Aucun vote n'est réellement enregistré ou autorisé ici.":
-      "check or uncheck each member's attendance. The primary member represents the seat when present; otherwise, the attending substitute takes their place. A seat can never have two eligible representatives. No votes are actually recorded or authorized here.",
+    "Les présences simulées sont enregistrées sur ce navigateur. Le titulaire présent est prioritaire sur le suppléant. Pour une réunion, utilisez sa feuille de présence.":
+      "Simulated attendance is saved in this browser. A present full member takes priority over the alternate. Use a meeting's attendance sheet to record its attendance.",
+    "Impossible d’enregistrer les présences simulées.":
+      "Could not save simulated attendance.",
+    "Aucun mandat en cours pour ce siège.": "This seat has no active mandate.",
     "Représentant éligible :": "Eligible representative:",
     "Aucun représentant éligible pour ce siège":
       "No eligible representative for this seat",
@@ -1251,8 +1254,7 @@ const translations: Record<string, Record<string, string>> = {
       "لا يسمح دورك بإنشاء قرار.",
     "Une décision doit être liée à une réunion en cours et rester en attente.":
       "يجب ربط القرار باجتماع جارٍ وأن يبقى قيد الانتظار.",
-    "Cette référence de décision existe déjà.":
-      "مرجع هذا القرار موجود بالفعل.",
+    "Cette référence de décision existe déjà.": "مرجع هذا القرار موجود بالفعل.",
     "Attribuez une responsabilité, une échéance et un statut. Les changements sont locaux à cette page.":
       "حدد المسؤولية والموعد النهائي والحالة. التغييرات محلية لهذه الصفحة.",
     "Intitulé de l'action *": "عنوان الإجراء *",
@@ -1627,8 +1629,11 @@ const translations: Record<string, Record<string, string>> = {
     "Sièges représentés": "المقاعد الممثلة",
     "Représentants éligibles (simulation)": "الممثلون المؤهلون (محاكاة)",
     "Simulation uniquement :": "محاكاة فقط:",
-    "coche ou décoche la présence de chaque membre. Le titulaire représente son siège lorsqu'il est présent ; sinon, le suppléant présent prend sa place. Un même siège ne peut jamais compter deux représentants éligibles. Aucun vote n'est réellement enregistré ou autorisé ici.":
-      "حدد حضور كل عضو أو ألغِ تحديده. يمثل العضو الأساسي مقعده عند حضوره؛ وإلا يحل محله العضو البديل الحاضر. لا يمكن أن يكون للمقعد ممثلان مؤهلان. لا يتم تسجيل أي تصويت فعلي هنا.",
+    "Les présences simulées sont enregistrées sur ce navigateur. Le titulaire présent est prioritaire sur le suppléant. Pour une réunion, utilisez sa feuille de présence.":
+      "يُحفظ الحضور التجريبي في هذا المتصفح. تكون الأولوية للعضو الأساسي الحاضر على العضو البديل. لتسجيل حضور اجتماع، استخدم صفحة الحضور الخاصة به.",
+    "Impossible d’enregistrer les présences simulées.":
+      "تعذر حفظ الحضور التجريبي.",
+    "Aucun mandat en cours pour ce siège.": "لا توجد ولاية سارية لهذا المقعد.",
     "Représentant éligible :": "الممثل المؤهل:",
     "Aucun représentant éligible pour ce siège":
       "لا يوجد ممثل مؤهل لهذا المقعد",
@@ -1769,6 +1774,198 @@ Object.assign(translations.ar, {
   "notification-message-pv-correction": "طلب الرئيس تصحيح المحضر:",
   "notification-message-pv-signe": "تم توقيع المحضر:",
   "notification-message-pv-archives": "المحضر الموقع جاهز للأرشفة:",
+})
+
+Object.assign(translations.en, {
+  "Journal d’audit": "Audit log",
+  Comptes: "Accounts",
+  Scrutins: "Ballots",
+  "Procès-verbaux": "Minutes",
+  Utilisateur: "User",
+  Opération: "Operation",
+  Module: "Module",
+  Du: "From",
+  Au: "To",
+  "Date et heure": "Date and time",
+  "Référence ou identifiant": "Reference or ID",
+  "Aucun événement d’audit.": "No audit events.",
+  Démonstration: "Demo",
+  "Page {page} sur {total}": "Page {page} of {total}",
+  Précédent: "Previous",
+  Suivant: "Next",
+  Planifier: "Schedule",
+  Convoquer: "Send invitations",
+  Démarrer: "Start",
+  Clôturer: "Close",
+  Soumettre: "Submit",
+  Signer: "Sign",
+  "Informations et participants.": "Meeting details and participants.",
+  "Annuler la réunion": "Cancel meeting",
+  "Confirmer l’annulation de cette réunion ?": "Cancel this meeting?",
+  "La réunion est annulée.": "The meeting has been cancelled.",
+  "Réunion annulée": "Meeting cancelled",
+  "La réunion {title} a été annulée.":
+    "The meeting {title} has been cancelled.",
+  "Seul le secrétaire peut annuler une réunion planifiée.":
+    "Only the secretary can cancel a scheduled meeting.",
+  "Une réunion annulée ne peut plus être modifiée.":
+    "A cancelled meeting can no longer be changed.",
+  "Ouvrir l’ordre du jour": "Open agenda",
+  "Gérez les propositions depuis le module Ordre du jour.":
+    "Manage proposals from the Agenda module.",
+  "Utilisez les commandes de la réunion pour cette opération.":
+    "Use the meeting controls for this operation.",
+  "Retirer la proposition": "Withdraw proposal",
+  "Confirmer le retrait de cette proposition ?": "Withdraw this proposal?",
+  "Cette proposition ne peut pas être retirée.":
+    "This proposal cannot be withdrawn.",
+  "Cette modification de proposition n’est pas autorisée.":
+    "This proposal change is not allowed.",
+  "L’ordre du jour est verrouillé ou la réunion est inaccessible.":
+    "The agenda is locked or the meeting is inaccessible.",
+  "Les identifiants des propositions doivent être uniques.":
+    "Proposal IDs must be unique.",
+  "Indiquez un titre et un motif pour tout rejet.":
+    "Enter a title and a reason for any rejection.",
+  "La réunion et l’auteur d’une proposition sont immuables.":
+    "A proposal’s meeting and author cannot change.",
+  "Ce mandat ne couvre plus la date d’une réunion planifiée.":
+    "This mandate no longer covers a scheduled meeting date.",
+  "Une action figurant dans un PV signé ne peut pas être supprimée.":
+    "An action recorded in signed minutes cannot be deleted.",
+  "Représentants par siège": "Representatives by seat",
+  "Le résultat d’un scrutin clôturé est définitif. Sans quorum, la décision reste en attente.":
+    "Closed ballot results are final. Without quorum, the decision remains pending.",
+  "Un nouveau scrutin doit être ouvert et sans vote.":
+    "A new ballot must start open with no votes.",
+  "Valider le document": "Approve document",
+  "Le document a été validé.": "The document has been approved.",
+  "Le document a été archivé.": "The document has been archived.",
+  "La décision a été archivée.": "The decision has been archived.",
+  "Ce document ne peut pas être archivé.": "This document cannot be archived.",
+  "Ce document ne peut pas être modifié.": "This document cannot be changed.",
+  "Seul l’archiviste peut archiver cet élément.":
+    "Only the archivist can archive this item.",
+  "Cet élément ne peut pas être archivé.": "This item cannot be archived.",
+  "Seule une décision définitive d’une réunion clôturée peut être archivée.":
+    "Only a final decision from a closed meeting can be archived.",
+  "Seul un PV signé peut être archivé.": "Only signed minutes can be archived.",
+  "Utilisez la commande d’archivage.": "Use the archive command.",
+  "Instantané historique indisponible.": "Historical snapshot unavailable.",
+  "Un PV soumis doit être retourné puis soumis à nouveau pour établir son instantané.":
+    "Return and resubmit the minutes to record an official snapshot.",
+  "Le dépôt doit ajouter une version numérotée et un fichier valide.":
+    "Upload the next numbered version with a valid file.",
+  "L’action doit avoir un titre, un statut et une priorité valides.":
+    "The action needs a title, a valid status and a valid priority.",
+})
+Object.assign(translations.ar, {
+  "Journal d’audit": "سجل التدقيق",
+  Comptes: "الحسابات",
+  Scrutins: "الاقتراعات",
+  "Procès-verbaux": "المحاضر",
+  Utilisateur: "المستخدم",
+  Opération: "العملية",
+  Module: "الوحدة",
+  Du: "من",
+  Au: "إلى",
+  "Date et heure": "التاريخ والوقت",
+  "Référence ou identifiant": "المرجع أو المعرّف",
+  "Aucun événement d’audit.": "لا توجد أحداث تدقيق.",
+  Démonstration: "عرض تجريبي",
+  "Page {page} sur {total}": "صفحة {page} من {total}",
+  Précédent: "السابق",
+  Suivant: "التالي",
+  Planifier: "جدولة",
+  Convoquer: "إرسال الدعوات",
+  Démarrer: "بدء",
+  Clôturer: "إغلاق",
+  Soumettre: "إرسال",
+  Signer: "توقيع",
+  "Informations et participants.": "معلومات الاجتماع والمشاركون.",
+  "Annuler la réunion": "إلغاء الاجتماع",
+  "Confirmer l’annulation de cette réunion ?":
+    "هل تريد تأكيد إلغاء هذا الاجتماع؟",
+  "La réunion est annulée.": "تم إلغاء الاجتماع.",
+  "Réunion annulée": "اجتماع ملغى",
+  "La réunion {title} a été annulée.": "تم إلغاء اجتماع {title}.",
+  "Seul le secrétaire peut annuler une réunion planifiée.":
+    "لا يمكن إلغاء اجتماع مجدول إلا للسكرتير.",
+  "Une réunion annulée ne peut plus être modifiée.":
+    "لا يمكن تعديل اجتماع ملغى.",
+  "Ouvrir l’ordre du jour": "فتح جدول الأعمال",
+  "Gérez les propositions depuis le module Ordre du jour.":
+    "أدر الاقتراحات من وحدة جدول الأعمال.",
+  "Utilisez les commandes de la réunion pour cette opération.":
+    "استخدم أزرار الاجتماع لتنفيذ هذه العملية.",
+  "Retirer la proposition": "سحب الاقتراح",
+  "Confirmer le retrait de cette proposition ?":
+    "هل تريد تأكيد سحب هذا الاقتراح؟",
+  "Cette proposition ne peut pas être retirée.": "لا يمكن سحب هذا الاقتراح.",
+  "Cette modification de proposition n’est pas autorisée.":
+    "تعديل الاقتراح غير مسموح.",
+  "L’ordre du jour est verrouillé ou la réunion est inaccessible.":
+    "جدول الأعمال مقفل أو الاجتماع غير متاح.",
+  "Les identifiants des propositions doivent être uniques.":
+    "يجب أن تكون معرّفات الاقتراحات فريدة.",
+  "Indiquez un titre et un motif pour tout rejet.":
+    "أدخل عنوانًا وسببًا لكل رفض.",
+  "La réunion et l’auteur d’une proposition sont immuables.":
+    "لا يمكن تغيير اجتماع الاقتراح أو صاحبه.",
+  "Ce mandat ne couvre plus la date d’une réunion planifiée.":
+    "لم تعد مدة العضوية تشمل تاريخ اجتماع مجدول.",
+  "Une action figurant dans un PV signé ne peut pas être supprimée.":
+    "لا يمكن حذف إجراء مدرج في محضر موقّع.",
+  "Représentants par siège": "الممثلون حسب المقعد",
+  "Le résultat d’un scrutin clôturé est définitif. Sans quorum, la décision reste en attente.":
+    "نتيجة الاقتراع المغلق نهائية. عند عدم اكتمال النصاب يظل القرار معلقًا.",
+  "Un nouveau scrutin doit être ouvert et sans vote.":
+    "يجب أن يبدأ الاقتراع الجديد مفتوحًا ومن دون أصوات.",
+  "Valider le document": "اعتماد المستند",
+  "Le document a été validé.": "تم اعتماد المستند.",
+  "Le document a été archivé.": "تمت أرشفة المستند.",
+  "La décision a été archivée.": "تمت أرشفة القرار.",
+  "Ce document ne peut pas être archivé.": "لا يمكن أرشفة هذا المستند.",
+  "Ce document ne peut pas être modifié.": "لا يمكن تعديل هذا المستند.",
+  "Seul l’archiviste peut archiver cet élément.":
+    "لا يمكن أرشفة هذا العنصر إلا لأمين الأرشيف.",
+  "Cet élément ne peut pas être archivé.": "لا يمكن أرشفة هذا العنصر.",
+  "Seule une décision définitive d’une réunion clôturée peut être archivée.":
+    "لا يمكن أرشفة إلا قرار نهائي من اجتماع مغلق.",
+  "Seul un PV signé peut être archivé.": "لا يمكن أرشفة محضر إلا بعد توقيعه.",
+  "Utilisez la commande d’archivage.": "استخدم أمر الأرشفة.",
+  "Instantané historique indisponible.": "النسخة التاريخية غير متاحة.",
+  "Un PV soumis doit être retourné puis soumis à nouveau pour établir son instantané.":
+    "أعِد المحضر ثم أرسله مجددًا لتسجيل نسخة رسمية.",
+  "Le dépôt doit ajouter une version numérotée et un fichier valide.":
+    "أرفق الإصدار بالتسلسل الرقمي التالي وبملف صالح.",
+  "L’action doit avoir un titre, un statut et une priorité valides.":
+    "يجب أن يتضمن الإجراء عنوانًا وحالة وأولوية صالحتين.",
+})
+
+Object.assign(translations.en, {
+  "Point validé (facultatif)": "Approved agenda item (optional)",
+  "Aucun point associé": "No linked agenda item",
+  "Un mandat utilisé en séance est protégé.":
+    "A mandate used in a session is protected.",
+  "Changement de rôle": "Role changed",
+  "Activation du compte": "Account activation",
+  Réattribution: "Reassignment",
+  "Modification de l’échéance": "Deadline changed",
+  "Modification de la visibilité": "Visibility changed",
+  "Bulletin mis à jour": "Ballot entry updated",
+})
+Object.assign(translations.ar, {
+  "Point validé (facultatif)": "بند معتمد (اختياري)",
+  "Aucun point associé": "لا يوجد بند مرتبط",
+  "Un mandat utilisé en séance est protégé.":
+    "الولاية المستخدمة في جلسة محمية.",
+  "Changement de rôle": "تغيير الدور",
+  "Activation du compte": "تفعيل الحساب",
+  Réattribution: "إعادة الإسناد",
+  "Modification de l’échéance": "تغيير الموعد النهائي",
+  "Modification de la visibilité": "تغيير نطاق الرؤية",
+  "Bulletin mis à jour": "تحديث ورقة الاقتراع",
 })
 
 export function useUiText() {

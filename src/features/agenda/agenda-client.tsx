@@ -68,10 +68,13 @@ export function AgendaClient() {
       return <Badge variant="secondary">{t(status)}</Badge>
     return <Badge variant="outline">{t(status)}</Badge>
   }
-  const { meetings, members } = useDemoData()
+  const { meetings, members, decisions } = useDemoData()
   const committeeMembers = members
   const [items, setItems] = useDemoCollection("agenda")
-  const [meetingId, setMeetingId] = useState("r1")
+  const [selectedMeetingId, setMeetingId] = useState(
+    searchParams.get("meeting") ?? "r1"
+  )
+  const [feedback, setFeedback] = useState("")
   const [tab, setTab] = useState<AgendaTab>("proposals")
   const [search, setSearch] = useState("")
   const [formOpen, setFormOpen] = useState(false)
@@ -83,13 +86,14 @@ export function AgendaClient() {
   const [rejectError, setRejectError] = useState("")
 
   const currentMeeting =
-    meetings.find((meeting) => meeting.id === meetingId) ?? meetings[0]
+    meetings.find((meeting) => meeting.id === selectedMeetingId) ?? meetings[0]
+  const meetingId = currentMeeting?.id ?? ""
   const actorId = user?.memberId ?? user?.id ?? ""
   const president = user?.role === "president"
   const canPropose = Boolean(
     user?.memberId && hasPermission(user, "agenda", "create")
   )
-  const editableMeeting = currentMeeting.status === "Planifiée"
+  const editableMeeting = currentMeeting?.status === "Planifiée"
   const currentItems = useMemo(
     () => sortAgenda(items.filter((item) => item.meetingId === meetingId)),
     [items, meetingId]
@@ -146,7 +150,7 @@ export function AgendaClient() {
     if (
       !editableMeeting ||
       !hasPermission(user, "agenda", "edit") ||
-      item.status !== "Proposé" ||
+      item.status === "Validé" ||
       item.proposedById !== actorId
     )
       return
@@ -162,7 +166,7 @@ export function AgendaClient() {
     if (editing) {
       if (
         !hasPermission(user, "agenda", "edit") ||
-        editing.status !== "Proposé" ||
+        editing.status === "Validé" ||
         editing.proposedById !== actorId
       )
         return
@@ -279,6 +283,15 @@ export function AgendaClient() {
     setTab("proposals")
   }
 
+  function withdraw(item: AgendaProposal) {
+    if (!window.confirm(t("Confirmer le retrait de cette proposition ?")))
+      return
+    const issue = setItems((current) =>
+      current.filter((entry) => entry.id !== item.id)
+    )
+    setFeedback(issue ? t(issue) : "")
+  }
+
   function move(id: string, direction: -1 | 1) {
     if (
       !president ||
@@ -316,6 +329,11 @@ export function AgendaClient() {
         )}
       </header>
 
+      {feedback && (
+        <p role="alert" className="text-sm text-destructive">
+          {feedback}
+        </p>
+      )}
       <div className="flex flex-col gap-5 border-y py-5 lg:flex-row lg:items-end lg:justify-between lg:gap-10">
         <div className="grid flex-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
@@ -447,7 +465,7 @@ export function AgendaClient() {
                 const canEdit =
                   editableMeeting &&
                   hasPermission(user, "agenda", "edit") &&
-                  item.status === "Proposé" &&
+                  item.status !== "Validé" &&
                   ownProposal
                 const canReview =
                   editableMeeting &&
@@ -552,6 +570,21 @@ export function AgendaClient() {
                           <Pencil className="mr-1.5 size-4" /> {t("Modifier")}
                         </Button>
                       )}
+                      {editableMeeting &&
+                        ownProposal &&
+                        item.status !== "Validé" &&
+                        hasPermission(user, "agenda", "withdraw") &&
+                        !decisions.some(
+                          (decision) => decision.agendaProposalId === item.id
+                        ) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => withdraw(item)}
+                          >
+                            {t("Retirer la proposition")}
+                          </Button>
+                        )}
                       {canReview && (
                         <>
                           <Button
@@ -637,7 +670,7 @@ export function AgendaClient() {
             editing?.proposedById ?? actorId,
             committeeMembers
           )}
-          meetingName={currentMeeting.title}
+          meetingName={currentMeeting?.title ?? ""}
           onOpenChange={setFormOpen}
           onSave={saveProposal}
         />

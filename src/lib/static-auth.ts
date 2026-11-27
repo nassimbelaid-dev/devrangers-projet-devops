@@ -2,6 +2,8 @@
 
 import { useEffect, useSyncExternalStore } from "react"
 
+import { logAuditChanges } from "./demo-audit"
+
 export type DemoRole =
   | "admin"
   | "president"
@@ -168,6 +170,8 @@ export function saveDemoAccounts(
 ): boolean {
   if (typeof window === "undefined" || getCurrentDemoUser()?.role !== "admin")
     return false
+  const actor = getCurrentDemoUser()!
+  const previousAccounts = getDemoAccounts()
   const activeAdmins = accounts.filter(
     (account) => account.role === "admin" && account.isActive !== false
   )
@@ -218,6 +222,7 @@ export function saveDemoAccounts(
       }))
     )
   )
+  logAuditChanges(actor, "Comptes", previousAccounts, accounts)
   const updated = accounts.find((account) => account.id === current?.id)
   if (!updated || updated.isActive === false) signOutStatic()
   else {
@@ -345,6 +350,9 @@ export type Permission =
   | "manageMeetings"
   | "manageMembers"
   | "managePresence"
+  | "cancel"
+  | "withdraw"
+  | "changeVisibility"
 const view = ["view"] as Permission[]
 export const rolePermissions: Record<
   DemoRole,
@@ -362,15 +370,16 @@ export const rolePermissions: Record<
     notifications: view,
     profile: ["view", "edit"],
     users: ["view", "create", "edit", "delete", "manageUsers", "manageRoles"],
+    audit: view,
   },
   president: {
     dashboard: view,
     meetings: ["view", "manageMeetings", "managePresence"],
     members: view,
-    agenda: ["view", "create", "edit", "approve"],
+    agenda: ["view", "create", "edit", "approve", "withdraw"],
     votes: ["view", "approve", "vote"],
     decisions: ["view", "create"],
-    actions: ["view", "create"],
+    actions: ["view", "create", "edit", "delete"],
     documents: view,
     minutes: ["view", "approve"],
     notifications: view,
@@ -378,12 +387,12 @@ export const rolePermissions: Record<
   },
   secretary: {
     dashboard: view,
-    meetings: ["view", "create", "edit", "managePresence"],
+    meetings: ["view", "create", "edit", "managePresence", "cancel"],
     members: view,
-    agenda: ["view", "create", "edit"],
+    agenda: ["view", "create", "edit", "withdraw"],
     votes: ["view", "vote"],
-    actions: ["view", "create", "edit"],
-    documents: ["view", "create", "edit"],
+    actions: ["view", "create", "edit", "delete"],
+    documents: ["view", "create", "edit", "approve", "changeVisibility"],
     minutes: ["view", "create", "edit"],
     notifications: view,
     profile: ["view", "edit"],
@@ -404,7 +413,7 @@ export const rolePermissions: Record<
     dashboard: view,
     meetings: view,
     members: view,
-    agenda: ["view", "create", "edit"],
+    agenda: ["view", "create", "edit", "withdraw"],
     votes: ["view", "vote"],
     actions: ["view", "edit"],
     documents: view,
@@ -425,6 +434,7 @@ const routeModules: Array<[string, string]> = [
   ["/notifications", "notifications"],
   ["/profile", "profile"],
   ["/users", "users"],
+  ["/audit", "audit"],
 ]
 export function moduleForPath(pathname: string) {
   return (

@@ -18,14 +18,20 @@ import { printMinutes, today } from "./utils"
 
 interface Props {
   minutes: MeetingMinutes
-  onSave: (next: MeetingMinutes) => void
+  onSave: (next: MeetingMinutes) => string | null
+  onArchive: (id: string) => string | null
   onWorkflow: (
     action: "submit-minutes" | "return-minutes" | "sign-minutes",
     minutes: MeetingMinutes
   ) => string | null
 }
 
-export function MinutesEditor({ minutes, onSave, onWorkflow }: Props) {
+export function MinutesEditor({
+  minutes,
+  onSave,
+  onWorkflow,
+  onArchive,
+}: Props) {
   const t = useUiText()
   const { user } = useStaticAuth()
   const { meetings, members, decisions, actions, ballots } = useDemoData()
@@ -58,8 +64,10 @@ export function MinutesEditor({ minutes, onSave, onWorkflow }: Props) {
   function save() {
     if (!canDraft || isLocked || form.status !== "Brouillon") return
     const next = { ...form, version: minutes.version + 1, updatedAt: today() }
-    onSave(next)
-    setFeedback(t("Brouillon enregistré en mémoire pour cette session."))
+    const issue = onSave(next)
+    setFeedback(
+      t(issue ?? "Brouillon enregistré en mémoire pour cette session.")
+    )
   }
   function validate() {
     if (!canDraft || form.status !== "Brouillon") return
@@ -121,16 +129,8 @@ export function MinutesEditor({ minutes, onSave, onWorkflow }: Props) {
       !window.confirm(t("Archiver définitivement ce PV signé ?"))
     )
       return
-    const next = {
-      ...form,
-      status: "Archivé" as const,
-      archivedAt: new Date().toISOString(),
-      archivedBy: user ? `${user.firstName} ${user.lastName}` : "",
-      version: minutes.version + 1,
-      updatedAt: today(),
-    }
-    onSave(next)
-    setFeedback(t("Le PV signé a été archivé."))
+    const issue = onArchive(form.id)
+    setFeedback(t(issue ?? "Le PV signé a été archivé."))
   }
 
   return (
@@ -214,14 +214,23 @@ export function MinutesEditor({ minutes, onSave, onWorkflow }: Props) {
             </p>
           </div>
           <fieldset
-            disabled={!canDraft || isLocked}
+            disabled={!canDraft || form.status !== "Brouillon"}
             className="space-y-7 disabled:opacity-70"
           >
             <div className="space-y-3">
               <Label>{t("Feuille de présence liée à la réunion")}</Label>
               <div className="divide-y rounded-xl border px-4">
-                {(meeting?.participantIds ?? []).map((id) => {
-                  const member = members.find((item) => item.id === id)
+                {(
+                  (form.status === "Brouillon"
+                    ? meeting
+                    : form.officialSnapshot?.meeting
+                  )?.participantIds ?? []
+                ).map((id) => {
+                  const member = (
+                    form.status === "Brouillon"
+                      ? members
+                      : (form.officialSnapshot?.members ?? [])
+                  ).find((item) => item.id === id)
                   const presence = recordedPresence?.[id]
                   return (
                     <div

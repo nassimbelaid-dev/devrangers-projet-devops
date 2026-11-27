@@ -156,6 +156,7 @@ export function DecisionsActionsClient() {
   )
   const [decisions, setDecisions] = useDemoCollection("decisions")
   const [actions, setActions] = useDemoCollection("actions")
+  const [operationIssue, setOperationIssue] = useState("")
   const [view, setView] = useState<BoardView>("kanban")
   const [search, setSearch] = useState("")
   const [priorityFilter, setPriorityFilter] = useState<
@@ -284,7 +285,8 @@ export function DecisionsActionsClient() {
   }
 
   function saveDecision(item: DecisionRecord): string | null {
-    if (!canCreateDecision) return t("Votre rôle ne permet pas de créer une décision.")
+    if (!canCreateDecision)
+      return t("Votre rôle ne permet pas de créer une décision.")
     if (
       item.status !== "En attente" ||
       !linkedMeetings.some(
@@ -292,7 +294,9 @@ export function DecisionsActionsClient() {
           meeting.id === item.meetingId && meeting.status === "En cours"
       )
     )
-      return t("Une décision doit être liée à une réunion en cours et rester en attente.")
+      return t(
+        "Une décision doit être liée à une réunion en cours et rester en attente."
+      )
     if (
       decisions.some(
         (decision) =>
@@ -301,13 +305,14 @@ export function DecisionsActionsClient() {
       )
     )
       return t("Cette référence de décision existe déjà.")
-    setDecisions((current) => [...current, item])
-    return null
+    const issue = setDecisions((current) => [...current, item])
+    return issue ? t(issue) : null
   }
 
   function saveAction(item: ActionRecord) {
-    if (!canManageActions) return
-    setActions((current) => {
+    if (!canManageActions)
+      return "Votre rôle ne permet pas de créer une action."
+    return setActions((current) => {
       const old = current.find((action) => action.id === item.id)
       const updated = old
         ? current.map((action) =>
@@ -332,9 +337,15 @@ export function DecisionsActionsClient() {
       )
       setDetailDecisionId(null)
     } else {
-      setActions((current) =>
+      const issue = setActions((current) =>
         normalizedOrder(current.filter((item) => item.id !== toDelete.id))
       )
+      if (issue) {
+        setOperationIssue(t(issue))
+        setToDelete(null)
+        return
+      }
+      setOperationIssue("")
       setDetailActionId(null)
     }
     setToDelete(null)
@@ -360,6 +371,11 @@ export function DecisionsActionsClient() {
 
   return (
     <div className="space-y-6 p-4 md:p-6">
+      {operationIssue && (
+        <p role="alert" className="text-sm text-destructive">
+          {operationIssue}
+        </p>
+      )}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">

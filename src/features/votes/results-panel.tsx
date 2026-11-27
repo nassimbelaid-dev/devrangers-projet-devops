@@ -159,7 +159,7 @@ export function ResultsPanel({ ballot, summary, members }: Props) {
 
       <details className="group overflow-hidden rounded-xl border bg-card">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-6 py-5 text-sm font-medium hover:bg-muted/30 [&::-webkit-details-marker]:hidden sm:px-8">
-          {t("Détail des voix par siège")}
+          {t("Représentants par siège")}
           <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
         </summary>
         <div className="overflow-x-auto border-t px-2 pb-3 sm:px-5">
@@ -169,14 +169,10 @@ export function ResultsPanel({ ballot, summary, members }: Props) {
                 <TableHead>{t("Siège")}</TableHead>
                 <TableHead>{t("Représentant")}</TableHead>
                 <TableHead>{t("Qualité")}</TableHead>
-                <TableHead>{t("Vote")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {summary.seats.map((seat) => {
-                const vote = ballot.votes[seat.seatId]
-                const validVote =
-                  vote?.memberId === seat.representativeId ? vote : null
                 return (
                   <TableRow key={seat.seatId}>
                     <TableCell className="font-medium">
@@ -188,23 +184,6 @@ export function ResultsPanel({ ballot, summary, members }: Props) {
                         : "—"}
                     </TableCell>
                     <TableCell>{seat.representativeKind ?? "—"}</TableCell>
-                    <TableCell>
-                      {validVote ? (
-                        <Badge variant="outline" className="font-normal">
-                          {t(
-                            validVote.choice === "pour"
-                              ? "Pour"
-                              : validVote.choice === "contre"
-                                ? "Contre"
-                                : "Abstention"
-                          )}
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground">
-                          {t(seat.representativeId ? "Non voté" : "Absent")}
-                        </span>
-                      )}
-                    </TableCell>
                   </TableRow>
                 )
               })}

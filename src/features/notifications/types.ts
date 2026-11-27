@@ -56,6 +56,7 @@ export type CommitteeNotification = {
   createdAt: string
   read: boolean
   archived: boolean
+  deletedAt?: string
   recipientId?: string
   senderId?: string
   senderName?: string
