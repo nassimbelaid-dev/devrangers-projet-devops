@@ -14,7 +14,21 @@ La migration `20261125151414_renforcer_integrite_historique` s’ajoute aux cinq
 | `protect_signed_minutes` | `meeting_minutes_protect_signed` | Les PV signés et archivés sont protégés contre la modification et la suppression. Le passage `SIGNED → ARCHIVED` peut renseigner les métadonnées d’archivage et `updated_at`, avec une version identique ou incrémentée de un. Le contenu, les identités, la signature et l’instantané restent figés. Les transitions de correction avant signature restent possibles. |
 | `protect_notification_history` | `notifications_protect_history` | Une notification active peut évoluer sur `read_at`, `archived_at` et `deleted_at`. Son destinataire et sa clé de déduplication sont immuables. Dès le retrait, toute mise à jour est refusée. Les suppressions physiques sont interdites. |
 
-Les refus des triggers renvoient `23514`. La nouvelle migration ne change aucune FK, unicité, exclusion ou contrainte `CHECK` précédente.
+Les refus des triggers renvoient `23514`.
+
+## Contraintes des sessions d’authentification
+
+La septième migration, `20261127120000_account_sessions`, ajoute une table technique aux 19 tables métier.
+
+| Objet SQL | Garantie |
+|---|---|
+| `account_sessions_account_id_fkey` | Le compte référencé existe. Sa suppression et le changement de son UUID sont bloqués tant qu’une session le référence. |
+| `account_sessions_token_hash_key` | L’empreinte est unique parmi toutes les sessions. |
+| `account_sessions_token_hash_format_check` | L’empreinte est stockée en texte et contient exactement 64 caractères hexadécimaux minuscules. Le calcul SHA-256 appartient au backend. |
+| `account_sessions_expiration_check` | `created_at` et `expires_at` sont finis, avec `expires_at > created_at`. |
+| `account_sessions_account_id_idx`, `account_sessions_expires_at_idx` | Index de révocation par compte et de purge par expiration. |
+
+La validité à l’instant de la lecture et l’état actif du compte sont vérifiés par le backend. La révocation et la purge suppriment les lignes de session. Le catalogue et les refus SQL sont couverts par la [suite BDD](TESTS_BDD.md).
 
 ## Transactions et ordre de verrouillage
 
@@ -30,7 +44,7 @@ Le backend doit aussi filtrer les notifications retirées dans toutes les lectur
 
 Les protections s’appliquent au DML et au `TRUNCATE` ordinaires. Le propriétaire des tables peut modifier ou désactiver les triggers. Le superutilisateur peut également les contourner. Le compte actuel reste inchangé. La séparation future consiste à confier le DDL et les migrations à un rôle propriétaire, puis à utiliser un rôle d’exécution sans propriété des objets ni droits de modification du schéma. Accorder à ce rôle les seuls accès nécessaires, limiter l’audit à la lecture ou l’insertion selon le besoin, et retirer `TRUNCATE`. Les triggers qui verrouillent le scrutin nécessitent les droits SQL correspondants sur le parent. Valider les droits du rôle d’exécution avant déploiement.
 
-## Vérifications
+## Vérifications des protections historiques (six premières migrations)
 
 | Domaine | Résultat sur PostgreSQL 18.7 |
 |---|---|

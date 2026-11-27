@@ -6,7 +6,7 @@ import { randomBytes } from "node:crypto"
 
 import { Client } from "pg"
 
-export const tables = [
+export const businessTables = [
   "accounts",
   "account_profiles",
   "members",
@@ -27,6 +27,8 @@ export const tables = [
   "notifications",
   "audit_events",
 ] as const
+
+export const tables = [...businessTables, "account_sessions"] as const
 
 export function testTarget(value: string | undefined) {
   let url: URL

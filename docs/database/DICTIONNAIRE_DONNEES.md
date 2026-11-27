@@ -15,6 +15,8 @@
 
 ## 2. Colonnes par table
 
+Les sections 2.1 à 2.19 décrivent les 19 tables métier. La section 2.20 décrit la table technique d’authentification.
+
 ### 2.1 `accounts` — Account
 
 **Clés :** PK id ; UQ email normalisé ; UQ member_id ; FK member_id → members.
@@ -346,6 +348,18 @@
 | `entity_type` | `text` | Non | — | Code stable du type d'objet audité, à coordonner backend. |
 | `entity_id` | `uuid` | Non | — | Identifiant historique de l'objet ; pas de FK polymorphe. |
 | `details` | `jsonb` | Oui | NULL | Contexte minimal, provenance, changements utiles ; aucun secret. |
+
+### 2.20 `account_sessions` — AccountSession (table technique)
+
+| Colonne | Champ Prisma | Type SQL | NULL autorisé | Défaut | Signification |
+|---|---|---|:---:|---|---|
+| `id` | `id` | `uuid` | Non | `uuid()` par Prisma | Identifiant de session, PK. |
+| `account_id` | `accountId` | `uuid` | Non | — | Compte propriétaire, FK vers `accounts.id`. |
+| `token_hash` | `tokenHash` | `text` | Non | — | Empreinte SHA-256 unique, 64 caractères hexadécimaux minuscules. |
+| `created_at` | `createdAt` | `timestamptz(3)` | Non | `CURRENT_TIMESTAMP` | Instant de création fini. |
+| `expires_at` | `expiresAt` | `timestamptz(3)` | Non | — | Instant fini strictement postérieur à la création, fourni par le backend. |
+
+La FK applique `RESTRICT` à la suppression et à la mise à jour du compte référencé. `account_id` et `expires_at` sont indexés séparément. La révocation supprime la ligne de session. Le backend transmet uniquement l’empreinte à la base. [Guide d’intégration backend](GUIDE_INTEGRATION_BACKEND.md#persistance-des-sessions-dans-authrepositoryts)
 
 ## 3. Domaines fermés (enums)
 Les codes stables ci-dessous sont une convention technique ; le frontend utilise un mapping vers ses valeurs existantes et les libellés FR/EN/AR. Ne pas utiliser les libellés traduits comme clés de persistance. Les valeurs de notification existantes en kebab-case sont conservées au niveau logique (mapping Prisma enum possible).

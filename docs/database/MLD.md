@@ -4,7 +4,7 @@
 **Version :** V1.1 — corrections ciblées après revue Codex  
 **Branche :** `feat/integration-bdd`  
 **Référence :** MCD V1.1 (fichier `MCD.md` après renommage), `ANALYSE_DES_DONNEES.md`, documentation des rôles et simulation du workflow.  
-**Statut** — Les corrections issues de la revue sont intégrées. Le schéma Prisma et les six migrations implémentent le MLD V1.1. Les arbitrages applicatifs restent à confirmer avec le backend.
+**Statut** — Le schéma Prisma et les sept migrations couvrent les 19 relations métier du MLD V1.1 et la table technique des sessions d’authentification.
 
 ## 1. Conventions
 
@@ -72,6 +72,14 @@ PV : la présence du brouillon dérive des participations. L'instantané officie
 
 Les notifications et l'audit utilisent des références polymorphes (couple type/UUID) : le service vérifie l'existence de la cible au moment de l'émission, puis conserve sa référence même si la cible est retirée. Les liens d'interface sont dérivés du type et l'autorisation est revérifiée au clic. Les dates read_at/archived_at décrivent l'état courant : effacement de la date = non lu/restauré. Le retrait par le destinataire est logique : renseigner deleted_at (instant réel du retrait, NULL initialement) et conserver la ligne et sa clé. Une notification retirée est exclue de toutes les vues utilisateur, y compris archives personnelles, détail, cloche et compteurs ; elle n’est ni restaurable ni modifiable via les opérations ordinaires en V1. La restauration d’une notification seulement archivée reste possible si deleted_at est NULL. La clé de déduplication est déterministe par occurrence, et l'unicité est définie par destinataire sur toutes les lignes, y compris retirées ; NULL est accepté pour des notifications sans déduplication. Toute relance technique réutilise la clé d’origine et ne réactive pas une ligne retirée ; un nouvel événement réel ou renvoi volontaire utilise une nouvelle clé. Pas de purge physique des lignes portant une clé de déduplication en V1 ; toute politique de rétention ultérieure devra conserver une trace durable des émissions. Ce champ technique traduit le retrait prévu au MCD §6 sans créer une nouvelle entité. Le journal d'audit est append-only, sans secret ni mot de passe, et doit être protégé contre les mutations ordinaires. Les événements d'import peuvent être système, avec date réelle d'import (distincte de la date historique inconnue).
 
+### 2.6 Sessions d’authentification (1 table technique)
+
+| Relation / modèle Prisma | Attributs | Clés et relations |
+|---|---|---|
+| `account_sessions` / `AccountSession` | `id`, `account_id` (UUID), `token_hash` (text), `created_at`, `expires_at` (timestamptz(3)) | PK id ; FK account_id → accounts avec `RESTRICT` en suppression et en mise à jour ; UQ token_hash |
+
+Un compte peut avoir zéro à plusieurs sessions. Chaque session référence un compte et contient une empreinte SHA-256 en hexadécimal minuscule. Les instants de création et d’expiration sont finis et l’expiration est strictement postérieure à la création. La suppression d’une session assure sa révocation.
+
 ## 3. Diagrammes relationnels
 
 Les relations ci-dessous montrent les liens logiques ; les compositions exactes des FK, nullabilités et contraintes figurent en §2. Une flèche de cardinalité ne remplace pas une contrainte SQL ou un contrôle de service.
@@ -80,6 +88,7 @@ Les relations ci-dessous montrent les liens logiques ; les compositions exactes 
 erDiagram
   members o|--o| accounts : association
   accounts ||--o| account_profiles : profil
+  accounts ||--o{ account_sessions : sessions
   members ||--|{ mandates : historique
   seats ||--o{ mandates : occupation
   members ||--o{ meeting_participants : invitation
@@ -214,6 +223,7 @@ Les PK et UQ créent déjà des index ; ne pas les dupliquer. Index candidats (�
 | stored_files | (agenda_proposal_id) |
 | notifications | (recipient_account_id, created_at), (recipient_account_id, archived_at, read_at), éventuellement index partiels de consultation WHERE deleted_at IS NULL (jamais sur l’unicité de déduplication) |
 | audit_events | (entity_type, entity_id, occurred_at), (actor_account_id, occurred_at) |
+| account_sessions (technique) | (account_id) pour la révocation par compte, (expires_at) pour la purge. L’unicité de token_hash indexe la recherche de session. |
 
 Les autres FK d'acteur/relecteur peuvent être indexées selon les accès et opérations de maintenance. La recherche plein texte (documents, PV, décisions) est signalée comme exigence dans les livrables ; prévoir des requêtes de recherche respectant la visibilité, puis éventuellement des index GIN/tsvector en migration dédiée après clarification du périmètre linguistique. Aucune table de recherche séparée n'est requise au MLD.
 
@@ -226,6 +236,8 @@ Les autres FK d'acteur/relecteur peuvent être indexées selon les accès et op�
 | 3 | decisions, ballots, ballot_votes, ballot_results, actions | Lots 1–2 |
 | 4 | documents, document_versions, stored_files, meeting_minutes | Lots 1–3 |
 | 5 | notifications, audit_events | Lot 1 et objets métier pour la validation applicative |
+| 6 | Protections historiques | Tables métier des lots 1 à 5 |
+| 7 | account_sessions (technique) | FK vers accounts, index et contrôles de format et d’expiration |
 
 Au lot 1, placer `CREATE EXTENSION IF NOT EXISTS btree_gist;` dans la migration SQL avant les contraintes EXCLUDE des mandats. Vérifier disponibilité et droits d’activation de l’extension sur PostgreSQL local, CI, staging et sur la base de validation des migrations (shadow database si utilisée par Prisma migrate dev). L’extension doit aussi être créée lors d’un rejeu complet sur base vierge ; une installation manuelle locale seule ne suffit pas. Vérifier le mapping des FK composites partagées avec `prisma validate`, inspecter le SQL généré et compléter les migrations avant application. Tester leur rejeu sur une base vierge, contrôler les contraintes réellement présentes dans PostgreSQL et vérifier qu’une migration ultérieure ne les supprime pas. Les contraintes de chaque lot sont livrées avec sa migration, les contraintes supplémentaires globales dans une migration ultérieure si nécessaire. Ne pas modifier les migrations déjà partagées. Seed dans cet ordre, avec UUID déterministes ou une correspondance stable entre anciens et nouveaux identifiants ; hacher les mots de passe selon le contrat backend ; convertir références vides en NULL ; corriger les fixtures incompatibles ou les exclure et consigner les exceptions ; éviter les écrasements sur réexécution. Les comptes et données de démonstration ne doivent pas être initialisés en production par défaut. L'import historique de décisions définitives est tracé dans audit_events ; pour cela le seed est exécuté après application de tous les lots.
 
@@ -235,7 +247,7 @@ Au lot 1, placer `CREATE EXTENSION IF NOT EXISTS btree_gist;` dans la migration 
 - Normalisation : présence, agenda, mandat, comptes et membres sans copies courantes ; seules les captures historiques et les clés de provenance volontairement redondantes sont conservées. Les archives, statistiques, compteurs non lus, retard d'action et statut de mandat restent calculés.
 - Les clés, les FK composites et les cardinalités ont été vérifiées sur une base vierge rejouée par la [suite BDD](TESTS_BDD.md). Le client Prisma expose `Decision.ballots` sous forme de liste. L’unicité SQL limite la relation à un scrutin par décision.
 - Entériner les choix V1 restant ouverts, dont absence de second scrutin, exception historique seule, représentation du siège vacant, droits de lecture, conservation des comptes et mandats, JSONB, stockage privé, mono-comité, fuseau et limites. Les droits confirmés en §5.2 s’appliquent aux services avec les relations et contraintes actuelles.
-- Coordonner le système d'authentification et ses éventuelles tables de session avec le backend. Le compte métier n'est pas une session ; ces tables techniques ne sont pas incluses dans les 19 tables.
+- Intégrer la table technique `account_sessions` dans le repository d’authentification. Le contrat de lecture et de révocation figure dans le [guide backend](GUIDE_INTEGRATION_BACKEND.md#persistance-des-sessions-dans-authrepositoryts).
 - Le [dictionnaire](DICTIONNAIRE_DONNEES.md), les [règles](REGLES_INTEGRITE.md), le [schéma Prisma](../../prisma/schema.prisma) et les [protections historiques](PROTECTIONS_SQL.md) documentent les artefacts livrés. Les tests des services et des permissions seront réalisés lors de l’intégration backend.
 
 ## 10. Traçabilité de la revue du MLD
@@ -247,4 +259,4 @@ Au lot 1, placer `CREATE EXTENSION IF NOT EXISTS btree_gist;` dans la migration 
 | Déduplication après retrait | Ajout de deleted_at, retrait logique terminal et conservation de l’unique sur toutes les lignes (§2.5, §5, §7) | Tester retrait, relance identique, nouvelle occurrence et exclusion des vues. |
 | Migrations PostgreSQL/Prisma | btree_gist avant EXCLUDE, droits sur base de validation, actions FK explicites et préservation du SQL personnalisé (§1, §2.3, §5.1, §8) | Valider le schéma et rejouer les migrations sur base vierge, puis inspecter les contraintes. |
 
-**Statut final** — Le MLD V1.1 est implémenté pour les 19 tables. Les vérifications de la colonne de retrait logique, des contraintes, des migrations et de la concurrence sont recensées dans [TESTS_BDD.md](TESTS_BDD.md). Le [guide d’intégration](GUIDE_INTEGRATION_BACKEND.md) indique les garanties à compléter dans les services.
+**Statut final** — Le schéma implémente les 19 tables métier et la table technique de sessions. Les vérifications de la colonne de retrait logique, des contraintes, des migrations et de la concurrence sont recensées dans [TESTS_BDD.md](TESTS_BDD.md). Le [guide d’intégration](GUIDE_INTEGRATION_BACKEND.md) indique les garanties à compléter dans les services.

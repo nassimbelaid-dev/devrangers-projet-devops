@@ -33,29 +33,30 @@ pnpm db:test
 
 La suite exige une URL PostgreSQL explicite vers `comite_scientifique_test`, sur l’interface locale et le port 5433, avec le compte `comite_dev`. Elle refuse la base de développement, les hôtes distants, les options d’URL et `NODE_ENV=production`. PostgreSQL confirme le nom, le rôle, le port interne et l’absence de réplication avant la préparation. La suite ne lit jamais `DATABASE_URL` comme solution de repli.
 
-Le test de Prisma Client utilise `db:check --json`. Il compare le nom de la base renvoyé par PostgreSQL et les 19 compteurs à des lectures SQL indépendantes de la base de rejeu. Cette lecture est indépendante du rendu de `console.table` sous PowerShell.
+Le test de Prisma Client utilise `db:check --json`. Il compare le nom de la base renvoyé par PostgreSQL et les 20 compteurs (19 tables métier et une table technique) à des lectures SQL indépendantes de la base de rejeu.
 
-Chaque exécution crée une base vérifiée vide à partir de `template0`, nommée `comite_scientifique_test_<suffixe>`. Les six migrations sont rejouées et le seed reçoit une valeur aléatoire propre au test, transmise aux sous-processus. Les bases de rejeu sont conservées pour inspection, y compris les données des scénarios qui nécessitent un vrai `COMMIT`. La suite ne supprime aucune base ni volume. Sur un runner éphémère, la disparition de l’instance suit le cycle de vie du runner.
+Chaque exécution crée une base vérifiée vide à partir de `template0`, nommée `comite_scientifique_test_<suffixe>`. Les sept migrations sont rejouées et le seed reçoit une valeur aléatoire propre au test, transmise aux sous-processus. Les bases de rejeu sont conservées pour inspection, y compris les données des scénarios qui nécessitent un vrai `COMMIT`. La suite ne supprime aucune base ni volume. Sur un runner éphémère, la disparition de l’instance suit le cycle de vie du runner.
 
 ## Organisation et couverture
 
 | Fichier | Couverture |
 |---|---|
 | `environment.ts`, `fixtures.ts` | Isolation, vérification de la cible, migrations et seed. Connexions fermées systématiquement, transactions annulées et savepoints pour les refus attendus. |
-| `suite.test.ts` | 19 tables, six migrations terminées et checksums, PK/FK, index, 29 `CHECK`, trois exclusions, `btree_gist` et 16 triggers. Vérifications des données du seed, idempotence, scrypt, refus en production et lecture des 19 modèles avec Prisma Client. |
+| `suite.test.ts` | 19 tables métier, une table technique, sept migrations terminées et leurs empreintes, PK/FK, index, 29 `CHECK` métier et deux techniques, trois exclusions, `btree_gist` et 16 triggers. Colonnes de la table des sessions, vérification du seed et de son idempotence, scrypt, refus en production et lecture des 20 modèles avec Prisma Client. |
 | `domains.ts` | Comptes, membres, sièges, mandats, réunions et agenda. Provenance, unicités, quorum et majorité des scrutins, actions autonomes. Versions documentaires, fichiers exclusifs, PV, déduplication, cibles polymorphes et références d’audit. |
+| `sessions.ts` | Relation obligatoire au compte avec FK restrictive, sessions multiples, révocation ciblée, unicité globale de l’empreinte, format hexadécimal et expiration finie strictement postérieure à la création. |
 | `history.ts` | Audit append-only, immutabilité des décisions, scrutins, votes, résultats et PV, archivage et retrait. Refus au `COMMIT` des deux états incohérents d’un scrutin, clôture transactionnelle légitime et deux ordres possibles de concurrence avec le vote. |
 
 Les refus attendus sont vérifiés par SQLSTATE et, pour les contraintes nommées, par nom de contrainte lorsque pertinent. Les tests courants annulent leurs modifications. Les scénarios à validation réelle utilisent des références de fixture distinctes dans la base de rejeu. Les tests concurrents attendent un blocage observé dans PostgreSQL et disposent de délais de connexion, de verrou et de requête.
 
 ## Résultats de validation
 
-| Exécution finale | Réussis | Échecs | Ignorés |
+| Exécution | Réussis | Échecs | Ignorés |
 |---|---:|---:|---:|
-| Premier passage sur base vierge | 24 | 0 | 0 |
-| Second passage sur une autre base vierge | 24 | 0 | 0 |
+| Six premières migrations, deux passages sur des bases vierges (par passage) | 24 | 0 | 0 |
+| Sept migrations avec les sessions, PostgreSQL 18.7 | 27 | 0 | 0 |
 
-Chaque passage a rejoué six migrations, inséré 84 lignes, puis vérifié une réexécution du seed sans écriture. `db:validate`, `db:generate`, `db:migrate:status`, `db:check` et le contrôle TypeScript ciblé ont réussi. Le lancement sans `TEST_DATABASE_URL` a été refusé. L’empreinte du contenu des 19 tables de développement, calculée en lecture seule, est identique avant et après. Les essais initiaux ont permis d’isoler deux erreurs dans les données et requêtes de test. La suite corrigée confirme les contraintes visées sans modification SQL.
+Après le rejeu des sept migrations sur une base vierge, le seed a inséré 84 lignes. Sa réexécution a inséré zéro ligne et l’empreinte du contenu est restée identique. La table technique est vide après le seed. `db:validate`, `db:generate`, `db:migrate:status`, `db:check` et le contrôle TypeScript ciblé ont réussi. Sur la base de développement, les sept empreintes des migrations concordent avec l’historique PostgreSQL et l’empreinte du contenu des 19 tables métier est identique avant et après l’intervention.
 
 ## Privilèges et limites
 

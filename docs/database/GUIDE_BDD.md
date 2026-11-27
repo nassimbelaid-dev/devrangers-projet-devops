@@ -10,12 +10,12 @@ PostgreSQL 18.7 tourne dans le service Compose `db`. Il est publié sur `127.0.0
 |---|---|
 | [compose.yaml](../../compose.yaml), [.env.example](../../.env.example) | Service Docker et modèle de configuration locale |
 | [prisma.config.ts](../../prisma.config.ts), [schema.prisma](../../prisma/schema.prisma) | URL du CLI, chemin des migrations et du seed, modèles et génération du client |
-| [prisma/migrations/](../../prisma/migrations/) | Six migrations SQL versionnées et historique appliqué enregistré dans `_prisma_migrations` |
+| [prisma/migrations/](../../prisma/migrations/) | Sept migrations SQL versionnées et historique appliqué enregistré dans `_prisma_migrations` |
 | [prisma/seed.ts](../../prisma/seed.ts), [prisma/seed/data.ts](../../prisma/seed/data.ts) | Import transactionnel des fixtures et transformation historique |
 | [scripts/db-check.ts](../../scripts/db-check.ts), [tests/database/](../../tests/database/) | Compteurs Prisma, rejeu et tests PostgreSQL isolés |
 | `src/generated/prisma/` | Client généré et exclu de Git |
 
-## Les 19 tables
+## Les 19 tables métier et la table technique
 
 | Domaine | Tables et rôle |
 |---|---|
@@ -25,7 +25,9 @@ PostgreSQL 18.7 tourne dans le service Compose `db`. Il est publié sur `127.0.0
 | Documents et PV | `documents` porte la bibliothèque, `document_versions` ses versions, `stored_files` les métadonnées des pièces et `meeting_minutes` les PV et leur instantané. |
 | Traçabilité | `notifications` est la boîte interne individuelle. `audit_events` est le journal append-only. |
 
-Les cinq premières migrations créent les tables par domaine. La sixième installe les protections historiques. La structure comporte 33 FK, 29 `CHECK`, trois exclusions GiST via `btree_gist` et 16 triggers. Les exclusions empêchent les chevauchements incompatibles de mandats. Les triggers protègent l’audit, les scrutins, décisions définitives, PV signés et notifications. Les contraintes différées valident l’existence du résultat au commit. Voir les [règles d’intégrité](REGLES_INTEGRITE.md) et les [protections SQL](PROTECTIONS_SQL.md).
+Les cinq premières migrations créent les tables par domaine. La sixième installe les protections historiques. Les tables métier comptent 33 FK, 29 `CHECK`, trois exclusions GiST via `btree_gist` et 16 triggers. Les exclusions empêchent les chevauchements incompatibles de mandats. Les triggers protègent l’audit, les scrutins, décisions définitives, PV signés et notifications. Les contraintes différées valident l’existence du résultat au commit. Voir les [règles d’intégrité](REGLES_INTEGRITE.md) et les [protections SQL](PROTECTIONS_SQL.md).
+
+La septième migration crée `account_sessions`, la table technique d’authentification, avec une FK vers `accounts`, une empreinte SHA-256 unique, deux `CHECK` et les index de révocation par compte et de purge par expiration. [Guide d’intégration backend](GUIDE_INTEGRATION_BACKEND.md#persistance-des-sessions-dans-authrepositoryts)
 
 ## Commandes disponibles
 
@@ -39,7 +41,7 @@ Les cinq premières migrations créent les tables par domaine. La sixième insta
 | `pnpm db:migrate:status` | Contrôler les migrations locales et appliquées |
 | `pnpm db:studio` | Ouvrir Prisma Studio pour la cible locale configurée |
 | `pnpm db:seed` | Charger les fixtures sur une base locale migrée |
-| `pnpm db:check` | Vérifier la connexion et afficher les 19 compteurs |
+| `pnpm db:check` | Vérifier la connexion et afficher les 20 compteurs |
 | `pnpm db:check --json` | Afficher le nom de la base et les compteurs sous forme JSON |
 | `pnpm db:test` | Rejouer migrations et seed sur une base vierge isolée, puis tester |
 

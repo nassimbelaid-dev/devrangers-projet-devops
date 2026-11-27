@@ -25,6 +25,7 @@ async function checkDatabase() {
       minutes,
       notifications,
       auditEvents,
+      accountSessions,
     ] = await prisma.$transaction([
       prisma.$queryRaw<
         { database: string }[]
@@ -48,6 +49,7 @@ async function checkDatabase() {
       prisma.meetingMinutes.count(),
       prisma.notification.count(),
       prisma.auditEvent.count(),
+      prisma.accountSession.count(),
     ])
 
     const counts = {
@@ -70,6 +72,7 @@ async function checkDatabase() {
       meeting_minutes: minutes,
       notifications,
       audit_events: auditEvents,
+      account_sessions: accountSessions,
     }
     if (process.argv.includes("--json")) {
       console.log(JSON.stringify({ database: identity.database, counts }))

@@ -7,6 +7,7 @@ import type { TestRun } from "./environment"
 
 import { registerDomainTests } from "./domains"
 import {
+  businessTables,
   pnpm,
   provision,
   runPnpm,
@@ -16,6 +17,7 @@ import {
 } from "./environment"
 import { one } from "./fixtures"
 import { registerHistoryTests } from "./history"
+import { registerSessionTests } from "./sessions"
 
 let run: TestRun
 let initialRows: number
@@ -53,13 +55,13 @@ test("Isolation : URL dédiée obligatoire, base locale de développement interd
   )
 })
 
-test("Structure : 19 tables, six migrations, FK, index, contraintes et triggers", () =>
+test("Structure : 19 tables métier, une table technique et sept migrations", () =>
   withConnection(run, async (db) => {
     const paths = (await readdir("prisma/migrations", { withFileTypes: true }))
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name)
       .sort()
-    assert.equal(paths.length, 6)
+    assert.equal(paths.length, 7)
     const sql = await Promise.all(
       paths.map((path) =>
         readFile(`prisma/migrations/${path}/migration.sql`, "utf8")
@@ -91,9 +93,31 @@ test("Structure : 19 tables, six migrations, FK, index, contraintes et triggers"
     const tableList = await db.query(
       "SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename<>'_prisma_migrations' ORDER BY tablename"
     )
+    assert.equal(businessTables.length, 19)
     assert.deepEqual(
       tableList.rows.map((row) => row.tablename),
       [...tables].sort()
+    )
+    const { rows: sessionColumns } = await db.query(
+      `SELECT column_name, udt_name, is_nullable, datetime_precision FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = 'account_sessions' ORDER BY ordinal_position`
+    )
+    assert.deepEqual(
+      sessionColumns.map(
+        ({ column_name, udt_name, is_nullable, datetime_precision }) => [
+          column_name,
+          udt_name,
+          is_nullable,
+          datetime_precision,
+        ]
+      ),
+      [
+        ["id", "uuid", "NO", null],
+        ["account_id", "uuid", "NO", null],
+        ["token_hash", "text", "NO", null],
+        ["created_at", "timestamptz", "NO", 3],
+        ["expires_at", "timestamptz", "NO", 3],
+      ]
     )
     const expectedConstraints = [
       ...sql
@@ -105,7 +129,7 @@ test("Structure : 19 tables, six migrations, FK, index, contraintes et triggers"
       .map((match) => match[1])
       .sort()
     const actual =
-      await db.query(`SELECT conname,contype,confdeltype::text,confupdtype::text FROM pg_constraint
+      await db.query(`SELECT conname,contype,confdeltype::text,confupdtype::text,conrelid='account_sessions'::regclass AS technical FROM pg_constraint
     WHERE connamespace='public'::regnamespace AND contype IN ('f','c','x','p') AND conrelid<>'_prisma_migrations'::regclass ORDER BY conname`)
     assert.deepEqual(
       actual.rows.map((row) => row.conname).sort(),
@@ -115,7 +139,9 @@ test("Structure : 19 tables, six migrations, FK, index, contraintes et triggers"
       assert.equal(row.confdeltype, "r")
       assert.equal(row.confupdtype, "r")
     }
-    assert.equal(actual.rows.filter((row) => row.contype === "c").length, 29)
+    const checks = actual.rows.filter((row) => row.contype === "c")
+    assert.equal(checks.filter((row) => !row.technical).length, 29)
+    assert.equal(checks.filter((row) => row.technical).length, 2)
     assert.equal(actual.rows.filter((row) => row.contype === "x").length, 3)
     assert.equal(
       (
@@ -164,6 +190,10 @@ test(
   () =>
     withConnection(run, async (db) => {
       assert.equal(initialRows, 84)
+      assert.equal(
+        (await one(db, "SELECT count(*)::int AS n FROM account_sessions")).n,
+        0
+      )
       const snapshot = `SELECT md5(concat_ws('|',${tables.map((table) => `(SELECT COALESCE(jsonb_agg(to_jsonb(r) ORDER BY r.id)::text,'[]') FROM "${table}" r)`).join(",")})) AS digest`
       const before = await one(db, snapshot)
       assert(/0 ligne/.test(runPnpm(run, "db:seed")))
@@ -329,7 +359,7 @@ test("Seed : exécution en production refusée", { timeout: 95_000 }, () => {
 })
 
 test(
-  "Prisma Client : db:check interroge les 19 modèles",
+  "Prisma Client : db:check interroge les 20 modèles",
   { timeout: 95_000 },
   () =>
     withConnection(run, async (db) => {
@@ -342,24 +372,25 @@ test(
         `db:check a échoué (stderr : ${Buffer.byteLength(stderr)} octets).`
       )
 
-      const expected = await Promise.all(
-        tables.map(async (table) => {
-          const { count } = await one(
-            db,
-            `SELECT count(*)::int AS count FROM "${table}"`
+      const { rows: expected } = await db.query(
+        tables
+          .map(
+            (table) =>
+              `SELECT '${table}' AS table_name, count(*)::int AS count FROM "${table}"`
           )
-          return [table, count] as const
-        })
+          .join(" UNION ALL ")
       )
-      assert.equal(expected.length, 19)
       const { name } = await one(db, "SELECT current_database() AS name")
       assert.equal(name, run.url.pathname.slice(1))
       assert.deepEqual(JSON.parse(stdout), {
         database: name,
-        counts: Object.fromEntries(expected),
+        counts: Object.fromEntries(
+          expected.map(({ table_name, count }) => [table_name, count])
+        ),
       })
     })
 )
 
 registerDomainTests(() => run)
+registerSessionTests(() => run)
 registerHistoryTests(() => run)
