@@ -222,12 +222,12 @@ La collection `agenda` est la source détaillée des propositions. `demo-busines
 | `documents-client.tsx` | Bibliothèque, espace PV et archives. Recherche d’archives normalisée et filtre « Procès-verbal » appliqué aux entrées PV. Liens aux réunions et décisions. |
 | `document-form.tsx`, `document-details.tsx` | Saisie/consultation d’un document, versions et pièce jointe locale. |
 | `minutes-editor.tsx` | Notes du secrétaire, soumission, corrections, signature simulée et archivage. |
-| `minutes-preview.tsx` | Aperçu structuré, alimenté par réunion, participants, agenda, décisions, votes et actions disponibles. |
+| `minutes-preview.tsx` | Aperçu structuré alimenté par les données de séance pour le brouillon et par la capture officielle à partir de la soumission. |
 | `types.ts` | `CommitteeDocument`, `DocumentVersion`, `MeetingMinutes`, catégories et statuts. |
 | `utils.ts` | Dates, identifiants, étiquettes, échappement HTML et impression du PV par la fenêtre navigateur. |
 | `mock-data.ts` | Documents et PV initiaux. |
 
-L’archivage modifie le statut métier et ajoute une date/identité d’archivage. Il n’est pas équivalent à la signature. Le contenu des objets `File` ne persiste pas dans `localStorage`.
+L’archivage date et identifie l’opération. Il change le statut des documents et des PV, et conserve l’issue des décisions. Le contenu des objets `File` ne persiste pas dans `localStorage`.
 
 ### Notifications — `src/features/notifications/`
 
@@ -271,7 +271,7 @@ Ce module côté client ne contacte aucun fournisseur d’identité.
 - **État initial :** importe les `initial*` depuis les modules et compose `DemoState` en une seule structure. La forme du type `DemoState` est définie dans `demo-business.ts`.
 - **Hydratation :** `initialize()` lit la clé `comite-scientifique:demo-data:v1`, restaure collection par collection et utilise les valeurs initiales pour les collections absentes/invalides.
 - **Persistance :** `persist()` sérialise l’état dans `localStorage`. Son replacer omet les clés `file`, car les objets `File` ne sont pas sérialisables.
-- **Abonnement :** `useDemoData()` expose le snapshot complet; `useDemoCollection(key)` expose une collection et son setter. Ces hooks reposent sur `useSyncExternalStore` et publient les changements aux composants abonnés.
+- **Abonnement :** `useDemoData()` expose l’état filtré par `projectDemoState()` selon le compte actif. `useDemoCollection(key)` expose une collection et son setter. Ces hooks reposent sur `useSyncExternalStore` et publient les changements aux composants abonnés.
 - **Écriture d’une collection :** le setter résout la mise à jour immuable, obtient l’acteur courant, appelle `authorizeDemoWrite()`, puis `applyDemoChange()`. En cas de succès il remplace le snapshot, persiste et notifie; en cas de refus il conserve les données et publie un message via `useDemoFeedback()`. Après une mise à jour des membres, il synchronise aussi les sièges des comptes avant d’accepter l’écriture.
 - **Autorisations par collection :** la fonction locale `authorizeDemoWrite()` contrôle membres, réunions, agenda, scrutins, décisions, actions, documents, PV et notifications. Elle applique des restrictions plus fines que le simple accès à la page, notamment état de réunion, auteur d’une proposition, attribution d’action et destinataire de notification.
 - **Entrées métier spécialisées :** `runMeetingWorkflow()`, `sendMeetingInvitationsFromStore()` et `createMeetingMinutes()` vérifient que l’acteur transmis correspond au compte connecté, puis appliquent les transitions prévues et sauvegardent.
@@ -283,11 +283,11 @@ Ce module côté client ne contacte aucun fournisseur d’identité.
 Le module définit `DemoState`, `CollectionKey`, `TransitionResult` et `WorkflowAction`. Ses fonctions reçoivent l’état en argument et retournent un nouvel état ou une erreur; elles n’écrivent ni dans le navigateur ni sur un serveur. Les horodatages et identifiants de notification sont toutefois générés par l’horloge et un compteur du module : les transitions ne sont donc pas strictement pures/déterministes.
 
 - `sendMeetingInvitations(state, meetingId, actor)` accepte le secrétaire et une réunion planifiée, construit une notification par participant ayant un compte démo associé, et date l’envoi.
-- `applyMeetingWorkflow(state, action, meetingId, actor, minutesId?)` applique le démarrage/clôture par le président et la soumission, correction ou signature des PV avec contrôle de statut et génération de notifications ciblées.
+- `applyMeetingWorkflow(state, action, meetingId, actor, minutesId?)` applique l’annulation par le secrétaire, le démarrage et la clôture par le président, ainsi que la soumission, la correction et la signature du PV selon l’acteur et l’état.
 - `notification()` et `userNotification()` construisent les événements locaux; `withNotifications()` les ajoute aux collections.
-- `agendaView()`, `attachAgenda()` et `mergeMeetingAgenda()` maintiennent la projection entre propositions et points d’ordre du jour de la réunion.
+- `agendaView()` et `attachAgenda()` projettent les propositions validées dans l’ordre du jour de la réunion.
 - `deletionIssue()` explique pourquoi réunion, membre ou décision référencés ne peuvent pas être supprimés.
-- `applyDemoChange(state, key, value, recipients)` gère les mises à jour transversales : intégrité des références, validation des membres/mandats/actions/scrutins, projection réunion↔agenda, synchronisation bidirectionnelle des présences réunion↔scrutins ouverts et présence→brouillons de PV, notifications ciblées et contraintes d’immuabilité.
+- `applyDemoChange(state, key, value, recipients)` gère les mises à jour transversales : intégrité des références, validation des membres/mandats/actions/scrutins, projection réunion↔agenda, synchronisation des scrutins ouverts et des brouillons de PV depuis la feuille de présence, notifications ciblées et contraintes d’immuabilité.
 - Les présences sont limitées aux participants de la réunion. Leur changement recalcule les représentants de siège dans les scrutins ouverts, retire les votes devenus invalides et actualise le brouillon de PV; les scrutins clôturés ne sont pas resynchronisés.
 - À la clôture, `closedResult` conserve le résumé historique calculé. `calculateBallot()` le retourne ensuite sans recalcul à partir des mandats actuels; les contrôles d’écriture interdisent de modifier directement la décision liée ou ce snapshot.
 - La création d’un scrutin exige une décision en attente; un seul scrutin peut être associé à une décision. Les présences doivent être uniques et limitées aux participants, les votes valides portent la clé d’un siège représenté par le votant, et les seuils de quorum/majorité sont bornés de 1 à 100 %.
@@ -393,7 +393,7 @@ sequenceDiagram
   Auth-->>Store: acteur et permission meetings.create
   Store->>Store: authorizeDemoWrite (nouvelle réunion planifiée)
   Store->>Biz: applyDemoChange("meetings", next)
-  Biz->>Biz: vérifier références, fusionner agenda
+  Biz->>Biz: vérifier la réunion et les mandats des participants
   Biz-->>Store: nouvel état / erreur
   Store->>LS: persister si valide
   Store-->>UI: notifier les vues abonnées
@@ -473,7 +473,7 @@ sequenceDiagram
   Store->>Store: vérifier compte connecté
   Store->>Biz: applyMeetingWorkflow
   Biz->>Biz: exiger réunion clôturée + PV brouillon
-  Biz->>Biz: passer À signer et créer notification ciblée au président
+  Biz->>Biz: capturer le contenu officiel, passer À signer et notifier le président
   Biz-->>Store: nouvel état
   Store->>LS: sauvegarder
   P->>UI: Signer ou demander une correction
@@ -482,7 +482,7 @@ sequenceDiagram
   alt demande de correction
     Biz->>Biz: PV repasse en brouillon + notification au secrétaire
   else signature
-    Biz->>Biz: PV signé + statut de réunion mis à jour
+    Biz->>Biz: figer la capture soumise, signer le PV et mettre à jour la réunion
     Biz->>Biz: notifications au secrétaire et aux archives
   end
   Store->>LS: sauvegarder et notifier les abonnés
@@ -496,20 +496,19 @@ sequenceDiagram
   participant UI as DocumentsClient / MinutesEditor
   participant Auth as static-auth
   participant Store as demo-store
-  participant Biz as demo-business
   participant LS as localStorage
   A->>UI: Demande l'archivage
   UI->>UI: Confirmation avant l'action
   UI->>Auth: hasPermission(documents/minutes, archive)
   Auth-->>UI: permission accordée
-  UI->>Store: setter du document, de la décision ou du PV
-  Store->>Store: authorizeDemoWrite vérifie acteur et transition permise
-  Store->>Biz: applyDemoChange
-  Biz->>Biz: contrôle références et cohérence de l'objet
-  Note over Store,Biz: Le PV doit déjà être Signé; l'archivage ajoute date et identité
-  Biz-->>Store: nouvel état archivé
-  Store->>LS: persister
-  Store-->>UI: rafraîchir les Archives; l'objet devient en lecture seule
+  UI->>Store: archiveDemoRecord(type, id)
+  Store->>Store: vérifier le rôle archiviste et l’éligibilité de l’objet
+  alt archivage autorisé
+    Store->>LS: persister l’archivage et tracer l’audit
+    Store-->>UI: rafraîchir les Archives
+  else archivage refusé
+    Store-->>UI: afficher le motif
+  end
 ```
 
 ## 9. Authentification, rôles et autorisation
@@ -519,14 +518,14 @@ sequenceDiagram
 | `president` | Valide ou rejette les propositions, y compris celles du secrétaire, et crée les décisions. Démarre et clôture les séances, gère présences et scrutins, signe ou retourne les PV. Gère les actions avec les mêmes contrôles que le secrétaire. Vote soumis aux règles d’éligibilité. |
 | `secretary` | Planifie les réunions, gère participants, convocations, présences, actions et documents, puis rédige et soumet les PV. Vote soumis aux règles d’éligibilité. |
 | `member` | Consulte les objets autorisés, propose des points, modifie seulement le statut de ses actions attribuées et vote si le mandat, la présence et le siège le permettent. |
-| `archivist` | Consultation et archivage de documents et PV signés; rôle dédié, sans droits automatiques président/secrétaire. |
+| `archivist` | Consulte les objets autorisés et archive les documents éligibles, les PV signés et les décisions définitives des réunions clôturées ou avec PV signé. |
 | `admin` | Gestion des comptes et membres selon la matrice. Consultation du journal d’audit en lecture seule. |
 
-Le [référentiel des permissions](ROLES_ET_PERMISSIONS.md) fixe les règles à appliquer sur tous les parcours. Seul le président réordonne les points validés d’une réunion planifiée et tout rejet de proposition exige un motif non vide. L’auteur peut retirer sa propre proposition non validée et non référencée tant que la réunion est planifiée. Seul le secrétaire annule une réunion planifiée en la passant à `CANCELLED` et notifie en interne les participants déjà convoqués.
+Le [référentiel des permissions](ROLES_ET_PERMISSIONS.md) fixe les règles à appliquer sur tous les parcours. Seul le président réordonne les points validés d’une réunion planifiée et tout rejet de proposition exige un motif non vide. L’auteur peut retirer sa propre proposition proposée ou rejetée, sans référence métier, tant que la réunion est planifiée. Seul le secrétaire annule une réunion planifiée. Le passage à `CANCELLED` déclenche un avis interne aux comptes actifs déjà convoqués.
 
 Seul le secrétaire crée des documents, modifie les documents non archivés et y dépose des versions. Il valide les documents ordinaires en une étape et attribue ou modifie la visibilité des documents non archivés parmi `COMMITTEE`, `PRESIDENCY` et `ARCHIVES`. Aucun rôle ne peut effectuer de suppression documentaire ordinaire. Seul l’archiviste archive les documents éligibles.
 
-Les lectures de réunion respectent les invitations et les accès métier existants. Les écrans de vote présentent le vote propre et les résultats agrégés autorisés. Le service doit refuser la suppression d’une action présente dans un PV signé, même après archivage du PV.
+Les lectures de réunion respectent les invitations et les accès métier existants. Dans ce périmètre, le président, le secrétaire, les titulaires et les suppléants consultent aussi les propositions des autres membres. Les écrans de vote présentent le vote propre et les résultats agrégés autorisés. Le magasin refuse de supprimer une action présente dans la capture d’un PV signé ou archivé.
 
 Le type `Suppléant` se trouve dans `CommitteeMemberRecord.kind`; le compte se connecte comme `member`. `seatRepresentations()` dans `src/features/votes/utils.ts` n’accorde le siège au suppléant que si le titulaire actif de ce siège n’est pas présent.
 
@@ -593,7 +592,7 @@ Avant de créer un nouveau composant, chercher une primitive existante dans `src
 | Persistance | Une origine/navigateur, sans concurrence interutilisateur. | PostgreSQL avec migrations versionnées, contraintes FK/UNIQUE/CHECK, transactions et sauvegardes. |
 | Fichiers | `File` local temporaire, non inclus dans la sérialisation. | Stockage objet ou stockage serveur, métadonnées PostgreSQL, contrôles d’accès et politique de conservation. |
 | Notifications | Collections locales ciblées, cloche mise à jour par store. | Notifications persistées par utilisateur; génération transactionnelle/outbox ou jobs si l’envoi externe est introduit plus tard. |
-| Audit/archivage | Champs d’archive sur les objets et règles frontend. | Journal serveur immuable avec acteur et date. Prévoir une liste chronologique en lecture seule réservée à l’administrateur technique. |
+| Audit/archivage | Champs d’archivage sur les objets et journal local réservé à l’administrateur technique. | Journal serveur immuable avec acteur et date. Prévoir une liste chronologique en lecture seule réservée à l’administrateur technique. |
 | Tests | Script d’audit statique et scénarios Playwright. | Tests unitaires de domaine, intégration DB/migrations, tests d’autorisation serveur, E2E par rôle et pipeline CI. |
 
 ### Schéma cible illustrative
@@ -626,7 +625,7 @@ Les noms sont indicatifs. La modélisation doit être validée par l’équipe a
 | `committee_members`, `committee_seats`, `mandates` | Personnes, sièges et périodes; contraintes d’occupation temporelle à préciser. |
 | `meetings`, `meeting_participants`, `attendance_records` | Séances et participants; présence par réunion et membre, avec acteur/date de mise à jour si audit voulu. |
 | `agenda_items` | Propositions et décisions de revue; lien à réunion, auteur, statut, ordre, reviewer. |
-| `documents`, `document_versions`, `file_objects` | Métadonnées séparées du contenu binaire; réunion/point agenda facultatifs; références de stockage. |
+| `documents`, `document_versions`, `file_objects` | Métadonnées séparées du binaire. Rattachement facultatif du document à une réunion, fichier rattaché à sa version. |
 | `minutes`, `minutes_events` ou table d’audit | Rédaction, soumission, correction, signature/archivage; timestamps et acteurs distincts. |
 | `decisions`, `ballots`, `ballot_votes` | Scrutins et résultat; unicité `(ballot_id, seat_id)` pour empêcher le double vote. |
 | `actions` | Attribution, échéance et statut; références à décision et responsable. |

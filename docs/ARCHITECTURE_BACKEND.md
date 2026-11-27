@@ -41,10 +41,10 @@ flowchart LR
 
 ### 1.1 Sources de vérité
 
-- `ROLES_ET_PERMISSIONS.md` et `database/REGLES_INTEGRITE.md` : contrat des autorisations et des opérations ; appliquer également la dernière décision de lecture collaborative de l'agenda énoncée dans ce document.
+- `ROLES_ET_PERMISSIONS.md` et `database/REGLES_INTEGRITE.md` : contrat des autorisations et des opérations.
 - `database/MCD.md`, `database/MLD.md`, `database/DICTIONNAIRE_DONNEES.md`, `prisma/schema.prisma`, migrations et `database/PROTECTIONS_SQL.md` : structure et garanties réelles de persistance.
 - `database/GUIDE_INTEGRATION_BACKEND.md`, `database/SEED.md`, `database/TESTS_BDD.md` : intégration, reprise et tests.
-- `ARCHITECTURE.md`, `REVUE_COHERENCE_FRONTEND_BDD.md`, PDF de simulation et code frontend : comportement attendu des écrans et recette. Les rapports portant sur `4eb461b` ou `9fde791` restent historiques. L'utilisateur indique avoir finalisé le frontend, mais les dernières sources n'ont pas été fournies pour cette revue. Les corrections Markdown précédemment proposées n'ont pas été appliquées au dépôt ; leur harmonisation reste à effectuer.
+- `ARCHITECTURE.md`, `REVUE_COHERENCE_FRONTEND_BDD.md`, PDF de simulation et code frontend : comportement attendu des écrans et recette. La revue de cohérence et le référentiel des permissions s’appuient sur le frontend de la révision `ab88bba`. L’analyse des données au commit `9fde791` documente l’étude initiale.
 
 Une règle métier confirmée prévaut sur un ancien rapport de maquette. Une contradiction entre règle et contrainte SQL doit être signalée, et non contournée. Le backend garantit les autorisations, même si le frontend masque déjà les boutons. Les règles non confirmées restent explicites (section 10).
 
@@ -299,13 +299,13 @@ stateDiagram-v2
 - Annulation : secrétaire seul, `PLANNED` → `CANCELLED`, sans nouveau champ ; conserver données et historique. Notifier uniquement les comptes actifs réellement déjà convoqués, dédupliqués à partir des convocations persistées (y compris retirées de la boîte). Aucun avis si jamais convoquée. Aucun démarrage, édition, convocation, rappel ou mutation de séance/agenda après annulation ; lecture historique autorisée selon périmètre.
 - Président seul : démarrer si informations complètes, au moins un participant et un point approuvé ; clôturer si aucun scrutin ouvert. L'agenda, les données initiales et la composition sont verrouillés après sortie de `PLANNED`. Pas de réouverture. Président/secrétaire gèrent la présence en cours ; elle est ternaire (null, true, false) et verrouillée à la clôture. Les instants effectifs sont serveur.
 - Agenda : président, secrétaire et membres titulaires/suppléants proposent en leur propre nom, dans une réunion accessible et planifiée. L'auteur édite et retire uniquement sa proposition `PROPOSED` ou `REJECTED` ; retrait interdit si référence métier, indépendamment des références historiques audit/notification. Président seul valide/rejette, y compris les propositions du secrétaire ; motif de rejet non blanc obligatoire. Président seul réordonne les `APPROVED` tant que planifiée. Les `APPROVED` seuls composent l'ordre officiel. Les chemins Réunions et Agenda utilisent les mêmes commandes.
-- **Dernière règle validée :** président, secrétaire, titulaires et suppléants consultent les propositions des autres membres dans les réunions auxquelles ils ont accès, y compris les non validées et rejetées. La lecture n'accorde aucun droit de modification, retrait, revue ou ordre. Elle n'élargit pas l'accès aux réunions hors invitation. Les droits fins des pièces et des autres rôles ne sont pas étendus arbitrairement ; appliquer le périmètre confirmé et le contrôle du parent. Pas d'API de désignation arbitraire de représentant.
+- Président, secrétaire, titulaires et suppléants consultent les propositions des autres membres dans les réunions auxquelles ils ont accès, y compris les non validées et rejetées. La lecture n'accorde aucun droit de modification, retrait, revue ou ordre. Elle n'élargit pas l'accès aux réunions hors invitation. Les droits fins des pièces et des autres rôles ne sont pas étendus arbitrairement ; appliquer le périmètre confirmé et le contrôle du parent. Pas d'API de désignation arbitraire de représentant.
 
 ### 3.3 Scrutins, décisions, représentation
 
 Le président seul crée une décision `PENDING` pendant `IN_PROGRESS`, avec référence unique, réunion obligatoire, point facultatif de la même réunion (condition d'approbation à confirmer si elle est requise par le référentiel). Il ouvre et clôture le scrutin et paramètre les seuils dans les limites existantes. Un scrutin au maximum par décision, aucun second tour, même sans quorum. Les états et la provenance finale ne sont jamais fixés librement par le client.
 
-La représentation est dérivée des mandats à la date de réunion et de la feuille de présence, et non d'un choix arbitraire de siège. Siège actif = au moins un mandat valide, invité ou non. Titulaire actif présent prioritaire, sinon suppléant actif présent (y compris titulaire vacant selon le choix V1 du MET-13). Présence inconnue = inéligible. Le bug de clic sur le représentant dans la maquette ne doit pas introduire un attribut de représentant persistant. Si le clic concerne la feuille de présence réelle d’une séance, le serveur enregistre la présence autorisée puis recalcule la représentation ; si le clic concerne la vue de simulation de l’annuaire, conserver une simulation d’interface séparée sans mutation de séance ni stockage métier du représentant. Son correctif réel et le chemin exact concerné n’ont pas été vérifiés sur les sources actuelles.
+La représentation est dérivée des mandats à la date de réunion et de la feuille de présence, et non d'un choix arbitraire de siège. Siège actif = au moins un mandat valide, invité ou non. Titulaire actif présent prioritaire, sinon suppléant actif présent (y compris titulaire vacant selon le choix V1 du MET-13). Présence inconnue = inéligible. La simulation de l’annuaire conserve ses présences localement par compte. En séance, une modification autorisée passe par la feuille de présence et le représentant est recalculé.
 
 Président, secrétaire et membre actifs, liés à un membre éligible, votent pour leur propre siège pendant une séance en cours et un scrutin ouvert. Le serveur déduit les identifiants de réunion, participation, mandat et siège ; une FK composite et deux unicités protègent la provenance et le vote unique. La modification ou le retrait concernent uniquement son propre vote. Tout changement de présence ou d'éligibilité invalide les votes ouverts devenus incompatibles, sans restaurer d'anciens choix. Un scrutin clos est immuable.
 
@@ -343,7 +343,7 @@ stateDiagram-v2
   SIGNED --> ARCHIVED: Archiviste archive
 ```
 
-**PV.** Un PV par réunion. Secrétaire crée en cours ou clôturée, édite le brouillon uniquement. Soumission après clôture, résumé non blanc et au moins un présent : capture officielle versionnée de la séance, participants, agenda officiel, décisions/résultats autorisés, actions liées, notes et identités. Retour pour correction vers `DRAFT`, non vers un statut autonome ; motif selon règle validée, `returnedAt`. Nouvelle soumission remplace la capture non signée. Président signe la version soumise attendue, sans reconstruire son contenu ; signature, réunion `MINUTES_SIGNED`, audit et notifications dans une seule transaction. Les versions soumises, signées et archivées sont rendues depuis leur capture ; le brouillon utilise les données courantes. Impression/export navigateur à partir de la projection autorisée, pas de service PDF supplémentaire. Signature métier authentifiée, non cryptographique. Les modifications ultérieures ne réécrivent pas l'historique.
+**PV.** Un PV par réunion. Secrétaire crée en cours ou clôturée, édite le brouillon uniquement. Soumission après clôture, résumé non blanc et au moins un présent : capture officielle versionnée de la séance, participants, agenda officiel, décisions/résultats autorisés, actions liées, notes et identités. Retour pour correction vers `DRAFT` avec `returnedAt`. L’obligation éventuelle d’un motif reste à décider. Nouvelle soumission remplace la capture non signée. Président signe la version soumise attendue, sans reconstruire son contenu ; signature, réunion `MINUTES_SIGNED`, audit et notifications dans une seule transaction. Les versions soumises, signées et archivées sont rendues depuis leur capture ; le brouillon utilise les données courantes. Impression/export navigateur à partir de la projection autorisée, pas de service PDF supplémentaire. Signature métier authentifiée, non cryptographique. Les modifications ultérieures ne réécrivent pas l'historique.
 
 ### 3.6 Archives et tableau de bord
 
@@ -384,7 +384,7 @@ Protection des écritures : origine exacte configurée sur POST/PUT/PATCH/DELETE
 
 ### 4.2 Matrice des opérations confirmées
 
-C = autorisé si conditions métier remplies ; — = pas de droit sur cette opération. Membre titulaire/suppléant = même rôle MEMBER, éligibilité au vote différente. Les droits de lecture encore ouverts ne sont pas tranchés par cette matrice.
+C = autorisé si conditions métier remplies ; — = pas de droit sur cette opération. Membre titulaire/suppléant = même rôle MEMBER, éligibilité au vote différente. La lecture des propositions par ADMIN et ARCHIVIST suit le périmètre constaté dans le frontend. Une éventuelle extension aux propositions proposées ou rejetées reste à arbitrer.
 
 | Opération | ADMIN | PRESIDENT | SECRETARY | MEMBER | ARCHIVIST |
 |---|:---:|:---:|:---:|:---:|:---:|
@@ -392,7 +392,8 @@ C = autorisé si conditions métier remplies ; — = pas de droit sur cette opé
 | Planifier, modifier, convoquer, annuler réunion planifiée | — | — | C | — | — |
 | Démarrer/clôturer réunion | — | C | — | — | — |
 | Renseigner présences en cours | — | C | C | — | — |
-| Consulter propositions d'autrui dans réunions accessibles | à confirmer | C | C | C | à confirmer |
+| Consulter les points validés d’une réunion accessible | C | C | C | C | C |
+| Consulter les propositions proposées ou rejetées d’autrui dans une réunion accessible | — | C | C | C | — |
 | Proposer, éditer/retirer sa propre proposition admissible | — | C | C | C | — |
 | Approuver/rejeter/réordonner agenda officiel | — | C | — | — | — |
 | Créer décision / ouvrir, paramétrer, clôturer scrutin | — | C | — | — | — |
@@ -583,16 +584,16 @@ En plus des tests de workflow, garder la suite SQL existante (24 tests réussis 
 
 ### 10.1 Fonctionnalités conservées, sans arbitrage structurel à rouvrir
 
-La V1 conserve la règle de suppléance, le quorum sur sièges actifs/représentés, majorité stricte hors abstentions, un seul scrutin par décision sans réouverture, décision sans quorum bloquée, désactivation des comptes, historique des mandats/PV, annulation simple, lecture collaborative de l'agenda, droits identiques président/secrétaire sur actions, validation/visibilité documentaire, interdiction de suppression documentaire ordinaire et audit admin. Pas de lien direct document–point, de notification externe, de table archives ou dashboard, de signature cryptographique ni d'index plein texte requis. Ces choix suivent les contrats V1 fournis et les dernières décisions communiquées ; les anciennes mentions d'arbitrage les concernant doivent être harmonisées par Codex, sans réécriture des six migrations. Ils ne sont pas présentés comme un règlement universitaire officiel vérifié.
+La V1 conserve la règle de suppléance, le quorum sur sièges actifs/représentés, majorité stricte hors abstentions, un seul scrutin par décision sans réouverture, décision sans quorum bloquée, désactivation des comptes, historique des mandats/PV, annulation simple, lecture collaborative de l'agenda, droits identiques président/secrétaire sur actions, validation/visibilité documentaire, interdiction de suppression documentaire ordinaire et audit admin. Pas de lien direct document–point, de notification externe, de table archives ou dashboard, de signature cryptographique ni d'index plein texte requis. Ces choix suivent les contrats V1 fournis et les dernières décisions communiquées. Ils ne sont pas présentés comme un règlement universitaire officiel vérifié.
 
 ### 10.2 Points métier qui exigent une confirmation ciblée
 
-La documentation disponible ne permet pas de certifier tous les droits de lecture fins. Ne pas attribuer automatiquement un droit à partir d'un ancien `P` ou `?`. Vérifier le frontend final et la matrice harmonisée au début du lot concerné. À défaut de confirmation, ne pas ouvrir l'accès ni exposer l'opération litigieuse ; signaler le blocage à l'équipe sans empêcher les autres lots d'avancer.
+Le [référentiel des permissions](ROLES_ET_PERMISSIONS.md) décrit les lectures vérifiées dans le frontend. Les points ci-dessous restent à décider pour les contrats serveur.
 
 | Sujet | À confirmer précisément, sans ajouter de fonctionnalité |
 |---|---|
 | Annuaire, profil, réunions, agenda | champs d'annuaire visibles par rôle, périmètre exact des accès de réunion hors invitation, lecture des pièces et propositions non validées pour ADMIN/ARCHIVIST ; la nouvelle lecture PRESIDENT/SECRETARY/MEMBER est déjà actée |
-| Décisions, résultats, actions, archives | scopes exacts des lectures liées/hors affectation, résultats agrégés durant ouverture, impression/export selon accès, champs d'avis après perte d'accès |
+| Décisions, résultats, actions, archives | périmètre des lectures liées ou hors affectation, résultats agrégés pendant un scrutin ouvert, champs d’avis après perte d’accès |
 | Conservation et transitions | retrait d'un membre/mandat/pièce non référencé, resoumission ou remise en attente d'un point, motif obligatoire ou facultatif du retour PV, conditions d'archivage des documents de réunion planifiée, action d'un PV soumis mais non signé et autres cas de conservation |
 | Séance | condition éventuelle de liaison à un point validé pour une décision, modification des seuils pendant ouverture, traitement des décisions en attente à la clôture dans les limites du modèle existant |
 
